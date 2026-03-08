@@ -3,6 +3,18 @@
 // Contains utility functions
 //################################
 
+var doublesCache = {};
+var triplesAndPairsCache = {};
+
+function getTileCacheKey(tiles) {
+	return sortTiles(tiles).map(tile => tile.type + "-" + tile.index + "-" + (tile.dora ? 1 : 0)).join("|");
+}
+
+function clearHandAnalysisCache() {
+	doublesCache = {};
+	triplesAndPairsCache = {};
+}
+
 //Return the number of players in the game (3 or 4)
 function getNumberOfPlayers() {
 	if (!doesPlayerExist(1) || !doesPlayerExist(2) || !doesPlayerExist(3)) {
@@ -82,6 +94,10 @@ function getPairsAsArray(tiles) {
 
 //Return doubles in tiles
 function getDoubles(tiles) {
+	var cacheKey = getTileCacheKey(tiles);
+	if (typeof doublesCache[cacheKey] != 'undefined') {
+		return [...doublesCache[cacheKey]];
+	}
 	tiles = sortTiles(tiles);
 	var doubles = [];
 	for (let i = 0; i < tiles.length - 1; i++) {
@@ -94,15 +110,22 @@ function getDoubles(tiles) {
 			i++;
 		}
 	}
+	doublesCache[cacheKey] = doubles;
 	return doubles;
 }
 
 //Return all triplets/3-sequences and pairs as a tile array
 function getTriplesAndPairs(tiles) {
+	var cacheKey = getTileCacheKey(tiles);
+	if (typeof triplesAndPairsCache[cacheKey] != 'undefined') {
+		return { triples: [...triplesAndPairsCache[cacheKey].triples], pairs: [...triplesAndPairsCache[cacheKey].pairs], shanten: triplesAndPairsCache[cacheKey].shanten };
+	}
 	var sequences = getSequences(tiles);
 	var triplets = getTriplets(tiles);
 	var pairs = getPairs(tiles);
-	return getBestCombinationOfTiles(tiles, sequences.concat(triplets).concat(pairs), { triples: [], pairs: [], shanten: 8 });
+	var bestCombination = getBestCombinationOfTiles(tiles, sequences.concat(triplets).concat(pairs), { triples: [], pairs: [], shanten: 8 });
+	triplesAndPairsCache[cacheKey] = bestCombination;
+	return { triples: [...bestCombination.triples], pairs: [...bestCombination.pairs], shanten: bestCombination.shanten };
 }
 
 //Return all triplets/3-tile-sequences as a tile array
