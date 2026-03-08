@@ -262,7 +262,7 @@ function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombi
 function getSequences(tiles) {
 	var sortedTiles = sortTiles(tiles);
 	var sequences = [];
-	for (var index = 0; index <= 7; index++) {
+	for (var index = 1; index <= 7; index++) {
 		for (var type = 0; type <= 2; type++) {
 			var tiles1 = getTilesInTileArray(sortedTiles, index, type);
 			var tiles2 = getTilesInTileArray(sortedTiles, index + 1, type);
