@@ -181,6 +181,10 @@ async function callTriple(combinations, operation) {
 			newHandValue.waits > 2 && isBadWait) {// Make hand ready and eliminate a bad wait
 			log("Call accepted because it eliminates a bad wait and makes the hand ready!");
 		}
+		else if (newHandValue.shanten == 0 && newHandValue.yaku.open >= 1 && // Pon achieves confirmed yaku tenpai
+			callTiles[0].index == callTiles[1].index) { // Explicit pon check: isBadWait also covers kanchan/penchan
+			log("Call accepted because pon achieves yaku tenpai!");
+		}
 		else if ((0.5 - (tilesLeft / getWallSize())) +
 			(0.25 - (newHandValue.shanten / 4)) +
 			(newHandValue.shanten > 0 ? ((newPairs - newHandValue.shanten - 0.5) / 2) : 0) +
