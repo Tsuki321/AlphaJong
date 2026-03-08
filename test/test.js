@@ -254,6 +254,20 @@ function runEfficiencyTestcase() {
 			expected = ["1m"];
 			break;
 
+		case 18:
+			logTestcase("Prefer Shanpon Tenpai");
+			// 123m+5m(iso)+456p+234s+11z(pair)+77z(pair): discard 5m → shanpon tenpai on 1z/7z (both yakuhai)
+			ownHand = getTilesFromString("1235m456p234s1177z");
+			expected = ["5m"];
+			break;
+
+		case 19:
+			logTestcase("Prefer Tanyao-Compatible Wait");
+			// 4 seqs (234m+567m+234p+234s) leaving 5s and 9m: discard terminal 9m → inner tanki 5s (tanyao)
+			ownHand = getTilesFromString("234567m234p2345s9m");
+			expected = ["9m"];
+			break;
+
 		default:
 			nextTestcase();
 			return;
@@ -342,6 +356,14 @@ function runDefenseTestcase() {
 			KEEP_SAFETILE = true;
 			discards = [[], getTilesFromString("333"), getTilesFromString("222s"), getTilesFromString("111p9s")];
 			expected = ["9p"];
+			break;
+
+		case 11:
+			logTestcase("Fold Against Two Riichi");
+			ownHand = getTilesFromString("34567m2356p2347s1z");
+			discards = [[], getTilesFromString("1z2356m"), getTilesFromString("567m567p"), getTilesFromString("1z456m2p")];
+			testPlayerRiichi = [0, 1, 0, 1];
+			expected = ["1z"];
 			break;
 
 		default:
@@ -516,6 +538,13 @@ function runYakuTestcase() {
 			dora = getTilesFromString("7s");
 			ownHand = getTilesFromString("123m123789p11568s");
 			expected = ["8s"];
+			break;
+
+		case 20:
+			logTestcase("Preserve Ryanpeikou Structure");
+			// 123m+123m(iipeikou)+123p+12p(ryanmen)+67s(ryanmen)+1z(iso): discard 1z keeps both ryanmen
+			ownHand = getTilesFromString("112233m11223p67s1z");
+			expected = ["1z"];
 			break;
 
 		default:
@@ -699,6 +728,21 @@ async function runCallTestcase() {
 			var callResult = await callTriple(["7p|8p","9p|9p"], 0);
 			expected = ["9p"];
 			if (callResult) { //Should decline
+				expected = ["0z"];
+			}
+			break;
+
+		case 8:
+			logTestcase("Accept Yakuhai Pon for Tenpai");
+			// 234m+456p+789s+5z(Haku)+6z(Hatsu)+7z+7z: pon on 7z(Chun) → tenpai on 5z(Haku) or 6z(Hatsu)
+			ownHand = getTilesFromString("234m456p789s5677z");
+			isClosed = true;
+			updateAvailableTiles();
+			testCallTile = { index: 7, type: 3, dora: false, doraValue: 0 };
+			var callResult = await callTriple(["7z|7z"], 0);
+			ownHand = ownHand.concat(getTileFromString("7z"));
+			expected = ["5z", "6z"];
+			if (!callResult) { //Should accept
 				expected = ["0z"];
 			}
 			break;

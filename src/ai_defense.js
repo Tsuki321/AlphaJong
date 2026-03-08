@@ -58,7 +58,7 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 
 	//Is the player doing a flush of that type? -> More dangerous
 	var honitsuChance = isDoingHonitsu(player, tile.type);
-	var otherHonitsu = Math.max(isDoingHonitsu(player, 0) || isDoingHonitsu(player, 1) || isDoingHonitsu(player, 2));
+	var otherHonitsu = Math.max(isDoingHonitsu(player, 0), isDoingHonitsu(player, 1), isDoingHonitsu(player, 2));
 	if (honitsuChance > 0) {
 		danger *= 1 + honitsuChance;
 	}
@@ -82,7 +82,7 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 	//Does the player have no yaku yet? Yakuhai is likely -> Honor tiles are 10% more dangerous
 	if (!hasYaku(player)) {
 		if (tile.type == 3 && (tile.index > 4 || tile.index == getSeatWind(player) || tile.index == getRoundWind()) &&
-			getNumberOfTilesAvailable(tile.type, tile.index) > 2) {
+			getNumberOfTilesAvailable(tile.index, tile.type) > 2) {
 			danger *= 1.1;
 		}
 	}
@@ -564,6 +564,7 @@ function isTileCloseToOtherTile(tile, otherTile) {
 	if (tile.type != 3 && tile.type == otherTile.type) {
 		return tile.index >= otherTile.index - 3 && tile.index <= otherTile.index + 3;
 	}
+	return false;
 }
 
 //Check if the tile is close to dora
