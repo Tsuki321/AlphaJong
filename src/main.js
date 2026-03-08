@@ -153,6 +153,7 @@ async function mainOwnTurn() {
 	}
 
 	setData(); //Set current state of the board to local variables
+	clearHandAnalysisCache();
 
 	var operations = getOperationList();
 
