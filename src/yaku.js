@@ -109,7 +109,7 @@ function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
 	//Honrou
 	//All Terminals and Honors (means: Also 4 triplets)
 	//Open
-	var honrou = getHonrou(triplets);
+	var honrou = getHonrou(triplets, triplesAndPairs.pairs);
 	yakuOpen += honrou.open;
 	yakuClosed += honrou.closed;
 
@@ -334,9 +334,10 @@ function getChanta(triplets, sequences, pairs) {
 }
 
 //Honrou
-function getHonrou(triplets) {
-	if (triplets.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length >= 13) {
-		return { open: 3, closed: 2 }; // - Added to Chanta
+function getHonrou(triplets, pairs) {
+	if (triplets.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length >= 12 &&
+		pairs.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length >= 2) {
+		return { open: 2, closed: 2 }; // - Added to Chanta
 	}
 	return { open: 0, closed: 0 };
 }

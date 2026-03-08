@@ -32,7 +32,7 @@ function toggleRun() {
 		run = false;
 		startButton.innerHTML = "Start Bot";
 	}
-	else if (!run) {
+	else {
 		log("AlphaJong activated!");
 		run = true;
 		startButton.innerHTML = "Stop Bot";
