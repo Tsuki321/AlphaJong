@@ -23,7 +23,7 @@ if (isDebug()) {
 }
 
 function runHandAnalysisCacheTest() {
-	var testHand = getTilesFromString("123456m123p789s11z");
+	var testHand = getTilesFromString("112233m456p789s11z");
 	clearHandAnalysisCache();
 
 	var firstResult = getTriplesAndPairs(testHand);
@@ -32,6 +32,14 @@ function runHandAnalysisCacheTest() {
 
 	if (secondResult.triples.length == firstResult.triples.length) {
 		throw new Error("Hand analysis cache returned shared result objects.");
+	}
+
+	var firstDoubles = getDoubles(testHand);
+	firstDoubles.pop(); //Verify cached doubles are copied and not shared by reference
+	var secondDoubles = getDoubles(testHand);
+
+	if (secondDoubles.length == firstDoubles.length) {
+		throw new Error("Doubles cache returned shared result arrays.");
 	}
 }
 
