@@ -9,11 +9,23 @@ Compatible with both 3 and 4 player mode.
 ## Getting Started
 
 * Install a browser extension that lets you run userscripts, like [Tampermonkey](https://www.tampermonkey.net/).
-* Grab the latest [release of this project](https://github.com/Jimboom7/AlphaJong/releases) and install it in your browser extension. (For Tampermonkey you can enter the download url at utilities -> Install from URL).
+* Install the script from the direct link: [AlphaJong.user.js](https://raw.githubusercontent.com/Tsuki321/AlphaJong/main/AlphaJong.user.js)  
+  *(In Tampermonkey you can also use Utilities → Install from URL and paste the link above.)*
 * Open [Mahjong Soul](https://mahjongsoul.game.yo-star.com/) (make sure you are logged in already).
 * Go into a game and click "Start Bot" in the GUI at the top.
 * You can check "Autostart" to let the bot automatically start new games.
 * Detailed logging is output to the browser console ([F12] in most browsers)
+
+### Automatic Updates
+
+The script includes `@updateURL` and `@downloadURL` headers that point to the latest build on this repository.  
+Tampermonkey checks for updates automatically (default: every 24 hours). You can also trigger a manual check:
+
+1. Open the Tampermonkey dashboard.
+2. Find **AlphaJong** in the script list.
+3. Click the **Check for updates** button (circular arrow icon).
+
+Whenever a new version is pushed to this repository the CI pipeline rebuilds `AlphaJong.user.js` and commits it back, so Tampermonkey will detect the version bump and offer the update automatically.
 
 ### How to avoid bans
 

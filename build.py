@@ -13,6 +13,11 @@ def addFileToString(inputString, filename):
     
 VERSION = "1.3.2_beta"
 
+REPO = "Tsuki321/AlphaJong"
+BRANCH = "main"
+SCRIPT_NAME = "AlphaJong.user.js"
+RAW_BASE = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/{SCRIPT_NAME}"
+
 data = f"""// ==UserScript==
 // @name         AlphaJong
 // @namespace    alphajong
@@ -25,6 +30,8 @@ data = f"""// ==UserScript==
 // @match        https://game.maj-soul.net/*
 // @match        https://majsoul.union-game.com/*
 // @match        https://game.mahjongsoul.com/*
+// @updateURL    {RAW_BASE}
+// @downloadURL  {RAW_BASE}
 // ==/UserScript==
 """
 
@@ -45,6 +52,10 @@ def main():
     data = addFileToString(data, "main.js")
         
     with open ('build/AlphaJong_' + VERSION + '.user.js', 'w', encoding="utf-8") as fp:
+        fp.write(data)
+
+    # Write stable filename for Tampermonkey auto-updates via @updateURL / @downloadURL
+    with open(SCRIPT_NAME, 'w', encoding="utf-8") as fp:
         fp.write(data)
 
 if __name__ == "__main__":
