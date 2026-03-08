@@ -319,10 +319,12 @@ function callRiichi(tiles) {
 //Discard the safest tile, but consider slightly riskier tiles with same shanten
 function discardFold(tiles) {
 	if (strategy != STRATEGIES.FOLD) { //Not in full Fold mode yet: Discard a relatively safe tile with high priority
+		var minShanten = Math.min(...tiles.map(t => t.shanten));
+		var minDanger = Math.min(...tiles.map(t => t.danger));
 		for (let tile of tiles) {
 			var foldThreshold = getFoldThreshold(tile, ownHand);
-			if (tile.shanten == Math.min(...tiles.map(t => t.shanten)) && //If next tile same shanten as the best tile
-				tile.danger < Math.min(...tiles.map(t => t.danger)) * 1.1 && //And the tile is not much more dangerous than the safest tile
+			if (tile.shanten == minShanten && //If next tile same shanten as the best tile
+				tile.danger < minDanger * 1.1 && //And the tile is not much more dangerous than the safest tile
 				tile.danger <= foldThreshold * 2) {
 				log("Tile Priorities: ");
 				printTilePriority(tiles);
@@ -762,7 +764,7 @@ function getHandValues(hand, discardedTile) {
 
 	var riichiPriority = 0;
 	if (originalShanten == 0) { //Already in Tenpai: Look at waits instead
-		riichiEfficiency = waits / 10;
+		var riichiEfficiency = waits / 10;
 		riichiPriority = calculateTilePriority(riichiEfficiency, expectedScore, danger - sakigiri);
 	}
 
@@ -1085,14 +1087,14 @@ function keepSafetile(tiles) {
 function getDiscardTile(tiles) {
 	var tile = tiles[0].tile;
 
-	if (tiles[0].valid && (tiles[0].yaku.open >= 1 || isClosed || tileLeft <= 4)) {
+	if (tiles[0].tile.valid !== false && (tiles[0].yaku.open >= 1 || isClosed || tilesLeft <= 4)) {
 		return tile;
 	}
 
 	var highestYaku = -1;
 	for (let t of tiles) {
 		var foldThreshold = getFoldThreshold(t, ownHand);
-		if (t.valid && t.yaku.open > highestYaku + 0.01 && t.yaku.open / 3.5 > highestYaku && t.danger <= foldThreshold) {
+		if (t.tile.valid !== false && t.yaku.open > highestYaku + 0.01 && t.yaku.open / 3.5 > highestYaku && t.danger <= foldThreshold) {
 			tile = t.tile;
 			highestYaku = t.yaku.open;
 			if (t.yaku.open >= 1) {
