@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AlphaJong
 // @namespace    alphajong
-// @version      1.3.2_beta
+// @version      1.3.3
 // @description  A Mahjong Soul Bot.
 // @author       Jimboom7
 // @match        https://mahjongsoul.game.yo-star.com/*
