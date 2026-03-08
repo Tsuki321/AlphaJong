@@ -710,7 +710,7 @@ function getFoldThreshold(tilePrio, hand) {
 	}
 	else {
 		if (getCurrentDangerLevel() > 3000 && strategy == STRATEGIES.GENERAL) {
-			return 0;
+			return 0.5; // Small threshold: still allows discarding tiles with negligible danger
 		}
 		var foldValue = (((6 - (tilePrio.shanten - tilePrio.efficiency)) * 2000) + handScore) / 500;
 	}
@@ -779,7 +779,7 @@ function shouldFold(tile, highestPrio = false) {
 //Based on: https://mahjong.guide/2018/01/28/mahjong-fundamentals-5-riichi/
 function shouldRiichi(tilePrio) {
 	var badWait = tilePrio.waits < 5 - RIICHI;
-	var lotsOfDoraIndicators = tilePrio.dora.length >= 3;
+	var lotsOfDoraIndicators = dora.length >= 3;
 
 	//Chiitoitsu
 	if (strategy == STRATEGIES.CHIITOITSU) {
