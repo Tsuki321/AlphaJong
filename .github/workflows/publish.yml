@@ -6,6 +6,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,3 +24,11 @@ jobs:
           name: dist-userscript
           path: |
             build/*.user.js
+
+      - name: Commit and push AlphaJong.user.js for auto-updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add AlphaJong.user.js
+          git diff --cached --quiet || git commit -m "build: update AlphaJong.user.js [skip ci]"
+          git push
