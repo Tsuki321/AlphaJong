@@ -14,7 +14,7 @@ def addFileToString(inputString, filename):
 VERSION = "1.3.3"
 
 REPO = "Tsuki321/AlphaJong"
-BRANCH = "main"
+BRANCH = "master"
 SCRIPT_NAME = "AlphaJong.user.js"
 RAW_BASE = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/{SCRIPT_NAME}"
 

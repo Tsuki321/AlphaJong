@@ -9,7 +9,7 @@ Compatible with both 3 and 4 player mode.
 ## Getting Started
 
 * Install a browser extension that lets you run userscripts, like [Tampermonkey](https://www.tampermonkey.net/).
-* Install the script from the direct link: [AlphaJong.user.js](https://raw.githubusercontent.com/Tsuki321/AlphaJong/main/AlphaJong.user.js)  
+* Install the script from the direct link: [AlphaJong.user.js](https://raw.githubusercontent.com/Tsuki321/AlphaJong/master/AlphaJong.user.js)  
   *(In Tampermonkey you can also use Utilities → Install from URL and paste the link above.)*
 * Open [Mahjong Soul](https://mahjongsoul.game.yo-star.com/) (make sure you are logged in already).
 * Go into a game and click "Start Bot" in the GUI at the top.

@@ -10,8 +10,8 @@
 // @match        https://game.maj-soul.net/*
 // @match        https://majsoul.union-game.com/*
 // @match        https://game.mahjongsoul.com/*
-// @updateURL    https://raw.githubusercontent.com/Tsuki321/AlphaJong/main/AlphaJong.user.js
-// @downloadURL  https://raw.githubusercontent.com/Tsuki321/AlphaJong/main/AlphaJong.user.js
+// @updateURL    https://raw.githubusercontent.com/Tsuki321/AlphaJong/master/AlphaJong.user.js
+// @downloadURL  https://raw.githubusercontent.com/Tsuki321/AlphaJong/master/AlphaJong.user.js
 // ==/UserScript==
 
 
