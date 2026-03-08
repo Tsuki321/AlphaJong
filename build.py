@@ -11,7 +11,7 @@ def addFileToString(inputString, filename):
         
     return inputString
     
-VERSION = "1.3.2_beta"
+VERSION = "1.3.3"
 
 REPO = "Tsuki321/AlphaJong"
 BRANCH = "main"
@@ -60,3 +60,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
