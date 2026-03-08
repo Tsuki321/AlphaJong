@@ -547,6 +547,14 @@ function runYakuTestcase() {
 			expected = ["1z"];
 			break;
 
+		case 21:
+			logTestcase("Honroutou tenpai path");
+			// 111m+999p+111s+55z(pair)+99m(partial 4th group)+5m(simples intruder):
+			// discard 5m keeps all-terminal/honor structure → Honroutou tenpai on 9m (4 han)
+			ownHand = getTilesFromString("111m999p111s55z99m5m");
+			expected = ["5m"];
+			break;
+
 		default:
 			nextTestcase();
 			return;
