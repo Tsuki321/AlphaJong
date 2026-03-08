@@ -85,7 +85,7 @@ function getTilesFromString(inputString) {
 				numbers.push(input);
 				break;
 		}
-		if (type != "4") {
+		if (type != 4) {
 			for (let number of numbers) {
 				if (parseInt(number) == 0) {
 					tiles.push({ index: 5, type: type, dora: true, doraValue: 1, valid: true });
@@ -123,7 +123,7 @@ function getTileFromString(inputString) {
 		index = "5";
 		dr = true;
 	}
-	if (type != "4") {
+	if (type != 4) {
 		var tile = { index: parseInt(index), type: type, dora: dr, valid: true };
 		tile.doraValue = getTileDoraValue(tile);
 		return tile;

@@ -222,7 +222,7 @@ function getYakuhai(triples) {
 
 //Tanyao
 function getTanyao(hand, triplesAndPairs, inputCalls) {
-	if (hand.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length <= hand.length - 14 &&
+	if (hand.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length <= Math.max(0, hand.length - 14) &&
 		inputCalls.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length == 0 &&
 		triplesAndPairs.pairs.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length == 0 &&
 		triplesAndPairs.triples.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length == 0) {

@@ -929,7 +929,7 @@ function thirteenOrphansPriorities() {
 
 		var efficiency = shanten == originalShanten ? 1 : 0;
 		var danger = getTileDanger(ownHand[i]);
-		var sakigiri = getSakigiriValue(hand, ownHand[i], danger);
+		var sakigiri = getSakigiriValue(hand, ownHand[i]);
 		var yakuman = calculateScore(0, 13);
 		var expectedScore = { open: 0, closed: yakuman, riichi: yakuman };
 		var priority = calculateTilePriority(efficiency, expectedScore, danger - sakigiri);
