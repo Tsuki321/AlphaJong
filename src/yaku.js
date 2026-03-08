@@ -233,12 +233,27 @@ function getTanyao(hand, triplesAndPairs, inputCalls) {
 
 //Iipeikou
 function getIipeikou(triples) {
-	for (let triple of triples) {
-		var tiles1 = getNumberOfTilesInTileArray(triples, triple.index, triple.type);
-		var tiles2 = getNumberOfTilesInTileArray(triples, triple.index + 1, triple.type);
-		var tiles3 = getNumberOfTilesInTileArray(triples, triple.index + 2, triple.type);
-		if (tiles1 == 2 && tiles2 == 2 && tiles3 == 2) {
-			return { open: 0, closed: 1 };
+	// Use a greedy approach: consume sequences from lowest index first to correctly
+	// identify identical sequences even when other sequences share tile indices.
+	var counts = {};
+	for (let tile of triples) {
+		var key = tile.type * 10 + tile.index;
+		counts[key] = (counts[key] || 0) + 1;
+	}
+	for (var type = 0; type <= 2; type++) {
+		for (var index = 1; index <= 7; index++) {
+			var k1 = type * 10 + index;
+			var k2 = type * 10 + index + 1;
+			var k3 = type * 10 + index + 2;
+			var numSeqs = Math.min(counts[k1] || 0, counts[k2] || 0, counts[k3] || 0);
+			if (numSeqs >= 2) {
+				return { open: 0, closed: 1 };
+			}
+			if (numSeqs > 0) {
+				counts[k1] -= numSeqs;
+				counts[k2] -= numSeqs;
+				counts[k3] -= numSeqs;
+			}
 		}
 	}
 	return { open: 0, closed: 0 };
@@ -356,9 +371,7 @@ function getHonitsu(hand) {
 	var pinzu = hand.filter(tile => tile.type == 3 || tile.type == 0).length;
 	var manzu = hand.filter(tile => tile.type == 3 || tile.type == 1).length;
 	var souzu = hand.filter(tile => tile.type == 3 || tile.type == 2).length;
-	if (pinzu >= 14 || pinzu >= hand.length ||
-		manzu >= 14 || manzu >= hand.length ||
-		souzu >= 14 || souzu >= hand.length) {
+	if (pinzu == hand.length || manzu == hand.length || souzu == hand.length) {
 		return { open: 2, closed: 3 };
 	}
 	return { open: 0, closed: 0 };
@@ -369,9 +382,7 @@ function getChinitsu(hand) {
 	var pinzu = hand.filter(tile => tile.type == 0).length;
 	var manzu = hand.filter(tile => tile.type == 1).length;
 	var souzu = hand.filter(tile => tile.type == 2).length;
-	if (pinzu >= 14 || pinzu >= hand.length ||
-		manzu >= 14 || manzu >= hand.length ||
-		souzu >= 14 || souzu >= hand.length) {
+	if (pinzu == hand.length || manzu == hand.length || souzu == hand.length) {
 		return { open: 3, closed: 3 }; //Score gets added to honitsu -> 5/6 han
 	}
 	return { open: 0, closed: 0 };
