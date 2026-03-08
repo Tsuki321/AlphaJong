@@ -291,11 +291,18 @@ function callRiichi(tiles) {
 		}
 	}
 	log(JSON.stringify(combination));
+	// Pre-process: add the non-dora equivalent for any dora tile (0x -> 5x) so that
+	// a non-dora 5-tile can also match. Done once here to avoid mutating combination
+	// repeatedly inside the nested loop.
+	var normalizedCombination = [];
+	for (let comb of combination) {
+		normalizedCombination.push(comb);
+		if (comb.charAt(0) == "0") { //Fix for Dora Tiles
+			normalizedCombination.push("5" + comb.charAt(1));
+		}
+	}
 	for (let tile of tiles) {
-		for (let comb of combination) {
-			if (comb.charAt(0) == "0") { //Fix for Dora Tiles
-				combination.push("5" + comb.charAt(1));
-			}
+		for (let comb of normalizedCombination) {
 			if (getTileName(tile.tile) == comb) {
 				if (shouldRiichi(tile)) {
 					var moqie = false;
@@ -737,7 +744,7 @@ function getHandValues(hand, discardedTile) {
 	}
 
 	fu = fu <= 30 ? 30 : fu;
-	fu = fu > 110 ? 30 : fu;
+	fu = fu > 110 ? 110 : fu;
 
 	var efficiency = (shanten + (baseShanten - originalShanten)) * -1; //Percent Number that indicates how big the chance is to improve the hand (in regards to efficiency). Negative for increasing shanten with the discard
 	if (originalShanten == 0) { //Already in Tenpai: Look at waits instead
