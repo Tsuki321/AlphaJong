@@ -21,6 +21,7 @@ if (isDebug()) {
 		testStartTime = new Date();
 		runTestcases();
 	}).catch(function (error) {
+		console.error(error);
 		setTimeout(function () { throw error; });
 	});
 }
@@ -67,7 +68,7 @@ async function runCallTripleStateRestoreTest() {
 	updateAvailableTiles();
 	testCallTile = { index: 1, type: 0, dora: false, doraValue: 0 };
 
-	var originalCalls = calls[0].map(t => { return { ...t }; });
+	var originalCalls = calls[0].map(t => ({ ...t }));
 	var originalClosed = isClosed;
 	var originalGetTilePriorities = getTilePriorities;
 	getTilePriorities = async function () {
