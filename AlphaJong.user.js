@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AlphaJong
 // @namespace    alphajong
-// @version      1.3.4
+// @version      1.3.9
 // @description  A Mahjong Soul Bot.
 // @author       Jimboom7
 // @match        https://mahjongsoul.game.yo-star.com/*
@@ -1103,16 +1103,11 @@ function removeTilesFromTileArray(inputTiles, tiles) {
 //Sort tiles
 function sortTiles(inputTiles) {
 	var tiles = [...inputTiles];
-	tiles = tiles.sort(function (p1, p2) { //Sort dora value descending
-		return p2.doraValue - p1.doraValue;
+	return tiles.sort(function (p1, p2) {
+		if (p1.type !== p2.type) return p1.type - p2.type;   // type ascending
+		if (p1.index !== p2.index) return p1.index - p2.index; // index ascending
+		return p2.doraValue - p1.doraValue;                     // doraValue descending
 	});
-	tiles = tiles.sort(function (p1, p2) { //Sort index ascending
-		return p1.index - p2.index;
-	});
-	tiles = tiles.sort(function (p1, p2) { //Sort type ascending
-		return p1.type - p2.type;
-	});
-	return tiles;
 }
 
 //Return number of specific tiles available
@@ -1159,6 +1154,16 @@ function getTilesInTileArray(tileArray, index, type) {
 function updateAvailableTiles() {
 	visibleTiles = dora.concat(ownHand, discards[0], discards[1], discards[2], discards[3], calls[0], calls[1], calls[2], calls[3]);
 	visibleTiles = visibleTiles.filter(tile => typeof tile != 'undefined');
+
+	// Precompute which types already have a red five visible (avoids concat in inner loop)
+	var redFiveVisible = [false, false, false]; // indexed by type 0-2
+	for (let tile of visibleTiles) {
+		if (tile.dora && tile.index == 5 && tile.type < 3) {
+			redFiveVisible[tile.type] = true;
+		}
+	}
+	var redFiveAdded = [false, false, false]; // tracks whether we have already assigned the red five for each type
+
 	availableTiles = [];
 	for (var i = 0; i <= 3; i++) {
 		for (var j = 1; j <= 9; j++) {
@@ -1166,7 +1171,11 @@ function updateAvailableTiles() {
 				break;
 			}
 			for (var k = 1; k <= getNumberOfTilesAvailable(j, i); k++) {
-				var isRed = (j == 5 && i != 3 && visibleTiles.concat(availableTiles).filter(tile => tile.type == i && tile.dora).length == 0) ? true : false;
+				var isRed = false;
+				if (j == 5 && i < 3 && !redFiveVisible[i] && !redFiveAdded[i]) {
+					isRed = true;
+					redFiveAdded[i] = true;
+				}
 				availableTiles.push({
 					index: j,
 					type: i,
@@ -2242,9 +2251,15 @@ function getSanshokuDouko(triplets) {
 //Sanshoku Doujun
 function getSanshokuDoujun(sequences) {
 	for (var i = 1; i <= 7; i++) {
-		var seq = sequences.filter(tile => tile.index == i || tile.index == i + 1 || tile.index == i + 2);
-		if (seq.length >= 9 && seq.filter(tile => tile.type == 0).length >= 3 &&
-			seq.filter(tile => tile.type == 1).length >= 3 && seq.filter(tile => tile.type == 2).length >= 3) {
+		var type0Count = 0, type1Count = 0, type2Count = 0;
+		for (let tile of sequences) {
+			if (tile.index >= i && tile.index <= i + 2) {
+				if (tile.type == 0) type0Count++;
+				else if (tile.type == 1) type1Count++;
+				else if (tile.type == 2) type2Count++;
+			}
+		}
+		if (type0Count >= 3 && type1Count >= 3 && type2Count >= 3) {
 			return { open: 1, closed: 2 };
 		}
 	}
@@ -2253,10 +2268,15 @@ function getSanshokuDoujun(sequences) {
 
 //Shousangen
 function getShousangen(hand) {
-	if (hand.filter(tile => tile.type == 3 && tile.index >= 5).length == 8 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 5).length < 4 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 6).length < 4 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 7).length < 4) {
+	var dragon5Count = 0, dragon6Count = 0, dragon7Count = 0;
+	for (let tile of hand) {
+		if (tile.type == 3) {
+			if (tile.index == 5) dragon5Count++;
+			else if (tile.index == 6) dragon6Count++;
+			else if (tile.index == 7) dragon7Count++;
+		}
+	}
+	if (dragon5Count + dragon6Count + dragon7Count == 8 && dragon5Count < 4 && dragon6Count < 4 && dragon7Count < 4) {
 		return { open: 2, closed: 2 };
 	}
 	return { open: 0, closed: 0 };
@@ -2264,9 +2284,15 @@ function getShousangen(hand) {
 
 //Daisangen
 function getDaisangen(hand) {
-	if (hand.filter(tile => tile.type == 3 && tile.index == 5).length >= 3 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 6).length >= 3 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 7).length >= 3) {
+	var d5 = 0, d6 = 0, d7 = 0;
+	for (let tile of hand) {
+		if (tile.type == 3) {
+			if (tile.index == 5) d5++;
+			else if (tile.index == 6) d6++;
+			else if (tile.index == 7) d7++;
+		}
+	}
+	if (d5 >= 3 && d6 >= 3 && d7 >= 3) {
 		return { open: 10, closed: 10 }; //Yakuman -> 10?
 	}
 	return { open: 0, closed: 0 };
@@ -2318,10 +2344,14 @@ function getIttsuu(triples) {
 
 //Honitsu
 function getHonitsu(hand) {
-	var pinzu = hand.filter(tile => tile.type == 3 || tile.type == 0).length;
-	var manzu = hand.filter(tile => tile.type == 3 || tile.type == 1).length;
-	var souzu = hand.filter(tile => tile.type == 3 || tile.type == 2).length;
-	if (pinzu == hand.length || manzu == hand.length || souzu == hand.length) {
+	var typeCounts = [0, 0, 0, 0]; // counts for types 0, 1, 2, 3
+	for (let tile of hand) {
+		typeCounts[tile.type]++;
+	}
+	var honors = typeCounts[3];
+	if (honors + typeCounts[0] == hand.length ||
+		honors + typeCounts[1] == hand.length ||
+		honors + typeCounts[2] == hand.length) {
 		return { open: 2, closed: 3 };
 	}
 	return { open: 0, closed: 0 };
@@ -2329,10 +2359,11 @@ function getHonitsu(hand) {
 
 //Chinitsu
 function getChinitsu(hand) {
-	var pinzu = hand.filter(tile => tile.type == 0).length;
-	var manzu = hand.filter(tile => tile.type == 1).length;
-	var souzu = hand.filter(tile => tile.type == 2).length;
-	if (pinzu == hand.length || manzu == hand.length || souzu == hand.length) {
+	var typeCounts = [0, 0, 0];
+	for (let tile of hand) {
+		if (tile.type < 3) typeCounts[tile.type]++;
+	}
+	if (typeCounts[0] == hand.length || typeCounts[1] == hand.length || typeCounts[2] == hand.length) {
 		return { open: 3, closed: 3 }; //Score gets added to honitsu -> 5/6 han
 	}
 	return { open: 0, closed: 0 };
@@ -2443,7 +2474,7 @@ async function callTriple(combinations, operation) {
 		return false;
 	}
 
-	if (strategy == STRATEGIES.FOLD || tilePrios.filter(t => t.safe).length == 0) {
+	if (strategy == STRATEGIES.FOLD || !tilePrios.some(t => t.safe)) {
 		log("Would fold next discard! Declined!");
 		declineCall(operation);
 		return false;
@@ -2746,7 +2777,7 @@ async function getTilePriorities(inputHand) {
 			var hand = [...inputHand];
 			hand.splice(i, 1);
 
-			if (tiles.filter(t => isSameTile(t.tile, inputHand[i], true)).length > 0) { //Skip same tiles in hand
+			if (tiles.some(t => isSameTile(t.tile, inputHand[i], true))) { //Skip same tiles in hand
 				continue;
 			}
 
@@ -2880,7 +2911,7 @@ function getHandValues(hand, discardedTile) {
 		hand.pop();
 	}
 
-	var tile1Furiten = tileCombinations.filter(t => t.furiten).length > 0;
+	var tile1Furiten = tileCombinations.some(t => t.furiten);
 	for (let tileCombination of tileCombinations) { //Now again go through all the first tiles, but also the second tiles
 		hand.push(tileCombination.tile1);
 		for (let tile2Data of tileCombination.tiles2) {
@@ -2979,7 +3010,7 @@ function getHandValues(hand, discardedTile) {
 			}
 		}
 
-		var tile2Furiten = tileCombination.tiles2.filter(t => t.furiten).length > 0;
+		var tile2Furiten = tileCombination.tiles2.some(t => t.furiten);
 
 		for (let tile2Data of tileCombination.tiles2) {//Look at second tiles if not already winning
 			var tile2 = tile2Data.tile2;
@@ -3019,7 +3050,7 @@ function getHandValues(hand, discardedTile) {
 
 			if (winning && !tile2Furiten) { //If this tile combination wins in 2 turns: calculate shape etc.
 				thisShanten = -1 - baseShanten;
-				if (waitTiles.filter(t => isSameTile(t, tile2)).length == 0) {
+				if (!waitTiles.some(t => isSameTile(t, tile2))) {
 					var newShape = numberOfTiles2 * getWaitQuality(tile2) * ((numberOfTiles1) / availableTiles.length);
 					if (tile2Data.duplicate) {
 						newShape += numberOfTiles1 * getWaitQuality(tile1) * ((numberOfTiles2) / availableTiles.length);
@@ -3362,7 +3393,7 @@ async function discard() {
 		tiles = keepSafetile(tiles);
 	}
 
-	if (strategy == STRATEGIES.FOLD || tiles.filter(t => t.safe).length == 0) {
+	if (strategy == STRATEGIES.FOLD || !tiles.some(t => t.safe)) {
 		return discardFold(tiles);
 	}
 
@@ -3527,8 +3558,11 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 	}
 
 	//Is the player doing a flush of that type? -> More dangerous
-	var honitsuChance = isDoingHonitsu(player, tile.type);
-	var otherHonitsu = Math.max(isDoingHonitsu(player, 0), isDoingHonitsu(player, 1), isDoingHonitsu(player, 2));
+	var honitsuType0 = isDoingHonitsu(player, 0);
+	var honitsuType1 = isDoingHonitsu(player, 1);
+	var honitsuType2 = isDoingHonitsu(player, 2);
+	var honitsuChance = tile.type == 0 ? honitsuType0 : tile.type == 1 ? honitsuType1 : tile.type == 2 ? honitsuType2 : isDoingHonitsu(player, tile.type);
+	var otherHonitsu = Math.max(honitsuType0, honitsuType1, honitsuType2);
 	if (honitsuChance > 0) {
 		danger *= 1 + honitsuChance;
 	}
@@ -3834,17 +3868,21 @@ function getConfidenceInYakuPrediction(player) {
 
 //Returns a value between 0 and 1 for how likely the player could be doing honitsu
 function isDoingHonitsu(player, type) {
-	if (parseInt(calls[player].length) == 0 || calls[player].some(tile => tile.type != type && tile.type != 3)) { //Calls of different type -> false
+	if (calls[player].length == 0 || calls[player].some(tile => tile.type != type && tile.type != 3)) { //Calls of different type -> false
 		return 0;
 	}
-	if (parseInt(calls[player].length / 3) == 4) {
+	if (calls[player].length >= 12) {
 		return 1;
 	}
-	var percentageOfDiscards = discards[player].slice(0, 10).filter(tile => tile.type == type).length / discards[player].slice(0, 10).length;
-	if (percentageOfDiscards > 0.2 || discards[player].slice(0, 10).length == 0) {
+	var earlyDiscards = discards[player].slice(0, 10);
+	if (earlyDiscards.length == 0) {
 		return 0;
 	}
-	var confidence = (Math.pow(parseInt(calls[player].length / 3), 2) / 10) - percentageOfDiscards + 0.1;
+	var percentageOfDiscards = earlyDiscards.filter(tile => tile.type == type).length / earlyDiscards.length;
+	if (percentageOfDiscards > 0.2) {
+		return 0;
+	}
+	var confidence = (Math.pow(calls[player].length / 3, 2) / 10) - percentageOfDiscards + 0.1;
 	if (confidence > 1) {
 		confidence = 1;
 	}
@@ -3853,7 +3891,7 @@ function isDoingHonitsu(player, type) {
 
 //Returns a value between 0 and 1 for how likely the player could be doing toitoi
 function isDoingToiToi(player) {
-	if (parseInt(calls[player].length) > 0 && getSequences(calls[player]).length == 0) { //Only triplets called
+	if (calls[player].length > 0 && getSequences(calls[player]).length == 0) { //Only triplets called
 		return getConfidenceInYakuPrediction(player) - 0.1;
 	}
 	return 0;
@@ -3861,17 +3899,23 @@ function isDoingToiToi(player) {
 
 //Returns a value between 0 and 1 for how likely the player could be doing tanyao
 function isDoingTanyao(player) {
-	if (parseInt(calls[player].length) > 0 && calls[player].filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length == 0 &&
-		(discards[player].slice(0, 5).filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length / discards[player].slice(0, 5).length) >= 0.6) { //only inner tiles called and lots of terminal/honor discards
-		return getConfidenceInYakuPrediction(player);
+	if (calls[player].length > 0 && !calls[player].some(tile => tile.type == 3 || tile.index == 1 || tile.index == 9)) {
+		var earlyDiscards = discards[player].slice(0, 5);
+		if (earlyDiscards.length > 0 &&
+			earlyDiscards.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length / earlyDiscards.length >= 0.6) { //only inner tiles called and lots of terminal/honor discards
+			return getConfidenceInYakuPrediction(player);
+		}
 	}
 	return 0;
 }
 
 //Returns how many Yakuhai the player has
 function isDoingYakuhai(player) {
-	var yakuhai = parseInt(calls[player].filter(tile => tile.type == 3 && (tile.index > 4 || tile.index == getSeatWind(player) || tile.index == roundWind)).length / 3);
-	yakuhai += parseInt(calls[player].filter(tile => tile.type == 3 && tile.index == getSeatWind(player) && tile.index == roundWind).length / 3);
+	var playerSeatWind = getSeatWind(player);
+	var yakuhai = Math.floor(calls[player].filter(tile => tile.type == 3 && (tile.index > 4 || tile.index == playerSeatWind || tile.index == roundWind)).length / 3);
+	if (playerSeatWind == roundWind) {
+		yakuhai += Math.floor(calls[player].filter(tile => tile.type == 3 && tile.index == playerSeatWind).length / 3);
+	}
 	return yakuhai;
 }
 

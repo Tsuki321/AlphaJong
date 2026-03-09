@@ -300,16 +300,11 @@ function removeTilesFromTileArray(inputTiles, tiles) {
 //Sort tiles
 function sortTiles(inputTiles) {
 	var tiles = [...inputTiles];
-	tiles = tiles.sort(function (p1, p2) { //Sort dora value descending
-		return p2.doraValue - p1.doraValue;
+	return tiles.sort(function (p1, p2) {
+		if (p1.type !== p2.type) return p1.type - p2.type;   // type ascending
+		if (p1.index !== p2.index) return p1.index - p2.index; // index ascending
+		return p2.doraValue - p1.doraValue;                     // doraValue descending
 	});
-	tiles = tiles.sort(function (p1, p2) { //Sort index ascending
-		return p1.index - p2.index;
-	});
-	tiles = tiles.sort(function (p1, p2) { //Sort type ascending
-		return p1.type - p2.type;
-	});
-	return tiles;
 }
 
 //Return number of specific tiles available
@@ -356,6 +351,16 @@ function getTilesInTileArray(tileArray, index, type) {
 function updateAvailableTiles() {
 	visibleTiles = dora.concat(ownHand, discards[0], discards[1], discards[2], discards[3], calls[0], calls[1], calls[2], calls[3]);
 	visibleTiles = visibleTiles.filter(tile => typeof tile != 'undefined');
+
+	// Precompute which types already have a red five visible (avoids concat in inner loop)
+	var redFiveVisible = [false, false, false]; // indexed by type 0-2
+	for (let tile of visibleTiles) {
+		if (tile.dora && tile.index == 5 && tile.type < 3) {
+			redFiveVisible[tile.type] = true;
+		}
+	}
+	var redFiveAdded = [false, false, false]; // tracks whether we have already assigned the red five for each type
+
 	availableTiles = [];
 	for (var i = 0; i <= 3; i++) {
 		for (var j = 1; j <= 9; j++) {
@@ -363,7 +368,11 @@ function updateAvailableTiles() {
 				break;
 			}
 			for (var k = 1; k <= getNumberOfTilesAvailable(j, i); k++) {
-				var isRed = (j == 5 && i != 3 && visibleTiles.concat(availableTiles).filter(tile => tile.type == i && tile.dora).length == 0) ? true : false;
+				var isRed = false;
+				if (j == 5 && i < 3 && !redFiveVisible[i] && !redFiveAdded[i]) {
+					isRed = true;
+					redFiveAdded[i] = true;
+				}
 				availableTiles.push({
 					index: j,
 					type: i,

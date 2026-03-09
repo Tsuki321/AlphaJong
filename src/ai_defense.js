@@ -57,8 +57,11 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 	}
 
 	//Is the player doing a flush of that type? -> More dangerous
-	var honitsuChance = isDoingHonitsu(player, tile.type);
-	var otherHonitsu = Math.max(isDoingHonitsu(player, 0), isDoingHonitsu(player, 1), isDoingHonitsu(player, 2));
+	var honitsuType0 = isDoingHonitsu(player, 0);
+	var honitsuType1 = isDoingHonitsu(player, 1);
+	var honitsuType2 = isDoingHonitsu(player, 2);
+	var honitsuChance = tile.type == 0 ? honitsuType0 : tile.type == 1 ? honitsuType1 : tile.type == 2 ? honitsuType2 : isDoingHonitsu(player, tile.type);
+	var otherHonitsu = Math.max(honitsuType0, honitsuType1, honitsuType2);
 	if (honitsuChance > 0) {
 		danger *= 1 + honitsuChance;
 	}
@@ -364,17 +367,21 @@ function getConfidenceInYakuPrediction(player) {
 
 //Returns a value between 0 and 1 for how likely the player could be doing honitsu
 function isDoingHonitsu(player, type) {
-	if (parseInt(calls[player].length) == 0 || calls[player].some(tile => tile.type != type && tile.type != 3)) { //Calls of different type -> false
+	if (calls[player].length == 0 || calls[player].some(tile => tile.type != type && tile.type != 3)) { //Calls of different type -> false
 		return 0;
 	}
-	if (parseInt(calls[player].length / 3) == 4) {
+	if (calls[player].length >= 12) {
 		return 1;
 	}
-	var percentageOfDiscards = discards[player].slice(0, 10).filter(tile => tile.type == type).length / discards[player].slice(0, 10).length;
-	if (percentageOfDiscards > 0.2 || discards[player].slice(0, 10).length == 0) {
+	var earlyDiscards = discards[player].slice(0, 10);
+	if (earlyDiscards.length == 0) {
 		return 0;
 	}
-	var confidence = (Math.pow(parseInt(calls[player].length / 3), 2) / 10) - percentageOfDiscards + 0.1;
+	var percentageOfDiscards = earlyDiscards.filter(tile => tile.type == type).length / earlyDiscards.length;
+	if (percentageOfDiscards > 0.2) {
+		return 0;
+	}
+	var confidence = (Math.pow(calls[player].length / 3, 2) / 10) - percentageOfDiscards + 0.1;
 	if (confidence > 1) {
 		confidence = 1;
 	}
@@ -383,7 +390,7 @@ function isDoingHonitsu(player, type) {
 
 //Returns a value between 0 and 1 for how likely the player could be doing toitoi
 function isDoingToiToi(player) {
-	if (parseInt(calls[player].length) > 0 && getSequences(calls[player]).length == 0) { //Only triplets called
+	if (calls[player].length > 0 && getSequences(calls[player]).length == 0) { //Only triplets called
 		return getConfidenceInYakuPrediction(player) - 0.1;
 	}
 	return 0;
@@ -391,17 +398,23 @@ function isDoingToiToi(player) {
 
 //Returns a value between 0 and 1 for how likely the player could be doing tanyao
 function isDoingTanyao(player) {
-	if (parseInt(calls[player].length) > 0 && calls[player].filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length == 0 &&
-		(discards[player].slice(0, 5).filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length / discards[player].slice(0, 5).length) >= 0.6) { //only inner tiles called and lots of terminal/honor discards
-		return getConfidenceInYakuPrediction(player);
+	if (calls[player].length > 0 && !calls[player].some(tile => tile.type == 3 || tile.index == 1 || tile.index == 9)) {
+		var earlyDiscards = discards[player].slice(0, 5);
+		if (earlyDiscards.length > 0 &&
+			earlyDiscards.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length / earlyDiscards.length >= 0.6) { //only inner tiles called and lots of terminal/honor discards
+			return getConfidenceInYakuPrediction(player);
+		}
 	}
 	return 0;
 }
 
 //Returns how many Yakuhai the player has
 function isDoingYakuhai(player) {
-	var yakuhai = parseInt(calls[player].filter(tile => tile.type == 3 && (tile.index > 4 || tile.index == getSeatWind(player) || tile.index == roundWind)).length / 3);
-	yakuhai += parseInt(calls[player].filter(tile => tile.type == 3 && tile.index == getSeatWind(player) && tile.index == roundWind).length / 3);
+	var playerSeatWind = getSeatWind(player);
+	var yakuhai = Math.floor(calls[player].filter(tile => tile.type == 3 && (tile.index > 4 || tile.index == playerSeatWind || tile.index == roundWind)).length / 3);
+	if (playerSeatWind == roundWind) {
+		yakuhai += Math.floor(calls[player].filter(tile => tile.type == 3 && tile.index == playerSeatWind).length / 3);
+	}
 	return yakuhai;
 }
 

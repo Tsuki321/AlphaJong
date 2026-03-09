@@ -103,7 +103,7 @@ async function callTriple(combinations, operation) {
 		return false;
 	}
 
-	if (strategy == STRATEGIES.FOLD || tilePrios.filter(t => t.safe).length == 0) {
+	if (strategy == STRATEGIES.FOLD || !tilePrios.some(t => t.safe)) {
 		log("Would fold next discard! Declined!");
 		declineCall(operation);
 		return false;
@@ -406,7 +406,7 @@ async function getTilePriorities(inputHand) {
 			var hand = [...inputHand];
 			hand.splice(i, 1);
 
-			if (tiles.filter(t => isSameTile(t.tile, inputHand[i], true)).length > 0) { //Skip same tiles in hand
+			if (tiles.some(t => isSameTile(t.tile, inputHand[i], true))) { //Skip same tiles in hand
 				continue;
 			}
 
@@ -540,7 +540,7 @@ function getHandValues(hand, discardedTile) {
 		hand.pop();
 	}
 
-	var tile1Furiten = tileCombinations.filter(t => t.furiten).length > 0;
+	var tile1Furiten = tileCombinations.some(t => t.furiten);
 	for (let tileCombination of tileCombinations) { //Now again go through all the first tiles, but also the second tiles
 		hand.push(tileCombination.tile1);
 		for (let tile2Data of tileCombination.tiles2) {
@@ -639,7 +639,7 @@ function getHandValues(hand, discardedTile) {
 			}
 		}
 
-		var tile2Furiten = tileCombination.tiles2.filter(t => t.furiten).length > 0;
+		var tile2Furiten = tileCombination.tiles2.some(t => t.furiten);
 
 		for (let tile2Data of tileCombination.tiles2) {//Look at second tiles if not already winning
 			var tile2 = tile2Data.tile2;
@@ -679,7 +679,7 @@ function getHandValues(hand, discardedTile) {
 
 			if (winning && !tile2Furiten) { //If this tile combination wins in 2 turns: calculate shape etc.
 				thisShanten = -1 - baseShanten;
-				if (waitTiles.filter(t => isSameTile(t, tile2)).length == 0) {
+				if (!waitTiles.some(t => isSameTile(t, tile2))) {
 					var newShape = numberOfTiles2 * getWaitQuality(tile2) * ((numberOfTiles1) / availableTiles.length);
 					if (tile2Data.duplicate) {
 						newShape += numberOfTiles1 * getWaitQuality(tile1) * ((numberOfTiles2) / availableTiles.length);
@@ -1022,7 +1022,7 @@ async function discard() {
 		tiles = keepSafetile(tiles);
 	}
 
-	if (strategy == STRATEGIES.FOLD || tiles.filter(t => t.safe).length == 0) {
+	if (strategy == STRATEGIES.FOLD || !tiles.some(t => t.safe)) {
 		return discardFold(tiles);
 	}
 

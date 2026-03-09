@@ -293,9 +293,15 @@ function getSanshokuDouko(triplets) {
 //Sanshoku Doujun
 function getSanshokuDoujun(sequences) {
 	for (var i = 1; i <= 7; i++) {
-		var seq = sequences.filter(tile => tile.index == i || tile.index == i + 1 || tile.index == i + 2);
-		if (seq.length >= 9 && seq.filter(tile => tile.type == 0).length >= 3 &&
-			seq.filter(tile => tile.type == 1).length >= 3 && seq.filter(tile => tile.type == 2).length >= 3) {
+		var type0Count = 0, type1Count = 0, type2Count = 0;
+		for (let tile of sequences) {
+			if (tile.index >= i && tile.index <= i + 2) {
+				if (tile.type == 0) type0Count++;
+				else if (tile.type == 1) type1Count++;
+				else if (tile.type == 2) type2Count++;
+			}
+		}
+		if (type0Count >= 3 && type1Count >= 3 && type2Count >= 3) {
 			return { open: 1, closed: 2 };
 		}
 	}
@@ -304,10 +310,15 @@ function getSanshokuDoujun(sequences) {
 
 //Shousangen
 function getShousangen(hand) {
-	if (hand.filter(tile => tile.type == 3 && tile.index >= 5).length == 8 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 5).length < 4 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 6).length < 4 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 7).length < 4) {
+	var dragon5Count = 0, dragon6Count = 0, dragon7Count = 0;
+	for (let tile of hand) {
+		if (tile.type == 3) {
+			if (tile.index == 5) dragon5Count++;
+			else if (tile.index == 6) dragon6Count++;
+			else if (tile.index == 7) dragon7Count++;
+		}
+	}
+	if (dragon5Count + dragon6Count + dragon7Count == 8 && dragon5Count < 4 && dragon6Count < 4 && dragon7Count < 4) {
 		return { open: 2, closed: 2 };
 	}
 	return { open: 0, closed: 0 };
@@ -315,9 +326,15 @@ function getShousangen(hand) {
 
 //Daisangen
 function getDaisangen(hand) {
-	if (hand.filter(tile => tile.type == 3 && tile.index == 5).length >= 3 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 6).length >= 3 &&
-		hand.filter(tile => tile.type == 3 && tile.index == 7).length >= 3) {
+	var d5 = 0, d6 = 0, d7 = 0;
+	for (let tile of hand) {
+		if (tile.type == 3) {
+			if (tile.index == 5) d5++;
+			else if (tile.index == 6) d6++;
+			else if (tile.index == 7) d7++;
+		}
+	}
+	if (d5 >= 3 && d6 >= 3 && d7 >= 3) {
 		return { open: 10, closed: 10 }; //Yakuman -> 10?
 	}
 	return { open: 0, closed: 0 };
@@ -369,10 +386,14 @@ function getIttsuu(triples) {
 
 //Honitsu
 function getHonitsu(hand) {
-	var pinzu = hand.filter(tile => tile.type == 3 || tile.type == 0).length;
-	var manzu = hand.filter(tile => tile.type == 3 || tile.type == 1).length;
-	var souzu = hand.filter(tile => tile.type == 3 || tile.type == 2).length;
-	if (pinzu == hand.length || manzu == hand.length || souzu == hand.length) {
+	var typeCounts = [0, 0, 0, 0]; // counts for types 0, 1, 2, 3
+	for (let tile of hand) {
+		typeCounts[tile.type]++;
+	}
+	var honors = typeCounts[3];
+	if (honors + typeCounts[0] == hand.length ||
+		honors + typeCounts[1] == hand.length ||
+		honors + typeCounts[2] == hand.length) {
 		return { open: 2, closed: 3 };
 	}
 	return { open: 0, closed: 0 };
@@ -380,10 +401,11 @@ function getHonitsu(hand) {
 
 //Chinitsu
 function getChinitsu(hand) {
-	var pinzu = hand.filter(tile => tile.type == 0).length;
-	var manzu = hand.filter(tile => tile.type == 1).length;
-	var souzu = hand.filter(tile => tile.type == 2).length;
-	if (pinzu == hand.length || manzu == hand.length || souzu == hand.length) {
+	var typeCounts = [0, 0, 0];
+	for (let tile of hand) {
+		if (tile.type < 3) typeCounts[tile.type]++;
+	}
+	if (typeCounts[0] == hand.length || typeCounts[1] == hand.length || typeCounts[2] == hand.length) {
 		return { open: 3, closed: 3 }; //Score gets added to honitsu -> 5/6 han
 	}
 	return { open: 0, closed: 0 };
