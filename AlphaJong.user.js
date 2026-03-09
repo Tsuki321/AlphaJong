@@ -2428,7 +2428,7 @@ async function callTriple(combinations, operation) {
 		newHandTriples = getTriplesAndPairs(newHand); //Get Triples, to see if discard would make the hand worse
 	}
 	finally {
-		calls[0].length = originalCallCount;
+		calls[0].splice(originalCallCount);
 		isClosed = wasClosed;
 	}
 
