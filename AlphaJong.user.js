@@ -90,6 +90,8 @@ var playerDiscardSafetyList = [[], [], [], []];
 var totalPossibleWaits = {};
 var timeSave = 0;
 var showingStrategy = false; //Current in own turn?
+// shanten starts at 8 (the maximum shanten for a 13-tile closed hand with no useful groups)
+var helpHintContext = { shanten: 8, strategy: STRATEGIES.GENERAL }; //Context for HELP mode hint display
 
 // Display
 var tileEmojiList = [
@@ -123,6 +125,13 @@ var roomCombobox = document.createElement("select");
 var currentActionOutput = document.createElement("input");
 var debugButton = document.createElement("button");
 var hideButton = document.createElement("button");
+var hintsButton = document.createElement("button");
+
+// Floating, draggable hint panel (shown in HELP mode)
+var hintPanelDiv = document.createElement("div");
+var hintPanelHeader = document.createElement("div");
+var hintPanelContent = document.createElement("div");
+var hintPanelCloseButton = document.createElement("button");
 
 function initGui() {
 	if (getRooms() == null) { // Wait for minimal loading to be done
@@ -202,6 +211,14 @@ function initGui() {
 		guiSpan.appendChild(debugButton);
 	}
 
+	hintsButton.innerHTML = "Hints";
+	hintsButton.style.marginRight = "15px";
+	hintsButton.title = "Show/Hide the HELP mode hint panel";
+	hintsButton.onclick = function () {
+		hintPanelDiv.style.display = hintPanelDiv.style.display === "none" ? "block" : "none";
+	};
+	guiSpan.appendChild(hintsButton);
+
 	hideButton.innerHTML = "Hide GUI";
 	hideButton.onclick = function () {
 		toggleGui();
@@ -210,6 +227,10 @@ function initGui() {
 
 	guiDiv.appendChild(guiSpan);
 	document.body.appendChild(guiDiv);
+
+	// Build and attach the floating hint panel
+	initHintPanel();
+
 	toggleGui();
 }
 
@@ -287,20 +308,105 @@ function refreshRoomSelection() {
 
 // Show msg to currentActionOutput
 function showCrtActionMsg(msg) {
-	if (!showingStrategy) {
-		currentActionOutput.value =  msg;
-	}
+	currentActionOutput.value = msg;
 }
 
-// Apend msg to currentActionOutput
+// Show a HELP-mode strategy hint in the floating hint panel
 function showCrtStrategyMsg(msg) {
 	showingStrategy = true;
-	currentActionOutput.value = msg;
+	hintPanelContent.textContent = msg;
+	hintPanelDiv.style.display = "block";
 }
 
 function clearCrtStrategyMsg() {
 	showingStrategy = false;
-	currentActionOutput.value = "";
+	hintPanelContent.textContent = "";
+}
+
+// Create, style and append the floating hint panel
+function initHintPanel() {
+	var savedPosStr = window.localStorage.getItem("alphajongHintPos");
+	var savedPos = savedPosStr !== null ? JSON.parse(savedPosStr) : null;
+
+	hintPanelDiv.style.position = "fixed";
+	hintPanelDiv.style.zIndex = "100002";
+	hintPanelDiv.style.minWidth = "230px";
+	hintPanelDiv.style.backgroundColor = "rgba(24,24,24,0.88)";
+	hintPanelDiv.style.borderRadius = "7px";
+	hintPanelDiv.style.boxShadow = "0 3px 14px rgba(0,0,0,0.6)";
+	hintPanelDiv.style.overflow = "hidden";
+	hintPanelDiv.style.display = "none";
+	hintPanelDiv.style.left = (savedPos ? savedPos.left : 20) + "px";
+	hintPanelDiv.style.top = (savedPos ? savedPos.top : 60) + "px";
+
+	// Title bar (drag handle)
+	hintPanelHeader.style.backgroundColor = "rgba(50,110,190,0.92)";
+	hintPanelHeader.style.color = "white";
+	hintPanelHeader.style.padding = "4px 8px";
+	hintPanelHeader.style.cursor = "move";
+	hintPanelHeader.style.userSelect = "none";
+	hintPanelHeader.style.fontSize = "13px";
+	hintPanelHeader.style.display = "flex";
+	hintPanelHeader.style.justifyContent = "space-between";
+	hintPanelHeader.style.alignItems = "center";
+
+	var headerTitle = document.createElement("span");
+	headerTitle.textContent = "AlphaJong Hints";
+	hintPanelHeader.appendChild(headerTitle);
+
+	hintPanelCloseButton.textContent = "\u00d7"; // ×
+	hintPanelCloseButton.style.background = "none";
+	hintPanelCloseButton.style.border = "none";
+	hintPanelCloseButton.style.color = "white";
+	hintPanelCloseButton.style.cursor = "pointer";
+	hintPanelCloseButton.style.fontSize = "18px";
+	hintPanelCloseButton.style.lineHeight = "1";
+	hintPanelCloseButton.style.padding = "0 2px";
+	hintPanelCloseButton.onclick = function () {
+		hintPanelDiv.style.display = "none";
+	};
+	hintPanelHeader.appendChild(hintPanelCloseButton);
+	hintPanelDiv.appendChild(hintPanelHeader);
+
+	// Content area
+	hintPanelContent.style.padding = "8px 12px";
+	hintPanelContent.style.color = "white";
+	hintPanelContent.style.fontSize = "16px";
+	hintPanelContent.style.whiteSpace = "nowrap";
+	hintPanelContent.style.fontFamily = "sans-serif";
+	hintPanelDiv.appendChild(hintPanelContent);
+
+	document.body.appendChild(hintPanelDiv);
+
+	makeDraggable(hintPanelDiv, hintPanelHeader);
+}
+
+// Make an element draggable by holding its handle; saves position to localStorage
+function makeDraggable(element, handle) {
+	handle.addEventListener("mousedown", function (e) {
+		e.preventDefault();
+		var dragStartX = e.clientX;
+		var dragStartY = e.clientY;
+		var elemStartLeft = parseInt(element.style.left, 10) || 0;
+		var elemStartTop = parseInt(element.style.top, 10) || 0;
+
+		function onMouseMove(e) {
+			element.style.left = (elemStartLeft + e.clientX - dragStartX) + "px";
+			element.style.top = (elemStartTop + e.clientY - dragStartY) + "px";
+		}
+
+		function onMouseUp() {
+			document.removeEventListener("mousemove", onMouseMove);
+			document.removeEventListener("mouseup", onMouseUp);
+			window.localStorage.setItem("alphajongHintPos", JSON.stringify({
+				left: parseInt(element.style.left, 10),
+				top: parseInt(element.style.top, 10)
+			}));
+		}
+
+		document.addEventListener("mousemove", onMouseMove);
+		document.addEventListener("mouseup", onMouseUp);
+	});
 }
 
 //################################
@@ -521,7 +627,9 @@ function callDiscard(tileNumber) {
 	} else {
 		let tileID = ownHand[tileNumber];
 		let tileName = getTileName(tileID, false);
-		showCrtStrategyMsg(`Discard: ${tileName};`);
+		let strategyStr = helpHintContext.strategy || STRATEGIES.GENERAL;
+		let shantenStr = helpHintContext.shanten <= 0 ? "Tenpai" : (helpHintContext.shanten + " from tenpai");
+		showCrtStrategyMsg(`[${strategyStr} | ${shantenStr}] Discard: ${tileName}`);
 		if (CHANGE_RECOMMEND_TILE_COLOR) {
 			view.DesktopMgr.Inst.mainrole.hand.forEach(
 				tile => tile.val.toString() == tileID ?
@@ -2564,6 +2672,8 @@ function discardFold(tiles) {
 				tile.danger <= foldThreshold * 2) {
 				log("Tile Priorities: ");
 				printTilePriority(tiles);
+				helpHintContext.shanten = tile.shanten;
+				helpHintContext.strategy = strategy;
 				discardTile(tile.tile);
 				return tile.tile;
 			}
@@ -2579,6 +2689,8 @@ function discardFold(tiles) {
 	log("Fold Tile Priorities: ");
 	printTilePriority(tiles);
 
+	helpHintContext.shanten = tiles[0].shanten;
+	helpHintContext.strategy = strategy;
 	discardTile(tiles[0].tile);
 	return tiles[0].tile;
 }
@@ -3258,6 +3370,8 @@ async function discard() {
 		riichi = callRiichi(tiles);
 	}
 	if (!riichi) {
+		helpHintContext.shanten = tiles[0].shanten;
+		helpHintContext.strategy = strategy;
 		discardTile(tile);
 	}
 
