@@ -17,9 +17,19 @@ var expected = [];
 
 //Only run if debug mode
 if (isDebug()) {
+	runRegressionTests().then(function () {
+		testStartTime = new Date();
+		runTestcases();
+	}).catch(function (error) {
+		console.error(error);
+		setTimeout(function () { throw error; });
+	});
+}
+
+async function runRegressionTests() {
 	runHandAnalysisCacheTest();
-	testStartTime = new Date();
-	runTestcases();
+	runBestCombinationRegressionTest();
+	await runCallTripleStateRestoreTest();
 }
 
 function runHandAnalysisCacheTest() {
@@ -40,6 +50,50 @@ function runHandAnalysisCacheTest() {
 
 	if (secondDoubles.length == firstDoubles.length) {
 		throw new Error("Doubles cache returned shared result arrays.");
+	}
+}
+
+function runBestCombinationRegressionTest() {
+	var testHand = getTilesFromString("112233m456p789s11z");
+	var bestCombination = getTriplesAndPairs(testHand);
+
+	if (getStringForTiles(sortTiles(bestCombination.triples)) != "456p112233m789s" || getStringForTiles(sortTiles(bestCombination.pairs)) != "11z") {
+		throw new Error("Best tile combination regression test failed.");
+	}
+}
+
+async function runCallTripleStateRestoreTest() {
+	resetGlobals();
+	ownHand = getTilesFromString("1359m11p067s4477z");
+	updateAvailableTiles();
+	testCallTile = { index: 1, type: 0, dora: false, doraValue: 0 };
+
+	var originalCalls = calls[0].map(t => ({ ...t }));
+	var originalClosed = isClosed;
+	var originalGetTilePriorities = getTilePriorities;
+	getTilePriorities = async function () {
+		throw new Error("callTriple regression");
+	};
+
+	try {
+		await callTriple(["1p|1p"], 0);
+		throw new Error("callTriple regression test did not throw.");
+	}
+	catch (error) {
+		if (error.message != "callTriple regression") {
+			throw error;
+		}
+	}
+	finally {
+		getTilePriorities = originalGetTilePriorities;
+	}
+
+	if (isClosed != originalClosed) {
+		throw new Error("callTriple did not restore isClosed after an error.");
+	}
+	if (calls[0].length != originalCalls.length ||
+		calls[0].some(function (tile, index) { return !isSameTile(tile, originalCalls[index], true); })) {
+		throw new Error("callTriple did not restore simulated calls after an error.");
 	}
 }
 

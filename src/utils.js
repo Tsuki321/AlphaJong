@@ -189,11 +189,24 @@ function pushTileAndCheckDora(tiles, arrayToPush, tile) {
 	return tile;
 }
 
+function isBetterCombination(candidate, currentBest, checkShanten = false) {
+	if (checkShanten && candidate.shanten != currentBest.shanten) {
+		return candidate.shanten < currentBest.shanten;
+	}
+	if (candidate.triples.length != currentBest.triples.length) {
+		return candidate.triples.length > currentBest.triples.length;
+	}
+	if (candidate.pairs.length != currentBest.pairs.length) {
+		return candidate.pairs.length > currentBest.pairs.length;
+	}
+	return getNumberOfDoras(candidate.triples.concat(candidate.pairs)) > getNumberOfDoras(currentBest.triples.concat(currentBest.pairs));
+}
+
 //Return the best combination of 3-tile Sequences, Triplets and pairs in array of tiles
 //Recursive Function, weird code that can probably be optimized
-function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombinations) {
+function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombinations, startIndex = 0) {
 	var originalC = { triples: [...chosenCombinations.triples], pairs: [...chosenCombinations.pairs], shanten: chosenCombinations.shanten };
-	for (var i = 0; i < possibleCombinations.length; i++) {
+	for (var i = startIndex; i < possibleCombinations.length; i++) {
 		var cs = { triples: [...originalC.triples], pairs: [...originalC.pairs], shanten: originalC.shanten };
 		var tiles = possibleCombinations[i];
 		var hand = [...inputTiles];
@@ -224,13 +237,8 @@ function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombi
 		}
 
 		if (PERFORMANCE_MODE - timeSave <= 3) {
-			var anotherChoice = getBestCombinationOfTiles(hand, possibleCombinations.slice(i + 1), cs);
-			if (anotherChoice.triples.length > chosenCombinations.triples.length ||
-				(anotherChoice.triples.length == chosenCombinations.triples.length &&
-					anotherChoice.pairs.length > chosenCombinations.pairs.length) ||
-				(anotherChoice.triples.length == chosenCombinations.triples.length &&
-					anotherChoice.pairs.length == chosenCombinations.pairs.length &&
-					getNumberOfDoras(anotherChoice.triples.concat(anotherChoice.pairs)) > getNumberOfDoras(chosenCombinations.triples.concat(chosenCombinations.pairs)))) {
+			var anotherChoice = getBestCombinationOfTiles(hand, possibleCombinations, cs, i + 1);
+			if (isBetterCombination(anotherChoice, chosenCombinations)) {
 				chosenCombinations = anotherChoice;
 			}
 		}
@@ -243,13 +251,8 @@ function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombi
 				cs.shanten = 8;
 			}
 
-			var anotherChoice = getBestCombinationOfTiles(hand, possibleCombinations.slice(i + 1), cs);
-			if (anotherChoice.shanten < chosenCombinations.shanten || anotherChoice.shanten == chosenCombinations.shanten && (anotherChoice.triples.length > chosenCombinations.triples.length ||
-				(anotherChoice.triples.length == chosenCombinations.triples.length &&
-					anotherChoice.pairs.length > chosenCombinations.pairs.length) ||
-				(anotherChoice.triples.length == chosenCombinations.triples.length &&
-					anotherChoice.pairs.length == chosenCombinations.pairs.length &&
-					getNumberOfDoras(anotherChoice.triples.concat(anotherChoice.pairs)) > getNumberOfDoras(chosenCombinations.triples.concat(chosenCombinations.pairs))))) {
+			var anotherChoice = getBestCombinationOfTiles(hand, possibleCombinations, cs, i + 1);
+			if (isBetterCombination(anotherChoice, chosenCombinations, true)) {
 				chosenCombinations = anotherChoice;
 			}
 		}
