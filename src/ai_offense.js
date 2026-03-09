@@ -335,6 +335,8 @@ function discardFold(tiles) {
 				tile.danger <= foldThreshold * 2) {
 				log("Tile Priorities: ");
 				printTilePriority(tiles);
+				helpHintContext.shanten = tile.shanten;
+				helpHintContext.strategy = strategy;
 				discardTile(tile.tile);
 				return tile.tile;
 			}
@@ -350,6 +352,8 @@ function discardFold(tiles) {
 	log("Fold Tile Priorities: ");
 	printTilePriority(tiles);
 
+	helpHintContext.shanten = tiles[0].shanten;
+	helpHintContext.strategy = strategy;
 	discardTile(tiles[0].tile);
 	return tiles[0].tile;
 }
@@ -1029,6 +1033,8 @@ async function discard() {
 		riichi = callRiichi(tiles);
 	}
 	if (!riichi) {
+		helpHintContext.shanten = tiles[0].shanten;
+		helpHintContext.strategy = strategy;
 		discardTile(tile);
 	}
 

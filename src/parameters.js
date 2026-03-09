@@ -73,6 +73,8 @@ var playerDiscardSafetyList = [[], [], [], []];
 var totalPossibleWaits = {};
 var timeSave = 0;
 var showingStrategy = false; //Current in own turn?
+// shanten starts at 8 (the maximum shanten for a 13-tile closed hand with no useful groups)
+var helpHintContext = { shanten: 8, strategy: STRATEGIES.GENERAL }; //Context for HELP mode hint display
 
 // Display
 var tileEmojiList = [
