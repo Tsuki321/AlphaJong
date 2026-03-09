@@ -216,7 +216,9 @@ function callDiscard(tileNumber) {
 	} else {
 		let tileID = ownHand[tileNumber];
 		let tileName = getTileName(tileID, false);
-		showCrtStrategyMsg(`Discard: ${tileName};`);
+		let strategyStr = helpHintContext.strategy || STRATEGIES.GENERAL;
+		let shantenStr = helpHintContext.shanten <= 0 ? "Tenpai" : (helpHintContext.shanten + " from tenpai");
+		showCrtStrategyMsg(`[${strategyStr} | ${shantenStr}] Discard: ${tileName}`);
 		if (CHANGE_RECOMMEND_TILE_COLOR) {
 			view.DesktopMgr.Inst.mainrole.hand.forEach(
 				tile => tile.val.toString() == tileID ?

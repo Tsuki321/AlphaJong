@@ -268,6 +268,29 @@ function runEfficiencyTestcase() {
 			expected = ["9m"];
 			break;
 
+		case 20:
+			logTestcase("Discard Isolated Honor to Reach Tenpai");
+			// 3 m seqs + 2-3p (ryanmen on 1p/4p) + 5-5s (pair) + 7z (isolated honor)
+			// Discard 7z → tenpai waiting on 1p or 4p
+			ownHand = getTilesFromString("123m456m789m23p55s7z");
+			expected = ["7z"];
+			break;
+
+		case 21:
+			logTestcase("Keep Dora Tile Over Terminal");
+			// 4 complete seqs + 1s (terminal) + 7s (dora): discard terminal 1s, keep dora 7s as tanki
+			dora = getTilesFromString("6s");
+			ownHand = getTilesFromString("234m567m789p234s17s");
+			expected = ["1s"];
+			break;
+
+		case 22:
+			logTestcase("Discard Isolated Tile Preserving Pair and Partial Group");
+			// 3 seqs + 2-3s (ryanmen) + 9m-9m (pair) + 9p (isolated): discard 9p → tenpai on 1s or 4s
+			ownHand = getTilesFromString("123m456p789s23s99m9p");
+			expected = ["9p"];
+			break;
+
 		default:
 			nextTestcase();
 			return;
@@ -555,6 +578,15 @@ function runYakuTestcase() {
 			expected = ["5m"];
 			break;
 
+		case 22:
+			logTestcase("Open Tanyao: Discard Terminal");
+			// Open hand with calls; 9m (terminal) breaks tanyao while 8m tanki is inner and tanyao-compatible
+			ownHand = getTilesFromString("2345678m345p9m");
+			calls[0] = getTilesFromString("234s");
+			isClosed = false;
+			expected = ["9m"];
+			break;
+
 		default:
 			nextTestcase();
 			return;
@@ -640,6 +672,14 @@ function runWaitsTestcase() {
 			ownHand = getTilesFromString("111333555m225ps44z");
 			discards = [[], getTilesFromString("22p44z"), [], []];
 			expected = ["2p", "4z"];
+			break;
+
+		case 7:
+			logTestcase("Maintain Shanpon Wait After Draw");
+			// 3 m seqs + 2-2p (pair) + 5-5s (pair) already forms shanpon tenpai structure; drew 9z
+			// Discard 9z to preserve the shanpon tenpai on 2p or 5s
+			ownHand = getTilesFromString("123m456m789m22p55s9z");
+			expected = ["9z"];
 			break;
 
 		default:
