@@ -70,21 +70,27 @@ async function callTriple(combinations, operation) {
 	callTiles = callTiles.map(t => getTileFromString(t));
 
 	var wasClosed = isClosed;
-	calls[0].push(callTiles[0]); //Simulate "Call" for hand value calculation
-	calls[0].push(callTiles[1]);
-	calls[0].push(getTileForCall());
-	isClosed = false;
-	newHand = removeTilesFromTileArray(ownHand, callTiles); //Remove called tiles from hand
-	var tilePrios = await getTilePriorities(newHand);
-	tilePrios = sortOutUnsafeTiles(tilePrios);
-	var nextDiscard = getDiscardTile(tilePrios); //Calculate next discard
-	newHand = removeTilesFromTileArray(newHand, [nextDiscard]); //Remove discard from hand
-	var newHandValue = getHandValues(newHand, nextDiscard); //Get Value of that hand
-	newHandTriples = getTriplesAndPairs(newHand); //Get Triples, to see if discard would make the hand worse
-	calls[0].pop();
-	calls[0].pop();
-	calls[0].pop();
-	isClosed = wasClosed;
+	var originalCallCount = calls[0].length;
+	var tilePrios;
+	var nextDiscard;
+	var newHandValue;
+	try {
+		calls[0].push(callTiles[0]); //Simulate "Call" for hand value calculation
+		calls[0].push(callTiles[1]);
+		calls[0].push(getTileForCall());
+		isClosed = false;
+		newHand = removeTilesFromTileArray(ownHand, callTiles); //Remove called tiles from hand
+		tilePrios = await getTilePriorities(newHand);
+		tilePrios = sortOutUnsafeTiles(tilePrios);
+		nextDiscard = getDiscardTile(tilePrios); //Calculate next discard
+		newHand = removeTilesFromTileArray(newHand, [nextDiscard]); //Remove discard from hand
+		newHandValue = getHandValues(newHand, nextDiscard); //Get Value of that hand
+		newHandTriples = getTriplesAndPairs(newHand); //Get Triples, to see if discard would make the hand worse
+	}
+	finally {
+		calls[0].length = originalCallCount;
+		isClosed = wasClosed;
+	}
 
 	var newHonorPairs = newHandTriples.pairs.filter(t => t.type == 3).length / 2;
 	var newPairs = newHandTriples.pairs.length / 2;
