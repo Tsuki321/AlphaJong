@@ -26,6 +26,16 @@ var CHIITOITSU = 5; //Number of Pairs in Hand to go for chiitoitsu. Default: 5
 var THIRTEEN_ORPHANS = 10; //Number of Honor/Terminals in hand to go for 13 orphans. Default: 10
 var KEEP_SAFETILE = false; //If set to true the bot will keep 1 safetile
 
+//MODEL CALIBRATION
+// Tenpai chance multipliers by room rank. Higher room => players are more likely to be tenpai.
+var ROOM_TENPAI_MODIFIER = {
+	1: 0.60,
+	2: 0.70,
+	3: 0.80,
+	4: 0.90,
+	5: 1.00
+};
+
 //MISC
 var MARK_TSUMOGIRI = false; // Mark the tsumogiri tiles of opponents with grey color
 var CHANGE_RECOMMEND_TILE_COLOR = true; // change recommended tile color in help mode
@@ -75,6 +85,11 @@ var timeSave = 0;
 var showingStrategy = false; //Current in own turn?
 // shanten starts at 8 (the maximum shanten for a 13-tile closed hand with no useful groups)
 var helpHintContext = { shanten: 8, strategy: STRATEGIES.GENERAL }; //Context for HELP mode hint display
+var runtimeProfiling = {
+	discardDurationsMs: [],
+	maxSamples: 30,
+	slowDiscardThresholdMs: 1500
+};
 
 // Display
 var tileEmojiList = [

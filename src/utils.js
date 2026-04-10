@@ -16,6 +16,31 @@ function clearHandAnalysisCache() {
 	triplesAndPairsCache = {};
 }
 
+function getTileIdentityKey(tile) {
+	if (typeof tile == 'undefined' || tile == null) {
+		return "x";
+	}
+	return tile.type + "-" + tile.index + "-" + (tile.dora ? 1 : 0);
+}
+
+async function withSimulatedCallState(callTiles, callback) {
+	var initialCallLength = calls[0].length;
+	var wasClosed = isClosed;
+	var callTile = getTileForCall();
+
+	try {
+		calls[0].push(callTiles[0]);
+		calls[0].push(callTiles[1]);
+		calls[0].push(callTile);
+		isClosed = false;
+		return await callback(callTile);
+	}
+	finally {
+		calls[0].splice(initialCallLength);
+		isClosed = wasClosed;
+	}
+}
+
 //Return the number of players in the game (3 or 4)
 function getNumberOfPlayers() {
 	if (!doesPlayerExist(1) || !doesPlayerExist(2) || !doesPlayerExist(3)) {

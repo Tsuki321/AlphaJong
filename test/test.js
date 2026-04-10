@@ -15,12 +15,29 @@ var testPlayerHand = [13, 13, 13, 13];
 var testStartTime = 0;
 var expected = [];
 
+function publishTestResult(result) {
+	if (typeof window == 'undefined') {
+		return;
+	}
+	window.__ALPHAJONG_TEST_RESULT = result;
+	window.__ALPHAJONG_TEST_DONE = result.done === true;
+}
+
+publishTestResult({ done: false, failed: 0, total: 0, avgMsPerTest: 0 });
+
 //Only run if debug mode
 if (isDebug()) {
 	runRegressionTests().then(function () {
 		testStartTime = new Date();
 		runTestcases();
 	}).catch(function (error) {
+		publishTestResult({
+			done: true,
+			failed: 1,
+			total: 1,
+			avgMsPerTest: 0,
+			error: error.message
+		});
 		console.error(error);
 		setTimeout(function () { throw error; });
 	});
@@ -29,7 +46,28 @@ if (isDebug()) {
 async function runRegressionTests() {
 	runHandAnalysisCacheTest();
 	runBestCombinationRegressionTest();
+	runYakumanValueRegressionTest();
+	runRyanpeikouRegressionTest();
 	await runCallTripleStateRestoreTest();
+}
+
+function runYakumanValueRegressionTest() {
+	var hand = getTilesFromString("111m22p");
+	var callTiles = getTilesFromString("555666777z");
+	var yaku = getYaku(hand, callTiles);
+
+	if (yaku.open < 13 || yaku.closed < 13) {
+		throw new Error("Yakuman value regression test failed for Daisangen.");
+	}
+}
+
+function runRyanpeikouRegressionTest() {
+	var hand = getTilesFromString("112233m445566p77s");
+	var yaku = getYaku(hand, []);
+
+	if (yaku.closed < 3) {
+		throw new Error("Ryanpeikou regression test failed.");
+	}
 }
 
 function runHandAnalysisCacheTest() {
@@ -110,6 +148,9 @@ async function runTestcases() {
 //Show the final result
 function showEndResult() {
 	var time = new Date() - testStartTime;
+	var totalTests = overall.reduce((pv, cv) => pv + cv, 0);
+	var failedTests = totalTests - passes.reduce((pv, cv) => pv + cv, 0);
+	var avgMsPerTest = totalTests > 0 ? (time / totalTests) : 0;
 	log("#################");
 	log("TESTRESULTS");
 	for (var i = 0; i < TEST_CASES.length; i++) {
@@ -120,8 +161,15 @@ function showEndResult() {
 			log("<b style='color: red;'>" + TEST_CASES[i] + ": " + passes[i] + "/" + overall[i] + " failed!</b>");
 		}
 	}
-	log("Time needed: " + time + "ms, or " + time / overall.reduce((pv, cv) => pv + cv, 0) + "ms per test.");
+	log("Time needed: " + time + "ms, or " + avgMsPerTest + "ms per test.");
 	log("#################");
+	publishTestResult({
+		done: true,
+		failed: failedTests,
+		total: totalTests,
+		avgMsPerTest: avgMsPerTest,
+		timeMs: time
+	});
 }
 
 //List of testcases

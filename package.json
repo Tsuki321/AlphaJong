@@ -1,0 +1,11 @@
+{
+  "name": "alphajong",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:headless": "node test/run_headless_tests.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.53.0"
+  }
+}

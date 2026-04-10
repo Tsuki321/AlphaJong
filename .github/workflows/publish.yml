@@ -4,7 +4,29 @@ on:
   [push, workflow_dispatch]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run headless regression tests
+        env:
+          ALPHAJONG_MAX_MS_PER_TEST: '250'
+        run: npm run test:headless
+
   publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write

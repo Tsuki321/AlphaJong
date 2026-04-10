@@ -140,107 +140,119 @@ async function mainOwnTurn() {
 		return;
 	}
 	threadIsRunning = true;
+	var mainScheduled = false;
+	function scheduleMain(delay) {
+		mainScheduled = true;
+		setTimeout(main, delay);
+	}
 
-	//HELP MODE, if player not operate, just skip
-	if (MODE === AIMODE.HELP) {
-		if (!checkPlayerOpChanged()) {
-			setTimeout(main, 1000);
-			threadIsRunning = false;
-			return;
-		} else {
-			recordPlayerOps();
+	try {
+		//HELP MODE, if player not operate, just skip
+		if (MODE === AIMODE.HELP) {
+			if (!checkPlayerOpChanged()) {
+				scheduleMain(1000);
+				return;
+			} else {
+				recordPlayerOps();
+			}
+		}
+
+		setData(); //Set current state of the board to local variables
+		clearHandAnalysisCache();
+
+		var operations = getOperationList();
+
+		log("##### OWN TURN #####");
+		log("Debug String: " + getDebugString());
+		if (getNumberOfPlayers() == 3) {
+			log("Right Player Tenpai Chance: " + Number(isPlayerTenpai(1) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(1).toFixed(0)));
+			log("Left Player Tenpai Chance: " + Number(isPlayerTenpai(2) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(2).toFixed(0)));
+		}
+		else {
+			log("Shimocha Tenpai Chance: " + Number(isPlayerTenpai(1) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(1).toFixed(0)));
+			log("Toimen Tenpai Chance: " + Number(isPlayerTenpai(2) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(2).toFixed(0)));
+			log("Kamicha Tenpai Chance: " + Number(isPlayerTenpai(3) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(3).toFixed(0)));
+		}
+
+		determineStrategy(); //Get the Strategy for the current situation. After calls so it does not reset folds
+
+		isConsideringCall = true;
+		for (let operation of operations) { //Priority Operations: Should be done before discard on own turn
+			if (getOperationList().length == 0) {
+				break;
+			}
+			switch (operation.type) {
+				case getOperations().an_gang: //From Hand
+					callAnkan(operation.combination);
+					break;
+				case getOperations().add_gang: //Add from Hand to Pon
+					callShouminkan();
+					break;
+				case getOperations().zimo:
+					callTsumo();
+					break;
+				case getOperations().rong:
+					callRon();
+					break;
+				case getOperations().babei:
+					if (callKita()) {
+						scheduleMain(1000);
+						return;
+					}
+					break;
+				case getOperations().jiuzhongjiupai:
+					callAbortiveDraw();
+					break;
+			}
+		}
+
+		for (let operation of operations) {
+			if (getOperationList().length == 0) {
+				break;
+			}
+			switch (operation.type) {
+				case getOperations().dapai:
+					isConsideringCall = false;
+					await discard();
+					break;
+				case getOperations().eat:
+					await callTriple(operation.combination, getOperations().eat);
+					break;
+				case getOperations().peng:
+					await callTriple(operation.combination, getOperations().peng);
+					break;
+				case getOperations().ming_gang: //From others
+					callDaiminkan();
+					break;
+			}
+		}
+
+		log(" ");
+
+		if (MODE === AIMODE.AUTO) {
+			showCrtActionMsg("Own turn completed.");
+		}
+
+		if ((getOverallTimeLeft() < 8 && getLastTurnTimeLeft() - getOverallTimeLeft() <= 0) || //Not much overall time left and last turn took longer than the 5 second increment
+			(getOverallTimeLeft() < 4 && getLastTurnTimeLeft() - getOverallTimeLeft() <= 1)) {
+			timeSave++;
+			log("Low performance! Activating time save mode level: " + timeSave);
+		}
+		if (getOverallTimeLeft() > 15) { //Much time left (new round)
+			timeSave = 0;
+		}
+
+		scheduleMain(1000);
+	}
+	catch (error) {
+		log("mainOwnTurn failed: " + (error && error.message ? error.message : error));
+		if (!mainScheduled) {
+			scheduleMain(1000);
 		}
 	}
-
-	setData(); //Set current state of the board to local variables
-	clearHandAnalysisCache();
-
-	var operations = getOperationList();
-
-	log("##### OWN TURN #####");
-	log("Debug String: " + getDebugString());
-	if (getNumberOfPlayers() == 3) {
-		log("Right Player Tenpai Chance: " + Number(isPlayerTenpai(1) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(1).toFixed(0)));
-		log("Left Player Tenpai Chance: " + Number(isPlayerTenpai(2) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(2).toFixed(0)));
+	finally {
+		threadIsRunning = false;
 	}
-	else {
-		log("Shimocha Tenpai Chance: " + Number(isPlayerTenpai(1) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(1).toFixed(0)));
-		log("Toimen Tenpai Chance: " + Number(isPlayerTenpai(2) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(2).toFixed(0)));
-		log("Kamicha Tenpai Chance: " + Number(isPlayerTenpai(3) * 100).toFixed(1) + "%, Expected Hand Value: " + Number(getExpectedHandValue(3).toFixed(0)));
-	}
-
-	determineStrategy(); //Get the Strategy for the current situation. After calls so it does not reset folds
-
-	isConsideringCall = true;
-	for (let operation of operations) { //Priority Operations: Should be done before discard on own turn
-		if (getOperationList().length == 0) {
-			break;
-		}
-		switch (operation.type) {
-			case getOperations().an_gang: //From Hand
-				callAnkan(operation.combination);
-				break;
-			case getOperations().add_gang: //Add from Hand to Pon
-				callShouminkan();
-				break;
-			case getOperations().zimo:
-				callTsumo();
-				break;
-			case getOperations().rong:
-				callRon();
-				break;
-			case getOperations().babei:
-				if (callKita()) {
-					threadIsRunning = false;
-					setTimeout(main, 1000);
-					return;
-				}
-				break;
-			case getOperations().jiuzhongjiupai:
-				callAbortiveDraw();
-				break;
-		}
-	}
-
-	for (let operation of operations) {
-		if (getOperationList().length == 0) {
-			break;
-		}
-		switch (operation.type) {
-			case getOperations().dapai:
-				isConsideringCall = false;
-				await discard();
-				break;
-			case getOperations().eat:
-				await callTriple(operation.combination, getOperations().eat);
-				break;
-			case getOperations().peng:
-				await callTriple(operation.combination, getOperations().peng);
-				break;
-			case getOperations().ming_gang: //From others
-				callDaiminkan();
-				break;
-		}
-	}
-
-	log(" ");
-
-	if (MODE === AIMODE.AUTO) {
-		showCrtActionMsg("Own turn completed.");
-	}
-
-	if ((getOverallTimeLeft() < 8 && getLastTurnTimeLeft() - getOverallTimeLeft() <= 0) || //Not much overall time left and last turn took longer than the 5 second increment
-		(getOverallTimeLeft() < 4 && getLastTurnTimeLeft() - getOverallTimeLeft() <= 1)) {
-		timeSave++;
-		log("Low performance! Activating time save mode level: " + timeSave);
-	}
-	if (getOverallTimeLeft() > 15) { //Much time left (new round)
-		timeSave = 0;
-	}
-
-	threadIsRunning = false;
-
-	setTimeout(main, 1000);
 
 }
 

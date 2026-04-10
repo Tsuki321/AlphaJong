@@ -69,16 +69,12 @@ async function callTriple(combinations, operation) {
 	var callTiles = combinations[comb].split("|");
 	callTiles = callTiles.map(t => getTileFromString(t));
 
-	var wasClosed = isClosed;
-	var originalCallCount = calls[0].length;
 	var tilePrios;
 	var nextDiscard;
 	var newHandValue;
-	try {
-		calls[0].push(callTiles[0]); //Simulate "Call" for hand value calculation
-		calls[0].push(callTiles[1]);
-		calls[0].push(getTileForCall());
-		isClosed = false;
+	var newHand;
+	var newHandTriples;
+	await withSimulatedCallState(callTiles, async function () {
 		newHand = removeTilesFromTileArray(ownHand, callTiles); //Remove called tiles from hand
 		tilePrios = await getTilePriorities(newHand);
 		tilePrios = sortOutUnsafeTiles(tilePrios);
@@ -86,11 +82,7 @@ async function callTriple(combinations, operation) {
 		newHand = removeTilesFromTileArray(newHand, [nextDiscard]); //Remove discard from hand
 		newHandValue = getHandValues(newHand, nextDiscard); //Get Value of that hand
 		newHandTriples = getTriplesAndPairs(newHand); //Get Triples, to see if discard would make the hand worse
-	}
-	finally {
-		calls[0].splice(originalCallCount);
-		isClosed = wasClosed;
-	}
+	});
 
 	var newHonorPairs = newHandTriples.pairs.filter(t => t.type == 3).length / 2;
 	var newPairs = newHandTriples.pairs.length / 2;
@@ -434,7 +426,17 @@ Duplicates (for example 3m -> 4m and 4m -> 3m) are marked and will only be compu
 The rest is some math to produce the same result which would result in actually simulating everything (like adding the original value of the hand for all the useless combinations).
 */
 function getHandValues(hand, discardedTile) {
+	hand = [...hand]; //Never mutate caller-owned arrays while simulating hand branches.
 	var shanten = 8; //No check for Chiitoitsu in this function, so this is maximum
+	var yakuCache = {};
+
+	function getCachedYaku(currentHand, inputTriplesAndPairs) {
+		var cacheKey = getTileCacheKey(currentHand) + "|" + getTileCacheKey(calls[0]);
+		if (typeof yakuCache[cacheKey] == 'undefined') {
+			yakuCache[cacheKey] = getYaku(currentHand, calls[0], inputTriplesAndPairs);
+		}
+		return { open: yakuCache[cacheKey].open, closed: yakuCache[cacheKey].closed };
+	}
 
 	var callTriples = parseInt(getTriples(calls[0]).length / 3);
 
@@ -611,7 +613,7 @@ function getHandValues(hand, discardedTile) {
 
 		if (tileCombination.winning) { //For winning tiles: Add waits, fu and the Riichi value
 			var thisDora = getNumberOfDoras(triples2.concat(pairs2, calls[0]));
-			var thisYaku = getYaku(hand, calls[0], triplesAndPairs2);
+			var thisYaku = getCachedYaku(hand, triplesAndPairs2);
 			var thisWait = numberOfTiles1 * getWaitQuality(tile1);
 			var thisFu = calculateFu(triples2, calls[0], pairs2, removeTilesFromTileArray(hand, triples.concat(pairs).concat(tile1)), tile1);
 			if (isClosed || thisYaku.open >= 1 || tilesLeft <= 4) {
@@ -670,7 +672,7 @@ function getHandValues(hand, discardedTile) {
 			var winning = isWinningHand(parseInt((triples3.length / 3)) + callTriples, pairs3.length / 2);
 
 			var thisDora = getNumberOfDoras(triples3.concat(pairs3, calls[0]));
-			var thisYaku = getYaku(hand, calls[0], triplesAndPairs3);
+			var thisYaku = getCachedYaku(hand, triplesAndPairs3);
 
 			if (!isClosed && (!winning || tile2Furiten) &&
 				getNumberOfTilesInTileArray(triples3, tile2.index, tile2.type) == 3) {
@@ -1011,40 +1013,63 @@ function getMissingTilesForThirteenOrphans(uniqueTerminalHonors) {
 	return thirteenOrphansTiles.filter(tile => !uniqueTerminalHonors.some(otherTile => isSameTile(tile, otherTile)));
 }
 
+function recordDiscardComputationTime(durationMs) {
+	if (typeof runtimeProfiling == 'undefined' || !Array.isArray(runtimeProfiling.discardDurationsMs)) {
+		return;
+	}
+
+	runtimeProfiling.discardDurationsMs.push(durationMs);
+	if (runtimeProfiling.discardDurationsMs.length > runtimeProfiling.maxSamples) {
+		runtimeProfiling.discardDurationsMs.shift();
+	}
+
+	if (durationMs >= runtimeProfiling.slowDiscardThresholdMs) {
+		var avg = runtimeProfiling.discardDurationsMs.reduce((p, c) => p + c, 0) / runtimeProfiling.discardDurationsMs.length;
+		log("Performance warning: discard evaluation took " + Math.round(durationMs) + "ms (avg " + Math.round(avg) + "ms).");
+	}
+}
+
 
 //Discards the "best" tile
 async function discard() {
+	var startTime = (typeof performance != 'undefined' && typeof performance.now == 'function') ? performance.now() : Date.now();
+	try {
 
-	var tiles = await getTilePriorities(ownHand);
-	tiles = sortOutUnsafeTiles(tiles);
+		var tiles = await getTilePriorities(ownHand);
+		tiles = sortOutUnsafeTiles(tiles);
 
-	if (KEEP_SAFETILE) {
-		tiles = keepSafetile(tiles);
+		if (KEEP_SAFETILE) {
+			tiles = keepSafetile(tiles);
+		}
+
+		if (strategy == STRATEGIES.FOLD || !tiles.some(t => t.safe)) {
+			return discardFold(tiles);
+		}
+
+		log("Tile Priorities: ");
+		printTilePriority(tiles);
+
+		var tile = getDiscardTile(tiles);
+
+		var riichi = false;
+		if (canRiichi()) {
+			tiles.sort(function (p1, p2) {
+				return p2.riichiPriority - p1.riichiPriority;
+			});
+			riichi = callRiichi(tiles);
+		}
+		if (!riichi) {
+			helpHintContext.shanten = tiles[0].shanten;
+			helpHintContext.strategy = strategy;
+			discardTile(tile);
+		}
+
+		return tile;
 	}
-
-	if (strategy == STRATEGIES.FOLD || !tiles.some(t => t.safe)) {
-		return discardFold(tiles);
+	finally {
+		var endTime = (typeof performance != 'undefined' && typeof performance.now == 'function') ? performance.now() : Date.now();
+		recordDiscardComputationTime(endTime - startTime);
 	}
-
-	log("Tile Priorities: ");
-	printTilePriority(tiles);
-
-	var tile = getDiscardTile(tiles);
-
-	var riichi = false;
-	if (canRiichi()) {
-		tiles.sort(function (p1, p2) {
-			return p2.riichiPriority - p1.riichiPriority;
-		});
-		riichi = callRiichi(tiles);
-	}
-	if (!riichi) {
-		helpHintContext.shanten = tiles[0].shanten;
-		helpHintContext.strategy = strategy;
-		discardTile(tile);
-	}
-
-	return tile;
 }
 
 //Check all tiles for enough safety

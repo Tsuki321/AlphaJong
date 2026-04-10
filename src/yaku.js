@@ -5,11 +5,12 @@
 
 //Returns the closed and open yaku value of the hand
 function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
+	var kanCount = inputCalls.filter(tile => tile.kan).length;
 
 	//Remove 4th tile from Kans, which could lead to false yaku calculation
-	inputCalls = inputCalls.filter(tile => !tile.kan);
+	var filteredCalls = inputCalls.filter(tile => !tile.kan);
 
-	var hand = inputHand.concat(inputCalls); //Add calls to hand
+	var hand = inputHand.concat(filteredCalls); //Add calls to hand
 
 	var yakuOpen = 0;
 	var yakuClosed = 0;
@@ -21,10 +22,14 @@ function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
 		triplesAndPairs = getTriplesAndPairs(hand);
 	}
 	else {
-		triplesAndPairs.triples = triplesAndPairs.triples.concat(inputCalls);
+		triplesAndPairs = {
+			triples: [...triplesAndPairs.triples],
+			pairs: [...triplesAndPairs.pairs]
+		};
+		triplesAndPairs.triples = triplesAndPairs.triples.concat(filteredCalls);
 	}
 	var triplets = getTripletsAsArray(hand);
-	var sequences = getBestSequenceCombination(removeTilesFromTileArray(inputHand, triplets.concat(triplesAndPairs.pairs))).concat(getBestSequenceCombination(inputCalls));
+	var sequences = getBestSequenceCombination(removeTilesFromTileArray(inputHand, triplets.concat(triplesAndPairs.pairs))).concat(getBestSequenceCombination(filteredCalls));
 
 	//Pinfu is applied in ai_offense when fu is 30, same with Riichi.
 	//There's no certain way to check for it here, so ignore it
@@ -40,16 +45,23 @@ function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
 
 	//Tanyao
 	//Open
-	var tanyao = getTanyao(hand, triplesAndPairs, inputCalls);
+	var tanyao = getTanyao(hand, triplesAndPairs, filteredCalls);
 	yakuOpen += tanyao.open;
 	yakuClosed += tanyao.closed;
 
 	//Iipeikou (Identical Sequences in same type)
 	//Closed
 	if (strategy != STRATEGIES.CHIITOITSU) {
-		var iipeikou = getIipeikou(sequences);
-		yakuOpen += iipeikou.open;
-		yakuClosed += iipeikou.closed;
+		var ryanpeikou = getRyanpeikou(sequences);
+		if (ryanpeikou.closed > 0) {
+			yakuOpen += ryanpeikou.open;
+			yakuClosed += ryanpeikou.closed;
+		}
+		else {
+			var iipeikou = getIipeikou(sequences);
+			yakuOpen += iipeikou.open;
+			yakuClosed += iipeikou.closed;
+		}
 
 		// ### 2 Han ###
 
@@ -68,7 +80,9 @@ function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
 		//Sankantsu
 		//3 Kans
 		//Open
-		//-> TODO: Should not influence score, but Kan calling.
+		var sankantsu = getSankantsu(kanCount);
+		yakuOpen += sankantsu.open;
+		yakuClosed += sankantsu.closed;
 
 		//Toitoi
 		//All Triplets
@@ -121,10 +135,6 @@ function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
 	yakuClosed += ittsuu.closed;
 
 	//3 Han
-
-	//Ryanpeikou
-	//2 times identical sequences (2 Iipeikou)
-	//Closed
 
 	//Junchan
 	//All Terminals
@@ -259,6 +269,52 @@ function getIipeikou(triples) {
 	return { open: 0, closed: 0 };
 }
 
+//Ryanpeikou (2x iipeikou), closed only
+function getRyanpeikou(sequences) {
+	if (!isClosed) {
+		return { open: 0, closed: 0 };
+	}
+
+	var counts = {};
+	for (let tile of sequences) {
+		var key = tile.type * 10 + tile.index;
+		counts[key] = (counts[key] || 0) + 1;
+	}
+
+	var pairCount = 0;
+	for (var type = 0; type <= 2; type++) {
+		for (var index = 1; index <= 7; index++) {
+			var k1 = type * 10 + index;
+			var k2 = type * 10 + index + 1;
+			var k3 = type * 10 + index + 2;
+			var numSeqs = Math.min(counts[k1] || 0, counts[k2] || 0, counts[k3] || 0);
+			if (numSeqs >= 2) {
+				pairCount++;
+				counts[k1] -= 2;
+				counts[k2] -= 2;
+				counts[k3] -= 2;
+			}
+			else if (numSeqs > 0) {
+				counts[k1] -= numSeqs;
+				counts[k2] -= numSeqs;
+				counts[k3] -= numSeqs;
+			}
+		}
+	}
+
+	if (pairCount >= 2) {
+		return { open: 0, closed: 3 };
+	}
+	return { open: 0, closed: 0 };
+}
+
+function getSankantsu(kanCount) {
+	if (kanCount >= 3) {
+		return { open: 2, closed: 2 };
+	}
+	return { open: 0, closed: 0 };
+}
+
 //Sanankou
 function getSanankou(hand) {
 	if (!isConsideringCall) {
@@ -335,7 +391,7 @@ function getDaisangen(hand) {
 		}
 	}
 	if (d5 >= 3 && d6 >= 3 && d7 >= 3) {
-		return { open: 10, closed: 10 }; //Yakuman -> 10?
+		return { open: 13, closed: 13 };
 	}
 	return { open: 0, closed: 0 };
 }

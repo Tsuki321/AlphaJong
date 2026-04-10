@@ -3,6 +3,44 @@
 // Defensive part of the AI
 //################################
 
+var defenseRuntimeCache = {
+	stateKey: "",
+	waitScore: {},
+	tileDangerForPlayer: {},
+	totalPossibleWaits: {}
+};
+
+function getDefenseTileKey(tile) {
+	if (typeof tile == 'undefined' || tile == null) {
+		return "x";
+	}
+	return tile.type + "-" + tile.index + "-" + (tile.dora ? 1 : 0);
+}
+
+function getDefenseRuntimeStateKey() {
+	var discardLengths = discards.map(d => d.length).join(",");
+	var callLengths = calls.map(c => c.length).join(",");
+	var riichiState = [0, 1, 2, 3].map(p => isPlayerRiichi(p) ? 1 : 0).join(",");
+	return tilesLeft + "|" + discardLengths + "|" + callLengths + "|" + riichiState;
+}
+
+function ensureDefenseRuntimeCache() {
+	var runtimeState = getDefenseRuntimeStateKey();
+	if (defenseRuntimeCache.stateKey != runtimeState) {
+		defenseRuntimeCache.stateKey = runtimeState;
+		defenseRuntimeCache.waitScore = {};
+		defenseRuntimeCache.tileDangerForPlayer = {};
+		defenseRuntimeCache.totalPossibleWaits = {};
+	}
+}
+
+function invalidateDefenseRuntimeCache() {
+	defenseRuntimeCache.stateKey = "";
+	defenseRuntimeCache.waitScore = {};
+	defenseRuntimeCache.tileDangerForPlayer = {};
+	defenseRuntimeCache.totalPossibleWaits = {};
+}
+
 //Returns danger of tile for all players (from a specific players perspective, see second param) as a number from 0-100+
 //Takes into account Genbutsu (Furiten for opponents), Suji, Walls and general knowledge about remaining tiles.
 //From the perspective of playerPerspective parameter
@@ -32,14 +70,22 @@ function getTileDanger(tile, playerPerspective = 0) {
 
 //Return the Danger value for a specific tile and player
 function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
+	ensureDefenseRuntimeCache();
+	var dangerCacheKey = player + "|" + playerPerspective + "|" + getDefenseTileKey(tile);
+	if (typeof defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey] != 'undefined') {
+		return defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey];
+	}
+
 	var danger = 0;
 	if (getLastTileInDiscard(player, tile) != null) { // Check if tile in discard (Genbutsu)
+		defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey] = 0;
 		return 0;
 	}
 
 	danger = getWaitScoreForTileAndPlayer(player, tile, true, playerPerspective == 0); //Suji, Walls and general knowledge about remaining tiles.
 
 	if (danger <= 0) {
+		defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey] = 0;
 		return 0;
 	}
 
@@ -110,38 +156,38 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 		danger = 5;
 	}
 
+	defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey] = danger;
+
 	return danger;
 }
 
 //Percentage to deal in with a tile
 function getDealInChanceForTileAndPlayer(player, tile, playerPerspective = 0) {
-	var total = 0;
-	if (playerPerspective == 0) {
-		if (typeof totalPossibleWaits.turn == 'undefined' || totalPossibleWaits.turn != tilesLeft) {
-			totalPossibleWaits = { turn: tilesLeft, totalWaits: [0, 0, 0, 0] }; // Save it in a global variable to not calculate this expensive step multiple times per turn
-			for (let pl = 1; pl < getNumberOfPlayers(); pl++) {
-				totalPossibleWaits.totalWaits[pl] = getTotalPossibleWaits(pl);
-			}
-		}
-		total = totalPossibleWaits.totalWaits[player];
-	}
-	if (playerPerspective != 0) {
-		total = getTotalPossibleWaits(player);
+	var total = getTotalPossibleWaits(player, playerPerspective);
+	if (total <= 0) {
+		return 0;
 	}
 	return getTileDangerForPlayer(tile, player, playerPerspective) / total; //Then compare the given tile with it, this is our deal in percentage
 }
 
 //Total amount of waits possible
-function getTotalPossibleWaits(player) {
+function getTotalPossibleWaits(player, playerPerspective = 0) {
+	ensureDefenseRuntimeCache();
+	var waitCacheKey = player + "|" + playerPerspective;
+	if (typeof defenseRuntimeCache.totalPossibleWaits[waitCacheKey] != 'undefined') {
+		return defenseRuntimeCache.totalPossibleWaits[waitCacheKey];
+	}
+
 	var total = 0;
 	for (let i = 1; i <= 9; i++) { // Go through all tiles and check how many combinations there are overall for waits.
 		for (let j = 0; j <= 3; j++) {
 			if (j == 3 && i >= 8) {
 				break;
 			}
-			total += getTileDangerForPlayer({ index: i, type: j }, player);
+			total += getTileDangerForPlayer({ index: i, type: j }, player, playerPerspective);
 		}
 	}
+	defenseRuntimeCache.totalPossibleWaits[waitCacheKey] = total;
 	return total;
 }
 
@@ -321,8 +367,11 @@ function isPlayerTenpai(player) {
 	}
 
 	var room = getCurrentRoom();
-	if (room < 5 && room > 0) { //Below Throne Room: Less likely to be tenpai
-		tenpaiChance *= 1 - ((5 - room) * 0.1); //10% less likely for every rank lower than throne room to be tenpai
+	if (typeof ROOM_TENPAI_MODIFIER != 'undefined' && typeof ROOM_TENPAI_MODIFIER[room] != 'undefined') {
+		tenpaiChance *= ROOM_TENPAI_MODIFIER[room];
+	}
+	else if (room < 5 && room > 0) { //Fallback behavior for custom environments that don't define ROOM_TENPAI_MODIFIER.
+		tenpaiChance *= 1 - ((5 - room) * 0.1);
 	}
 
 	if (tenpaiChance > 1) {
@@ -422,6 +471,12 @@ function isDoingYakuhai(player) {
 //Suji, Walls and general knowledge about remaining tiles.
 //If "includeOthers" parameter is set to true it will also check if other players recently discarded relevant tiles
 function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeOfOwnHand = true) {
+	ensureDefenseRuntimeCache();
+	var waitCacheKey = player + "|" + includeOthers + "|" + useKnowledgeOfOwnHand + "|" + getDefenseTileKey(tile);
+	if (typeof defenseRuntimeCache.waitScore[waitCacheKey] != 'undefined') {
+		return defenseRuntimeCache.waitScore[waitCacheKey];
+	}
+
 	var tile0 = getNumberOfTilesAvailable(tile.index, tile.type);
 	var tile0Public = tile0 + getNumberOfTilesInTileArray(ownHand, tile.index, tile.type);
 	if (!useKnowledgeOfOwnHand) {
@@ -430,6 +485,7 @@ function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeO
 	var furitenFactor = getFuritenValue(player, tile, includeOthers);
 
 	if (furitenFactor == 0) {
+		defenseRuntimeCache.waitScore[waitCacheKey] = 0;
 		return 0;
 	}
 
@@ -442,6 +498,7 @@ function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeO
 	score += tile0 * tile0Public * furitenFactor * 2 * (2 - toitoiFactor);
 
 	if (getNumberOfTilesInHand(player) == 1 || tile.type == 3) {
+		defenseRuntimeCache.waitScore[waitCacheKey] = score;
 		return score;
 	}
 
@@ -469,6 +526,7 @@ function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeO
 
 	//Bridge Wait
 	score += (tileL1 * tileU1 * tile0Public) * furitenFactor * toitoiFactor;
+	defenseRuntimeCache.waitScore[waitCacheKey] = score;
 
 	return score;
 }
@@ -511,6 +569,7 @@ function updateDiscardedTilesSafety() {
 		}
 		rememberPlayerHand(k);
 	}
+	invalidateDefenseRuntimeCache();
 }
 
 //Pretty simple (all 0), but should work in case of crash -> count intelligently upwards
@@ -529,6 +588,7 @@ function initialDiscardedTilesSafety() {
 			}
 		}
 	}
+	invalidateDefenseRuntimeCache();
 }
 
 //Returns a value which indicates how important it is to sakigiri the tile now
