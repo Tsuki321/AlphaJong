@@ -21,7 +21,11 @@ jobs:
 
       - name: Run headless regression tests
         env:
-          ALPHAJONG_MAX_MS_PER_TEST: '250'
+          # The regression suite runs the full discard loop (real AI simulation), which measures
+          # ~530ms/test on a GitHub runner. 250 was never achievable - it was set alongside FAST
+          # mode, which the bundle job enables and this job does not, and it has failed since it
+          # was introduced. 900 leaves runner headroom while still catching a real slowdown.
+          ALPHAJONG_MAX_MS_PER_TEST: '900'
         run: npm run test:headless
 
       - name: Run Mahjong Soul API contract tests
