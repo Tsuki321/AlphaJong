@@ -3,6 +3,9 @@
 // Some function that are used by both Testcases and Benchmark
 //################################
 
+// When non-empty, lists the seat number(s) treated as "missing" (3-player table). Default [] = 4 players.
+var testExcludedSeats = [];
+
 function resetGlobals() {
 	dora = [{ index: 6, type: 3, dora: false }];
 	discards = [[], [], [], []];
@@ -17,6 +20,10 @@ function resetGlobals() {
 	SAKIGIRI = 1.0;
 	KEEP_SAFETILE = false;
 	isClosed = true;
+	isConsideringCall = false;
+	timeSave = 0;
+	testExcludedSeats = [];
+	playerDiscardSafetyList = [[], [], [], []];
 	testPlayerRiichi = [0, 0, 0, 0];
 	testPlayerHand = [13, 13, 13, 13];
 	riichiTiles = [null, null, null, null];

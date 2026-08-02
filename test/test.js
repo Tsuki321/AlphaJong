@@ -15,6 +15,43 @@ var testPlayerHand = [13, 13, 13, 13];
 var testStartTime = 0;
 var expected = [];
 
+// When set (via the headless runner's page.addInitScript), the page skips the slow discard
+// loop and reports after only the regression + direct prediction unit tests, for fast iteration.
+var FAST_MODE = (typeof window != 'undefined' && window.__ALPHAJONG_FAST === true);
+var predictionAssertionsRun = 0;
+
+// Minimal assertion helpers for the direct prediction/regression tests.
+function assertEqual(actual, expectedValue, message) {
+	predictionAssertionsRun++;
+	if (actual !== expectedValue) {
+		throw new Error((message || "assertEqual failed") + ": expected '" + expectedValue + "', got '" + actual + "'");
+	}
+}
+function assertTrue(value, message) {
+	predictionAssertionsRun++;
+	if (!value) {
+		throw new Error((message || "assertTrue failed") + ": expected truthy, got '" + value + "'");
+	}
+}
+function assertApprox(actual, expectedValue, epsilon, message) {
+	predictionAssertionsRun++;
+	if (typeof actual != 'number' || Math.abs(actual - expectedValue) > epsilon) {
+		throw new Error((message || "assertApprox failed") + ": expected " + expectedValue + " ± " + epsilon + ", got '" + actual + "'");
+	}
+}
+function assertGreaterThan(actual, threshold, message) {
+	predictionAssertionsRun++;
+	if (!(typeof actual == 'number' && actual > threshold)) {
+		throw new Error((message || "assertGreaterThan failed") + ": expected > " + threshold + ", got '" + actual + "'");
+	}
+}
+function assertLessThan(actual, threshold, message) {
+	predictionAssertionsRun++;
+	if (!(typeof actual == 'number' && actual < threshold)) {
+		throw new Error((message || "assertLessThan failed") + ": expected < " + threshold + ", got '" + actual + "'");
+	}
+}
+
 function publishTestResult(result) {
 	if (typeof window == 'undefined') {
 		return;
@@ -28,6 +65,12 @@ publishTestResult({ done: false, failed: 0, total: 0, avgMsPerTest: 0 });
 //Only run if debug mode
 if (isDebug()) {
 	runRegressionTests().then(function () {
+		if (FAST_MODE) {
+			// Fast path: regression + prediction unit tests already ran; skip the slow discard loop.
+			publishTestResult({ done: true, failed: 0, total: predictionAssertionsRun, avgMsPerTest: 0, fast: true });
+			log("FAST mode: regression + prediction unit tests passed, discard loop skipped.");
+			return;
+		}
 		testStartTime = new Date();
 		runTestcases();
 	}).catch(function (error) {
@@ -48,7 +91,297 @@ async function runRegressionTests() {
 	runBestCombinationRegressionTest();
 	runYakumanValueRegressionTest();
 	runRyanpeikouRegressionTest();
+	runPredictionUnitTests();
+	run3PlayerPredictionTests();
 	await runCallTripleStateRestoreTest();
+}
+
+// -- Prediction unit tests -------------------------------------------------
+// Direct assertions against the prediction primitives (shanten, yaku, score,
+// tenpai table, flush/yard detection, furiten/suji waits). These exercise the
+// "prediction ability" the AI relies on, independently of the slow discard loop.
+function baselinePredictionState() {
+	resetGlobals();
+	dora = [];
+	isConsideringCall = false;
+	timeSave = 0;
+	PERFORMANCE_MODE = 4;
+	updateAvailableTiles();
+	if (typeof invalidateDefenseRuntimeCache == 'function') {
+		invalidateDefenseRuntimeCache();
+	}
+}
+
+function mkTile(index, type) {
+	return { index: index, type: type, dora: false, doraValue: 0 };
+}
+
+function runPredictionUnitTests() {
+	// === Shanten (calculateShanten) ===
+	assertEqual(calculateShanten(4, 1, 0), -1, "Shanten 4 triples +1 pair should be a win (-1)");
+	assertEqual(calculateShanten(3, 1, 1), 0, "Shanten 3 triples +1 pair +1 double is tenpai (0)");
+	assertEqual(calculateShanten(0, 0, 0), 8, "Shanten with no blocks is 8");
+	assertEqual(calculateShanten(2, 1, 2), 1, "Shanten 2 triples +1 pair +2 doubles is 1");
+	assertEqual(calculateShanten(3, 0, 3), 1, "Shanten caps extra doubles and needs a pair (1)");
+
+	// === getTriplesAndPairs ===
+	var winning = getTriplesAndPairs(getTilesFromString("112233m456p789s11z"));
+	assertEqual(winning.triples.length, 12, "Winning hand has 4 triples (12 tiles)");
+	assertEqual(winning.pairs.length, 2, "Winning hand has 1 pair (2 tiles)");
+	var floatHand = getTriplesAndPairs(getTilesFromString("234m567m234p234s5z"));
+	assertEqual(floatHand.triples.length, 12, "Four sequences = 12 triple tiles");
+	assertEqual(floatHand.pairs.length, 0, "Single floating honor is not a pair");
+
+	// === getDoubles ===
+	assertEqual(getDoubles(getTilesFromString("13m")).length, 2, "Adjacent 1m/3m within two forms a double");
+	assertEqual(getDoubles(getTilesFromString("1m9m")).length, 0, "1m/9m do not form a double");
+	assertEqual(getDoubles(getTilesFromString("55p")).length, 2, "Pair of 5p is a double");
+	assertEqual(getDoubles(getTilesFromString("5z5z")).length, 2, "Pair of honors 5z is a double");
+
+	// === getYaku (exact han for clean hands; p=type0, m=type1, s=type2, z=type3) ===
+	baselinePredictionState();
+	var yTanyao = getYaku(getTilesFromString("234m456p678s234s55p"));
+	assertEqual(yTanyao.open, 1, "Tanyao open han");
+	assertEqual(yTanyao.closed, 1, "Tanyao closed han");
+
+	baselinePredictionState();
+	var yYakuhai = getYaku(getTilesFromString("555z234m456p789s11p"));
+	assertEqual(yYakuhai.open, 1, "Yakuhai (dragon triplet) open han");
+	assertEqual(yYakuhai.closed, 1, "Yakuhai closed han");
+
+	baselinePredictionState();
+	var yIipeikou = getYaku(getTilesFromString("112233m234p234s55z"));
+	assertEqual(yIipeikou.open, 0, "Iipeikou is closed-only");
+	assertEqual(yIipeikou.closed, 1, "Iipeikou adds 1 closed han");
+
+	baselinePredictionState();
+	var yRyanpeikou = getYaku(getTilesFromString("223344m556677p55z"));
+	assertEqual(yRyanpeikou.open, 0, "Ryanpeikou is closed-only");
+	assertEqual(yRyanpeikou.closed, 3, "Ryanpeikou adds 3 closed han");
+
+	baselinePredictionState();
+	var yIttsuu = getYaku(getTilesFromString("123456789m234p55z"));
+	assertEqual(yIttsuu.open, 1, "Ittsuu open han");
+	assertEqual(yIttsuu.closed, 2, "Ittsuu closed han");
+
+	baselinePredictionState();
+	var ySanshoku = getYaku(getTilesFromString("123m123p123s234m55z"));
+	assertEqual(ySanshoku.open, 1, "Sanshoku doujun open han");
+	assertEqual(ySanshoku.closed, 2, "Sanshoku doujun closed han");
+
+	// Toitoi hand (4 triplets + pair). Closed => also sanankou (concealed triplets).
+	baselinePredictionState();
+	isConsideringCall = false;
+	var yToiClosed = getYaku(getTilesFromString("555z999m444p333s11z"));
+	assertEqual(yToiClosed.open, 5, "Toitoi(2)+yakuhai(1)+sanankou(2) open han, closed hand");
+	assertEqual(yToiClosed.closed, 5, "Toitoi(2)+yakuhai(1)+sanankou(2) closed han, closed hand");
+
+	// Same hand but while a call is being considered => sanankou suppressed, isolating toitoi+yakuhai.
+	baselinePredictionState();
+	isConsideringCall = true;
+	var yToiOpen = getYaku(getTilesFromString("555z999m444p333s11z"));
+	assertEqual(yToiOpen.open, 3, "Toitoi(2)+yakuhai(1) once sanankou suppressed (open han)");
+	assertEqual(yToiOpen.closed, 3, "Toitoi(2)+yakuhai(1) closed han once sanankou suppressed");
+
+	baselinePredictionState();
+	assertGreaterThan(getYaku(getTilesFromString("11122233344455z")).closed, 12, "Tsuuiisou is yakuman");
+	assertGreaterThan(getYaku(getTilesFromString("222333444666s66z")).closed, 12, "Ryuuiisou is yakuman");
+	assertGreaterThan(getYaku(getTilesFromString("111999m111999p11s")).closed, 12, "Chinroutou is yakuman");
+	assertGreaterThan(getYaku(getTilesFromString("11122233344z444m")).closed, 12, "Shousuushii is yakuman");
+	assertGreaterThan(getYaku(getTilesFromString("1112345678999m5m")).closed, 12, "Chuuren poutou is yakuman");
+	assertGreaterThan(getYaku(getTilesFromString("19m19p19s1234567z1m")).closed, 12, "Kokushi musou is yakuman");
+
+	// Yakuman must also be detected on a 13-tile hand: every caller in ai_offense evaluates
+	// 13 tiles (ownHand minus one discard), so a 14-only gate makes these unreachable in the bot.
+	baselinePredictionState();
+	assertGreaterThan(getYaku(getTilesFromString("1112223334445z")).closed, 12, "Tsuuiisou is yakuman at 13 tiles");
+	assertGreaterThan(getYaku(getTilesFromString("22233344466s66z")).closed, 12, "Ryuuiisou is yakuman at 13 tiles");
+	assertGreaterThan(getYaku(getTilesFromString("111999m111999p1s")).closed, 12, "Chinroutou is yakuman at 13 tiles");
+	assertGreaterThan(getYaku(getTilesFromString("11122233344z44m")).closed, 12, "Shousuushii is yakuman at 13 tiles");
+	assertGreaterThan(getYaku(getTilesFromString("1112345678999m")).closed, 12, "Chuuren poutou is yakuman at 13 tiles (9-wait tenpai)");
+	assertGreaterThan(getYaku(getTilesFromString("19m19p19s1234567z")).closed, 12, "Kokushi musou is yakuman at 13 tiles (13-wait tenpai)");
+
+	// === calculateScore (test env: no dealer bonus, 4-player) ===
+	baselinePredictionState();
+	assertEqual(calculateScore(1, 1, 30), 960, "Score han1 fu30");
+	assertEqual(calculateScore(1, 4, 30), 7680, "Score han4 fu30 (mangan boundary)");
+	assertEqual(calculateScore(1, 5, 30), 8000, "Score han5 mangan");
+	assertEqual(calculateScore(1, 6, 30), 12000, "Score han6 haneman");
+	assertEqual(calculateScore(1, 13, 30), 32000, "Score han13 yakuman");
+
+	// === calculateFu (closed pinfu-style ron = 30 fu) ===
+	baselinePredictionState();
+	var fuTriples = getTilesFromString("123m456p789s234s");
+	var fuPair = getTilesFromString("55p");
+	var fuWinTile = mkTile(4, 2); // 4s completes the 234s sequence as a ryanmen wait
+	var fu = calculateFu(fuTriples, [], fuPair, [mkTile(1, 2), fuWinTile], fuWinTile, true);
+	assertEqual(fu, 30, "Closed all-sequence ron (pinfu) is 30 fu");
+
+	// === isPlayerTenpai table lock (room 4 => 0.9 modifier) ===
+	baselinePredictionState();
+	assertEqual(isPlayerTenpai(1), 0, "Fresh player (0 calls, 0 discards) is 0% tenpai");
+
+	baselinePredictionState();
+	discards[1] = getTilesFromString("2p4p6s8s5p");
+	updateAvailableTiles();
+	assertApprox(isPlayerTenpai(1), 0.0162, 0.0005, "Tenpai table [0][5] * 0.9 room modifier");
+
+	baselinePredictionState();
+	discards[1] = getTilesFromString("2p4p6s8s5p7s3p9p1p6p");
+	updateAvailableTiles();
+	assertApprox(isPlayerTenpai(1), 0.0855, 0.0005, "Tenpai table [0][10] * 0.9 room modifier");
+
+	baselinePredictionState();
+	testPlayerRiichi[2] = 1;
+	assertEqual(isPlayerTenpai(2), 1, "Riichi player is 100% tenpai");
+
+	baselinePredictionState();
+	calls[1] = getTilesFromString("234m"); // 1 meld
+	discards[1] = getTilesFromString("2p4p6s8s5p"); // 5 discards, none of flush suit m
+	testPlayerHand[1] = 10;
+	updateAvailableTiles();
+	assertApprox(isPlayerTenpai(1), 0.1143, 0.0005, "Tenpai table [1][5] (1 call) * 0.9");
+
+	// === Flush detection (isDoingHonitsu / isDoingChinitsu / ToiToi / Tanyao / Yakuhai) ===
+	baselinePredictionState();
+	calls[1] = getTilesFromString("234m678m"); // 2 m sequences
+	discards[1] = getTilesFromString("2p4p6s8s2p3s"); // no m, no honors kept-dropped
+	testPlayerHand[1] = 7;
+	updateAvailableTiles();
+	assertApprox(isDoingHonitsu(1, 1), 0.5, 0.001, "Honitsu confidence with 2 m melds (no honor discards)");
+	assertEqual(isDoingChinitsu(1, 1), 0, "No honor discards => not confident it's chinitsu (keeps honors)");
+
+	baselinePredictionState();
+	calls[2] = getTilesFromString("234m678m"); // 2 m sequences
+	discards[2] = getTilesFromString("1z3z2p4p6s2s"); // 2 honors dropped early, no m
+	testPlayerHand[2] = 7;
+	updateAvailableTiles();
+	assertApprox(isDoingHonitsu(2, 1), 0.5, 0.001, "Honitsu confidence same regardless of honor discards");
+	assertTrue(isDoingChinitsu(2, 1) > 0, "Honor discards => chinitsu confidence > 0");
+
+	baselinePredictionState();
+	calls[2] = getTilesFromString("234m555z");
+	discards[2] = getTilesFromString("1z3z2p4p6s2s");
+	testPlayerHand[2] = 7;
+	updateAvailableTiles();
+	assertTrue(isDoingHonitsu(2, 1) > 0, "Suit plus honor calls can indicate honitsu");
+	assertEqual(isDoingChinitsu(2, 1), 0, "An exposed honor makes chinitsu impossible");
+
+	baselinePredictionState();
+	calls[3] = getTilesFromString("555z666z"); // 2 dragon pons (all honors => no sequences)
+	testPlayerHand[3] = 7;
+	updateAvailableTiles();
+	assertApprox(isDoingToiToi(3), 0.3, 0.001, "Toitoi confidence with 2 triplet calls");
+
+	baselinePredictionState();
+	calls[1] = getTilesFromString("234p678p"); // 2 inner p sequences
+	discards[1] = getTilesFromString("1z9z1m9m9s"); // 5 discards, all terminal/honor
+	testPlayerHand[1] = 7;
+	updateAvailableTiles();
+	assertApprox(isDoingTanyao(1), 0.4, 0.001, "Tanyao confidence with inner calls + terminal discards");
+
+	baselinePredictionState();
+	calls[2] = getTilesFromString("555z666z"); // 2 dragon pons
+	testPlayerHand[2] = 7;
+	updateAvailableTiles();
+	assertEqual(isDoingYakuhai(2), 2, "Yakuhai counts 2 dragon triplets");
+
+	// === getExpectedHandValue ordering: chinitsu valued higher than honitsu (the fix) ===
+	baselinePredictionState();
+	discards[0] = getTilesFromString("0m0s0p"); // surface all 3 aka-dora so dora noise = 0
+	calls[1] = getTilesFromString("234m678m"); discards[1] = getTilesFromString("2p4p6s8s2p3s"); testPlayerHand[1] = 7;   // honitsu
+	calls[2] = getTilesFromString("234m678m"); discards[2] = getTilesFromString("1z3z2p4p6s2s"); testPlayerHand[2] = 7;   // chinitsu (honors dropped)
+	calls[3] = []; discards[3] = []; testPlayerHand[3] = 13; // generic closed
+	updateAvailableTiles();
+	if (typeof invalidateDefenseRuntimeCache == 'function') invalidateDefenseRuntimeCache();
+	var honitsuVal = getExpectedHandValue(1);
+	var chinitsuVal = getExpectedHandValue(2);
+	var baselineVal = getExpectedHandValue(3);
+	assertGreaterThan(chinitsuVal, honitsuVal, "Chinitsu pusher valued HIGHER than equally-open honitsu pusher (new chinitsu detection)");
+	assertGreaterThan(honitsuVal, baselineVal, "Open honitsu pusher valued higher than a generic closed hand");
+	assertGreaterThan(chinitsuVal, baselineVal * 1.5, "Chinitsu valued >1.5x a generic closed hand");
+
+	// === getWaitScoreForTileAndPlayer: furiten vs not ===
+	baselinePredictionState();
+	discards[1] = getTilesFromString("4m"); // player 1 discarded 4m => furiten on 4m
+	updateAvailableTiles();
+	if (typeof invalidateDefenseRuntimeCache == 'function') invalidateDefenseRuntimeCache();
+	assertEqual(getWaitScoreForTileAndPlayer(1, mkTile(4, 1), true), 0, "Tile in own discards is furiten (wait score 0)");
+
+	baselinePredictionState();
+	updateAvailableTiles();
+	if (typeof invalidateDefenseRuntimeCache == 'function') invalidateDefenseRuntimeCache();
+	assertGreaterThan(getWaitScoreForTileAndPlayer(1, mkTile(4, 1), true), 30, "Free ryanmen/suji wait on 4m scores > 30");
+
+	// === getTileDangerForPlayer: genbutsu vs dangerous ===
+	baselinePredictionState();
+	discards[1] = getTilesFromString("4m"); // genbutsu (own discard)
+	updateAvailableTiles();
+	if (typeof invalidateDefenseRuntimeCache == 'function') invalidateDefenseRuntimeCache();
+	assertEqual(getTileDangerForPlayer(mkTile(4, 1), 1, 0), 0, "Tile already in player's pond is safe (danger 0)");
+
+	baselinePredictionState();
+	updateAvailableTiles();
+	if (typeof invalidateDefenseRuntimeCache == 'function') invalidateDefenseRuntimeCache();
+	assertGreaterThan(getTileDangerForPlayer(mkTile(5, 1), 1, 0), 0, "Free middle tile has positive danger");
+
+	// === getExpectedDealInValue: tenpai0 => 0, and cache is stable ===
+	baselinePredictionState();
+	assertEqual(getExpectedDealInValue(1), 0, "Fresh player (0% tenpai) has 0 expected deal-in value");
+	var cached = getExpectedDealInValue(1);
+	assertEqual(getExpectedDealInValue(1), cached, "getExpectedDealInValue cached result is stable across calls");
+}
+
+// -- 3-player prediction tests ---------------------------------------------
+// Verify the 3-player tile model (no 2-8 man, smaller wall, north dora) and the
+// 12-field debug string parser, all enabled by opt-in testExcludedSeats.
+function run3PlayerPredictionTests() {
+	try {
+		testExcludedSeats = [3]; // seat 3 missing => 3-player table
+		assertEqual(getNumberOfPlayers(), 3, "Excluding seat 3 yields a 3-player game");
+
+		baselinePredictionState();
+		testExcludedSeats = [3];
+		dora = [];
+		updateAvailableTiles();
+		assertEqual(getNumberOfTilesAvailable(5, 1), 0, "3p: middles 2-8 man (type 1) are unavailable");
+		assertEqual(getNumberOfTilesAvailable(1, 1), 4, "3p: 1 man still has 4 tiles");
+		assertEqual(getNumberOfTilesAvailable(9, 1), 4, "3p: 9 man still has 4 tiles");
+		assertEqual(getNumberOfTilesAvailable(5, 2), 4, "3p: 5 sou still has 4 tiles");
+		assertEqual(getNumberOfTilesAvailable(5, 0), 4, "3p: 5 pin still has 4 tiles");
+		assertEqual(getWallSize(), 55, "3p: wall size is 55");
+		assertEqual(getTileDoraValue({ index: 4, type: 3, dora: false }), 1, "3p: north (4z) is a dora");
+		assertEqual(getTileDoraValue({ index: 4, type: 3, dora: true }), 2, "3p: red... north tile as aka + indicator dora");
+
+		baselinePredictionState();
+		testExcludedSeats = [3];
+		//Uradora chance scales with dora indicators: 3p uses 0.5 per indicator.
+		dora = [{ index: 6, type: 3, dora: false }]; // one indicator
+		assertApprox(getUradoraChance(), 0.5, 0.001, "3p: one dora indicator => 0.5 uradora chance");
+		dora = [{ index: 6, type: 3, dora: false }, { index: 7, type: 3, dora: false }];
+		assertApprox(getUradoraChance(), 1.0, 0.001, "3p: two dora indicators => 1.0 uradora chance");
+
+		// 3-player 12-field debug string dispatch + parse.
+		// Dispatch is field-count based: a 12-field string routes to read3PlayerDebugString
+		// even when the table is configured as 4-player, so verify both the route and the parse.
+		testExcludedSeats = []; // genuinely 4p here
+		readDebugString("6z|123456789m234p11s||1m2m3m|4p5p|6s7s||8m9m|1,1,0|3|2|42");
+		assertEqual(getNumberOfPlayers(), 4, "4p config unchanged after reading a 12-field (3p) debug string");
+		assertEqual(dora[0].index, 6, "read3PlayerDebugString parsed dora index");
+		assertEqual(dora[0].type, 3, "read3PlayerDebugString parsed dora type");
+		assertEqual(ownHand.length, 14, "read3PlayerDebugString parsed ownHand length (9m+3p+2s)");
+		assertEqual(calls[1].length, 3, "read3PlayerDebugString parsed calls[1] (1m2m3m)");
+		assertEqual(discards[2].length, 2, "read3PlayerDebugString parsed discards[2] (8m9m)");
+		assertEqual(testPlayerHand[1], 10, "read3PlayerDebugString set testPlayerHand from calls (13-3)");
+		assertEqual(seatWind, 3, "read3PlayerDebugString parsed seatWind");
+		assertEqual(roundWind, 2, "read3PlayerDebugString parsed roundWind");
+		assertEqual(tilesLeft, 42, "read3PlayerDebugString parsed tilesLeft");
+	}
+	finally {
+		// Critical: restore 4-player default so subsequent regression/discard tests run in 4p.
+		testExcludedSeats = [];
+		baselinePredictionState();
+	}
 }
 
 function runYakumanValueRegressionTest() {

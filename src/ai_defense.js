@@ -7,7 +7,8 @@ var defenseRuntimeCache = {
 	stateKey: "",
 	waitScore: {},
 	tileDangerForPlayer: {},
-	totalPossibleWaits: {}
+	totalPossibleWaits: {},
+	expectedDealInValue: {}
 };
 
 function getDefenseTileKey(tile) {
@@ -21,7 +22,10 @@ function getDefenseRuntimeStateKey() {
 	var discardLengths = discards.map(d => d.length).join(",");
 	var callLengths = calls.map(c => c.length).join(",");
 	var riichiState = [0, 1, 2, 3].map(p => isPlayerRiichi(p) ? 1 : 0).join(",");
-	return tilesLeft + "|" + discardLengths + "|" + callLengths + "|" + riichiState;
+	//dora and availableTiles feed getExpectedDealInValue (via getExpectedHandValue/getUradoraChance),
+	//and both can change without any discard/call length changing - include them or the cache goes stale.
+	return tilesLeft + "|" + discardLengths + "|" + callLengths + "|" + riichiState +
+		"|" + dora.length + "|" + availableTiles.length;
 }
 
 function ensureDefenseRuntimeCache() {
@@ -31,6 +35,7 @@ function ensureDefenseRuntimeCache() {
 		defenseRuntimeCache.waitScore = {};
 		defenseRuntimeCache.tileDangerForPlayer = {};
 		defenseRuntimeCache.totalPossibleWaits = {};
+		defenseRuntimeCache.expectedDealInValue = {};
 	}
 }
 
@@ -39,6 +44,7 @@ function invalidateDefenseRuntimeCache() {
 	defenseRuntimeCache.waitScore = {};
 	defenseRuntimeCache.tileDangerForPlayer = {};
 	defenseRuntimeCache.totalPossibleWaits = {};
+	defenseRuntimeCache.expectedDealInValue = {};
 }
 
 //Returns danger of tile for all players (from a specific players perspective, see second param) as a number from 0-100+
@@ -102,21 +108,32 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 		danger *= 1.05;
 	}
 
-	//Is the player doing a flush of that type? -> More dangerous
+	//Is the player doing a flush of that type? A flush suit is more dangerous (they want it).
+	//A chinitsu (single suit, NO honors kept) is worth ~5-6 han, far more than a honitsu,
+	//so its suit is rated even more dangerous and honors it sheds become safer.
 	var honitsuType0 = isDoingHonitsu(player, 0);
 	var honitsuType1 = isDoingHonitsu(player, 1);
 	var honitsuType2 = isDoingHonitsu(player, 2);
-	var honitsuChance = tile.type == 0 ? honitsuType0 : tile.type == 1 ? honitsuType1 : tile.type == 2 ? honitsuType2 : isDoingHonitsu(player, tile.type);
+	var honitsuChance = tile.type == 0 ? honitsuType0 : tile.type == 1 ? honitsuType1 : tile.type == 2 ? honitsuType2 : 0; // honors match no suit
+	var chinitsuChance = tile.type == 3 ? 0 : isDoingChinitsu(player, tile.type);
 	var otherHonitsu = Math.max(honitsuType0, honitsuType1, honitsuType2);
+	var otherChinitsu = Math.max(isDoingChinitsu(player, 0), isDoingChinitsu(player, 1), isDoingChinitsu(player, 2));
 	if (honitsuChance > 0) {
-		danger *= 1 + honitsuChance;
+		danger *= 1 + honitsuChance + (chinitsuChance * 0.5); //chinitsu suit: bigger hand => more dangerous
 	}
-	else if (otherHonitsu > 0) { //Is the player going for any other flush?
+	else if (otherHonitsu > 0 || otherChinitsu > 0) { //Is the player going for any other flush?
 		if (tile.type == 3) {
-			danger *= 1 + otherHonitsu; //Honor tiles are also dangerous
+			//A honitsu keeper holds honors (still possibly their pair/yaku) => dangerous.
+			//A chinitsu player drops honors (never keeps them) => safer.
+			if (otherChinitsu > 0) {
+				danger *= 1 - (otherChinitsu * 0.5); //Safer, but never assume unseen honors cannot be a honitsu wait
+			}
+			else {
+				danger *= 1 + otherHonitsu;
+			}
 		}
 		else {
-			danger *= 1 - otherHonitsu; //Other tiles are less dangerous
+			danger *= 1 - Math.max(otherHonitsu, otherChinitsu); //Off-suit tiles are less dangerous
 		}
 	}
 
@@ -191,14 +208,18 @@ function getTotalPossibleWaits(player, playerPerspective = 0) {
 	return total;
 }
 
-//Returns the expected deal in calue
+//Returns the expected deal in value. Cached per (state, player): it folds isPlayerTenpai*getExpectedHandValue,
+//which is hot (called from getCurrentDangerLevel and from getTileDanger for the player-0 perspective).
 function getExpectedDealInValue(player) {
-	var tenpaiChance = isPlayerTenpai(player);
-
-	var value = getExpectedHandValue(player);
+	ensureDefenseRuntimeCache();
+	if (typeof defenseRuntimeCache.expectedDealInValue[player] != 'undefined') {
+		return defenseRuntimeCache.expectedDealInValue[player];
+	}
 
 	//DealInValue is probability of player being in tenpai multiplied by the value of the hand
-	return tenpaiChance * value;
+	var value = isPlayerTenpai(player) * getExpectedHandValue(player);
+	defenseRuntimeCache.expectedDealInValue[player] = value;
+	return value;
 }
 
 //Calculate the expected Han of the hand
@@ -217,9 +238,13 @@ function getExpectedHandValue(player) {
 		hanValue += 1;
 	}
 
-	//Yakus (only for open hands)
-	hanValue += (Math.max((isDoingHonitsu(player, 0) * 2), (isDoingHonitsu(player, 1) * 2), (isDoingHonitsu(player, 2) * 2))) +
-		(isDoingToiToi(player) * 2) + (isDoingTanyao(player) * 1) + (isDoingYakuhai(player) * 1);
+	//Yakus (only for open hands). A chinitsu (full flush, no honors) is worth ~5 han vs a honitsu's ~2,
+	//so value the opponent's flush as whichever is higher when a chinitsu push is plausible.
+	var flushHan = Math.max(
+		(isDoingHonitsu(player, 0) * 2), (isDoingHonitsu(player, 1) * 2), (isDoingHonitsu(player, 2) * 2),
+		(isDoingChinitsu(player, 0) * 5), (isDoingChinitsu(player, 1) * 5), (isDoingChinitsu(player, 2) * 5)
+	);
+	hanValue += flushHan + (isDoingToiToi(player) * 2) + (isDoingTanyao(player) * 1) + (isDoingYakuhai(player) * 1);
 
 	//Expect some hidden Yaku when more tiles are unknown. 1.3 Yaku for a fully concealed hand, less for open hands
 	if (calls[player].length == 0) {
@@ -435,6 +460,37 @@ function isDoingHonitsu(player, type) {
 		confidence = 1;
 	}
 	return confidence;
+}
+
+//Returns a value between 0 and 1 for how likely the player is going for a CHINITSU (full flush, no honors).
+//Distinguishing it from honitsu matters: a chinitsu is worth ~5-6 han vs ~2-3 for honitsu, so an opponent
+//pushing chinitsu should be valued (and defended against) more aggressively than honitsu.
+//Key signal: a honitsu keeper keeps honors; a chinitsu player discards them. We require the same single-suit
+//call signal as honitsu AND early honor discards (honors being shed instead of saved).
+//Note: early honor discards are common in ordinary play, so this stays deliberately conservative -
+//it demands a strong single-suit call signal before treating the hand as a full flush.
+function isDoingChinitsu(player, type) {
+	var honitsuConfidence = isDoingHonitsu(player, type);
+	if (honitsuConfidence == 0) {
+		return 0;
+	}
+	if (calls[player].some(tile => tile.type == 3)) {
+		return 0; //Any exposed honor makes a full flush impossible
+	}
+
+	var earlyDiscards = discards[player].slice(0, 10);
+	var honorDiscards = earlyDiscards.filter(tile => tile.type == 3).length;
+	if (honorDiscards == 0) {
+		return 0; //Keeping honors => this is honitsu, not chinitsu
+	}
+
+	//Require a committed single-suit call signal (2+ melds) before believing a full flush.
+	//One pon plus a couple of honor discards is far too common to justify a 5 han estimate.
+	if (calls[player].length < 6) {
+		return 0;
+	}
+
+	return honitsuConfidence * Math.min(1, honorDiscards / 3);
 }
 
 //Returns a value between 0 and 1 for how likely the player could be doing toitoi

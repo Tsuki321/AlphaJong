@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<!-- body must precede the scripts: log() writes to document.body.innerHTML when DEBUG is set,
+     so scripts running before the body exists throw on a null body (same layout as run_tests.html). -->
+<body></body>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<script>var DEBUG = true;</script>
+<script src="../AlphaJong.user.js"></script>
+<script src="../test/test_api.js"></script>
+<script src="../test/test_utils.js"></script>
+<script src="../test/test.js"></script>
+</head>
+</html>

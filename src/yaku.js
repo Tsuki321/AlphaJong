@@ -4,7 +4,7 @@
 //################################
 
 //Returns the closed and open yaku value of the hand
-function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
+function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 	var kanCount = inputCalls.filter(tile => tile.kan).length;
 
 	//Remove 4th tile from Kans, which could lead to false yaku calculation
@@ -168,55 +168,51 @@ function getYaku(inputHand, inputCalls, triplesAndPairs = null) {
 	yakuOpen += daisangen.open;
 	yakuClosed += daisangen.closed;
 
-	//Suuankou
-	//4 Concealed Triplets
-	//Closed
-
 	//Tsuuiisou
 	//All Honours
 	//Open
+	var tsuuiisou = getTsuuiisou(hand);
+	yakuOpen = Math.max(yakuOpen, tsuuiisou.open);
+	yakuClosed = Math.max(yakuClosed, tsuuiisou.closed);
 
 	//Ryuuiisou
 	//All Green
 	//Open
+	var ryuuiisou = getRyuuiisou(hand);
+	yakuOpen = Math.max(yakuOpen, ryuuiisou.open);
+	yakuClosed = Math.max(yakuClosed, ryuuiisou.closed);
 
 	//Chinroutou
 	//All Terminals
 	//Open
+	var chinroutou = getChinroutou(hand);
+	yakuOpen = Math.max(yakuOpen, chinroutou.open);
+	yakuClosed = Math.max(yakuClosed, chinroutou.closed);
 
-	//Suushiihou
-	//Four Little Winds
+	//Shousuushii / Daisuushii
 	//Open
+	var windYakuman = getWindYakuman(hand);
+	yakuOpen = Math.max(yakuOpen, windYakuman.open);
+	yakuClosed = Math.max(yakuClosed, windYakuman.closed);
 
 	//Suukantsu
 	//4 Kans
 	//Open
+	var suukantsu = getSuukantsu(kanCount);
+	yakuOpen = Math.max(yakuOpen, suukantsu.open);
+	yakuClosed = Math.max(yakuClosed, suukantsu.closed);
 
 	//Chuuren poutou
 	//9 Gates
 	//Closed
+	var chuuren = getChuurenPoutou(hand, filteredCalls);
+	yakuClosed = Math.max(yakuClosed, chuuren.closed);
 
 	//Kokushi musou
 	//Thirteen Orphans
 	//Closed
-
-	//Double Yakuman
-
-	//Suuankou tanki
-	//4 Concealed Triplets Single Wait
-	//Closed
-
-	//Kokushi musou juusan menmachi
-	//13 Wait Thirteen Orphans
-	//Closed
-
-	//Junsei chuuren poutou
-	//True Nine Gates
-	//Closed
-
-	//Daisuushii
-	//Four Big Winds
-	//Open
+	var kokushi = getKokushiMusou(hand, filteredCalls);
+	yakuClosed = Math.max(yakuClosed, kokushi.closed);
 
 
 	return { open: yakuOpen, closed: yakuClosed };
@@ -242,29 +238,23 @@ function getTanyao(hand, triplesAndPairs, inputCalls) {
 }
 
 //Iipeikou
-function getIipeikou(triples) {
-	// Use a greedy approach: consume sequences from lowest index first to correctly
-	// identify identical sequences even when other sequences share tile indices.
+function getSequenceStartCounts(sequenceTiles) {
 	var counts = {};
-	for (let tile of triples) {
-		var key = tile.type * 10 + tile.index;
-		counts[key] = (counts[key] || 0) + 1;
-	}
-	for (var type = 0; type <= 2; type++) {
-		for (var index = 1; index <= 7; index++) {
-			var k1 = type * 10 + index;
-			var k2 = type * 10 + index + 1;
-			var k3 = type * 10 + index + 2;
-			var numSeqs = Math.min(counts[k1] || 0, counts[k2] || 0, counts[k3] || 0);
-			if (numSeqs >= 2) {
-				return { open: 0, closed: 1 };
-			}
-			if (numSeqs > 0) {
-				counts[k1] -= numSeqs;
-				counts[k2] -= numSeqs;
-				counts[k3] -= numSeqs;
-			}
+	for (var i = 0; i + 2 < sequenceTiles.length; i += 3) {
+		var sequence = sequenceTiles.slice(i, i + 3).sort((a, b) => a.index - b.index);
+		if (sequence[0].type == sequence[1].type && sequence[1].type == sequence[2].type &&
+			sequence[1].index == sequence[0].index + 1 && sequence[2].index == sequence[0].index + 2) {
+			var key = sequence[0].type + "-" + sequence[0].index;
+			counts[key] = (counts[key] || 0) + 1;
 		}
+	}
+	return counts;
+}
+
+function getIipeikou(sequences) {
+	var counts = getSequenceStartCounts(sequences);
+	if (Object.values(counts).some(count => count >= 2)) {
+		return { open: 0, closed: 1 };
 	}
 	return { open: 0, closed: 0 };
 }
@@ -275,33 +265,8 @@ function getRyanpeikou(sequences) {
 		return { open: 0, closed: 0 };
 	}
 
-	var counts = {};
-	for (let tile of sequences) {
-		var key = tile.type * 10 + tile.index;
-		counts[key] = (counts[key] || 0) + 1;
-	}
-
-	var pairCount = 0;
-	for (var type = 0; type <= 2; type++) {
-		for (var index = 1; index <= 7; index++) {
-			var k1 = type * 10 + index;
-			var k2 = type * 10 + index + 1;
-			var k3 = type * 10 + index + 2;
-			var numSeqs = Math.min(counts[k1] || 0, counts[k2] || 0, counts[k3] || 0);
-			if (numSeqs >= 2) {
-				pairCount++;
-				counts[k1] -= 2;
-				counts[k2] -= 2;
-				counts[k3] -= 2;
-			}
-			else if (numSeqs > 0) {
-				counts[k1] -= numSeqs;
-				counts[k2] -= numSeqs;
-				counts[k3] -= numSeqs;
-			}
-		}
-	}
-
+	var counts = getSequenceStartCounts(sequences);
+	var pairCount = Object.values(counts).reduce((total, count) => total + Math.floor(count / 2), 0);
 	if (pairCount >= 2) {
 		return { open: 0, closed: 3 };
 	}
@@ -348,16 +313,9 @@ function getSanshokuDouko(triplets) {
 
 //Sanshoku Doujun
 function getSanshokuDoujun(sequences) {
+	var counts = getSequenceStartCounts(sequences);
 	for (var i = 1; i <= 7; i++) {
-		var type0Count = 0, type1Count = 0, type2Count = 0;
-		for (let tile of sequences) {
-			if (tile.index >= i && tile.index <= i + 2) {
-				if (tile.type == 0) type0Count++;
-				else if (tile.type == 1) type1Count++;
-				else if (tile.type == 2) type2Count++;
-			}
-		}
-		if (type0Count >= 3 && type1Count >= 3 && type2Count >= 3) {
+		if (counts["0-" + i] > 0 && counts["1-" + i] > 0 && counts["2-" + i] > 0) {
 			return { open: 1, closed: 2 };
 		}
 	}
@@ -427,14 +385,10 @@ function getJunchan(triplets, sequences, pairs) {
 
 //Ittsuu
 function getIttsuu(triples) {
+	var counts = getSequenceStartCounts(triples);
 	for (var j = 0; j <= 2; j++) {
-		for (var i = 1; i <= 9; i++) {
-			if (!triples.some(tile => tile.type == j && tile.index == i)) {
-				break;
-			}
-			if (i == 9) {
-				return { open: 1, closed: 2 };
-			}
+		if (counts[j + "-1"] > 0 && counts[j + "-4"] > 0 && counts[j + "-7"] > 0) {
+			return { open: 1, closed: 2 };
 		}
 	}
 	return { open: 0, closed: 0 };
@@ -465,4 +419,60 @@ function getChinitsu(hand) {
 		return { open: 3, closed: 3 }; //Score gets added to honitsu -> 5/6 han
 	}
 	return { open: 0, closed: 0 };
+}
+
+//The yakuman checks below accept 13 tiles as well as 14: every caller in ai_offense evaluates a
+//13-tile hand, so gating on 14 made these unreachable outside the unit tests.
+function getTsuuiisou(hand) {
+	if (hand.length >= 13 && hand.every(tile => tile.type == 3)) {
+		return { open: 13, closed: 13 };
+	}
+	return { open: 0, closed: 0 };
+}
+
+function getRyuuiisou(hand) {
+	var allGreen = hand.length >= 13 && hand.every(tile =>
+		(tile.type == 2 && [2, 3, 4, 6, 8].includes(tile.index)) ||
+		(tile.type == 3 && tile.index == 6));
+	return allGreen ? { open: 13, closed: 13 } : { open: 0, closed: 0 };
+}
+
+function getChinroutou(hand) {
+	if (hand.length >= 13 && hand.every(tile => tile.type < 3 && (tile.index == 1 || tile.index == 9))) {
+		return { open: 13, closed: 13 };
+	}
+	return { open: 0, closed: 0 };
+}
+
+function getWindYakuman(hand) {
+	var counts = [1, 2, 3, 4].map(index => hand.filter(tile => tile.type == 3 && tile.index == index).length);
+	var triplets = counts.filter(count => count >= 3).length;
+	if (triplets == 4 || (triplets == 3 && counts.some(count => count == 2))) {
+		return { open: 13, closed: 13 };
+	}
+	return { open: 0, closed: 0 };
+}
+
+function getSuukantsu(kanCount) {
+	return kanCount >= 4 ? { open: 13, closed: 13 } : { open: 0, closed: 0 };
+}
+
+function getChuurenPoutou(hand, calls) {
+	if (calls.length > 0 || (hand.length != 13 && hand.length != 14) || hand.some(tile => tile.type == 3 || tile.type != hand[0].type)) {
+		return { open: 0, closed: 0 };
+	}
+	var counts = Array(10).fill(0);
+	hand.forEach(tile => counts[tile.index]++);
+	if (counts[1] >= 3 && counts[9] >= 3 && [2, 3, 4, 5, 6, 7, 8].every(index => counts[index] >= 1)) {
+		return { open: 0, closed: 13 };
+	}
+	return { open: 0, closed: 0 };
+}
+
+function getKokushiMusou(hand, calls) {
+	if (calls.length > 0 || (hand.length != 13 && hand.length != 14) || hand.some(tile => !isTerminalOrHonor(tile))) {
+		return { open: 0, closed: 0 };
+	}
+	var uniqueTiles = new Set(hand.map(tile => tile.type + "-" + tile.index));
+	return uniqueTiles.size == 13 ? { open: 0, closed: 13 } : { open: 0, closed: 0 };
 }

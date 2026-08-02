@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #-*-coding:utf-8-*-
 
+import argparse
 import os
 import re
 
@@ -18,33 +19,37 @@ def bumpVersion(version):
     parts[-1] = str(int(parts[-1]) + 1)
     return ".".join(parts)
 
-def updateVersionInSelf(new_version):
-    """Rewrite the VERSION = "..." line in this script with the new version."""
-    script_path = os.path.abspath(__file__)
-    with open(script_path, encoding="utf-8") as fp:
-        source = fp.read()
-    source = re.sub(r'^VERSION = "[^"]+"', f'VERSION = "{new_version}"', source, count=1, flags=re.MULTILINE)
-    with open(script_path, "w", encoding="utf-8") as fp:
-        fp.write(source)
-
-VERSION = "1.3.9"
-
 REPO = "Tsuki321/AlphaJong"
 BRANCH = "master"
 SCRIPT_NAME = "AlphaJong.user.js"
 RAW_BASE = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/{SCRIPT_NAME}"
 
-def main():
-    global VERSION
+def getCurrentVersion():
+    """Read the last published version so every clean CI checkout advances it."""
+    with open(SCRIPT_NAME, encoding="utf-8") as fp:
+        match = re.search(r'^// @version\s+([^\s]+)', fp.read(), flags=re.MULTILINE)
+    if match is None:
+        raise ValueError(f"Could not find @version in {SCRIPT_NAME}")
+    return match.group(1)
 
-    # Auto-bump patch version and persist it back into this file
-    VERSION = bumpVersion(VERSION)
-    updateVersionInSelf(VERSION)
+def main():
+    parser = argparse.ArgumentParser(description="Assemble the AlphaJong userscript.")
+    parser.add_argument(
+        "--no-bump",
+        action="store_true",
+        help="Assemble without incrementing @version. Use for CI bundle validation so the "
+             "test job does not consume a version number that the publish job then bumps again.",
+    )
+    args = parser.parse_args()
+
+    version = getCurrentVersion()
+    if not args.no_bump:
+        version = bumpVersion(version)
 
     data = f"""// ==UserScript==
 // @name         AlphaJong
 // @namespace    alphajong
-// @version      {VERSION}
+// @version      {version}
 // @description  A Mahjong Soul Bot.
 // @author       Jimboom7
 // @match        https://mahjongsoul.game.yo-star.com/*
@@ -71,14 +76,14 @@ def main():
     data = addFileToString(data, "ai_defense.js")
     data = addFileToString(data, "main.js")
         
-    with open('build/AlphaJong_' + VERSION + '.user.js', 'w', encoding="utf-8") as fp:
+    with open('build/AlphaJong_' + version + '.user.js', 'w', encoding="utf-8") as fp:
         fp.write(data)
 
     # Write stable filename for Tampermonkey auto-updates via @updateURL / @downloadURL
     with open(SCRIPT_NAME, 'w', encoding="utf-8") as fp:
         fp.write(data)
 
-    print(f"Built version {VERSION}")
+    print(f"Built version {version}")
 
 if __name__ == "__main__":
     main()

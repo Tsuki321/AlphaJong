@@ -365,7 +365,8 @@ function getPlayerLinkState(player) {
 	if (typeof view == 'undefined' || view == null || typeof view.DesktopMgr == 'undefined' || view.DesktopMgr == null || !Array.isArray(view.DesktopMgr.player_link_state)) {
 		return 1;
 	}
-	return view.DesktopMgr.player_link_state[localPosition2Seat(player)] || 1;
+	var linkState = view.DesktopMgr.player_link_state[localPosition2Seat(player)];
+	return typeof linkState == 'undefined' ? 1 : linkState;
 }
 
 function getNumberOfTilesInHand(player) {

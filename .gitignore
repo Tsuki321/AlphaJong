@@ -1,2 +1,4 @@
 build
 .scannerwork/
+node_modules/
+test-results/

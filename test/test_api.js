@@ -121,6 +121,11 @@ function isInGame() {
 }
 
 function doesPlayerExist(player) {
+	// Opt-in 3-player testing: when testExcludedSeats lists a seat number, that seat is "missing"
+	// the way it is in real 3-player Mahjong Soul. Default [] keeps the 4-player behavior.
+	if (typeof testExcludedSeats != 'undefined' && testExcludedSeats.includes(player)) {
+		return false;
+	}
 	return true;
 }
 
