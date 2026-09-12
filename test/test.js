@@ -35,7 +35,7 @@ function assertTrue(value, message) {
 }
 function assertApprox(actual, expectedValue, epsilon, message) {
 	predictionAssertionsRun++;
-	if (typeof actual != 'number' || Math.abs(actual - expectedValue) > epsilon) {
+	if (!Number.isFinite(actual) || Math.abs(actual - expectedValue) > epsilon) {
 		throw new Error((message || "assertApprox failed") + ": expected " + expectedValue + " ± " + epsilon + ", got '" + actual + "'");
 	}
 }
@@ -94,6 +94,7 @@ async function runRegressionTests() {
 	runPredictionUnitTests();
 	run3PlayerPredictionTests();
 	await runCallTripleStateRestoreTest();
+	await runAccuracyRegressionTests();
 }
 
 // -- Prediction unit tests -------------------------------------------------
@@ -203,8 +204,8 @@ function runPredictionUnitTests() {
 
 	// === calculateScore (test env: no dealer bonus, 4-player) ===
 	baselinePredictionState();
-	assertEqual(calculateScore(1, 1, 30), 960, "Score han1 fu30");
-	assertEqual(calculateScore(1, 4, 30), 7680, "Score han4 fu30 (mangan boundary)");
+	assertEqual(calculateScore(1, 1, 30), 1000, "Score han1 fu30");
+	assertEqual(calculateScore(1, 4, 30), 7700, "Score han4 fu30 (below mangan)");
 	assertEqual(calculateScore(1, 5, 30), 8000, "Score han5 mangan");
 	assertEqual(calculateScore(1, 6, 30), 12000, "Score han6 haneman");
 	assertEqual(calculateScore(1, 13, 30), 32000, "Score han13 yakuman");

@@ -350,7 +350,10 @@ function callDiscard(tileNumber) {
 		let tileName = getTileName(tileID, false);
 		let strategyStr = helpHintContext.strategy || STRATEGIES.GENERAL;
 		let shantenStr = helpHintContext.shanten <= 0 ? "Tenpai" : (helpHintContext.shanten + " from tenpai");
-		showCrtStrategyMsg(`[${strategyStr} | ${shantenStr}] Discard: ${tileName}`);
+		let drawStr = Number.isFinite(helpHintContext.ukeire) ?
+			` | ${helpHintContext.ukeire} improving unseen tiles (~${(helpHintContext.improvementChance * 100).toFixed(1)}% next draw)` : "";
+		let furitenStr = helpHintContext.furiten ? " | Furiten: self-draw only" : "";
+		showCrtStrategyMsg(`[${strategyStr} | ${shantenStr}] Discard: ${tileName}${drawStr}${furitenStr}`);
 		if (CHANGE_RECOMMEND_TILE_COLOR) {
 			view.DesktopMgr.Inst.mainrole.hand.forEach(
 				tile => tile.val.toString() == tileID ?

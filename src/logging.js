@@ -58,6 +58,8 @@ function printTilePriority(tiles) {
 			"> Yaku Closed: <" + Number(tiles[i].yaku.closed).toFixed(3) +
 			"> Dora: <" + Number(tiles[i].dora).toFixed(3) +
 			"> Waits: <" + Number(tiles[i].waits).toFixed(3) +
+			"> Ukeire: <" + tiles[i].ukeire +
+			"> Next draw estimate: <" + Number(tiles[i].improvementChance * 100).toFixed(1) + "%" +
 			"> Danger: <" + Number(tiles[i].danger).toFixed(2) + ">");
 	}
 }

@@ -7,6 +7,7 @@
 var testExcludedSeats = [];
 
 function resetGlobals() {
+	ownHand = [];
 	dora = [{ index: 6, type: 3, dora: false }];
 	discards = [[], [], [], []];
 	calls = [[], [], [], []];
@@ -30,6 +31,8 @@ function resetGlobals() {
 	totalPossibleWaits = {};
 	PERFORMANCE_MODE = 4;
 	LOG_AMOUNT = 14;
+	clearHandAnalysisCache();
+	invalidateDefenseRuntimeCache();
 }
 
 //Reads a debugString and sets the game state accordingly

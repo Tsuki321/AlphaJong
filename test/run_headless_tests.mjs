@@ -1,6 +1,7 @@
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 
 const testFilePath = path.resolve(process.argv[2] || path.join("test", "run_tests.html"));
@@ -13,6 +14,11 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 const consoleLines = [];
 const pageErrors = [];
+
+if (process.env.ALPHAJONG_REFERENCE_FIXTURES) {
+  const fixtures = JSON.parse(await readFile(process.env.ALPHAJONG_REFERENCE_FIXTURES, "utf8"));
+  await page.addInitScript(data => { window.__ALPHAJONG_SHANTEN_REFERENCE = data; }, fixtures);
+}
 
 if (fastMode) {
   // Runs before any page script. Lets the test page skip the slow discard loop and
@@ -45,6 +51,9 @@ await page.waitForFunction(() => window.__ALPHAJONG_TEST_DONE === true, undefine
 });
 
 const result = await page.evaluate(() => window.__ALPHAJONG_TEST_RESULT || null);
+await mkdir("test-results", { recursive: true });
+await writeFile(path.join("test-results", `${path.basename(testFilePath)}.json`), JSON.stringify(result, null, 2));
+await writeFile(path.join("test-results", `${path.basename(testFilePath)}.html`), await page.content());
 await browser.close();
 
 if (!result) {

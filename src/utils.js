@@ -14,6 +14,7 @@ function getTileCacheKey(tiles, sorted = false) {
 function clearHandAnalysisCache() {
 	doublesCache = {};
 	triplesAndPairsCache = {};
+	clearExactHandAnalysisCache();
 }
 
 function getTileIdentityKey(tile) {
@@ -26,6 +27,8 @@ function getTileIdentityKey(tile) {
 async function withSimulatedCallState(callTiles, callback) {
 	var initialCallLength = calls[0].length;
 	var wasClosed = isClosed;
+	var originalStrategy = strategy;
+	var originalAllowsCalls = strategyAllowsCalls;
 	var callTile = getTileForCall();
 
 	try {
@@ -38,6 +41,9 @@ async function withSimulatedCallState(callTiles, callback) {
 	finally {
 		calls[0].splice(initialCallLength);
 		isClosed = wasClosed;
+		strategy = originalStrategy;
+		strategyAllowsCalls = originalAllowsCalls;
+		invalidateDefenseRuntimeCache();
 	}
 }
 
@@ -69,7 +75,7 @@ function getCorrectPlayerNumber(player) {
 }
 
 function isSameTile(tile1, tile2, checkDora = false) {
-	if (typeof tile1 == 'undefined' || typeof tile2 == 'undefined') {
+	if (tile1 == null || tile2 == null) {
 		return false;
 	}
 	if (checkDora) {
@@ -142,7 +148,7 @@ function getDoubles(tiles) {
 
 //Return all triplets/3-sequences and pairs as a tile array
 function getTriplesAndPairs(tiles) {
-	var cacheKey = getTileCacheKey(tiles);
+	var cacheKey = getTileCacheKey(tiles) + "|" + (PERFORMANCE_MODE - timeSave) + "|" + strategy;
 	if (typeof triplesAndPairsCache[cacheKey] !== 'undefined') {
 		var cached = triplesAndPairsCache[cacheKey];
 		return { triples: [...cached.triples], pairs: [...cached.pairs], shanten: cached.shanten };
@@ -311,12 +317,10 @@ function removeTilesFromTileArray(inputTiles, tiles) {
 	var tileArray = [...inputTiles];
 
 	for (let tile of tiles) {
-		for (var j = 0; j < tileArray.length; j++) {
-			if (isSameTile(tile, tileArray[j])) {
-				tileArray.splice(j, 1);
-				break;
-			}
-		}
+		// Preserve the requested physical variant when a red and normal five coexist.
+		var index = tileArray.findIndex(candidate => isSameTile(tile, candidate, true));
+		if (index < 0) index = tileArray.findIndex(candidate => isSameTile(tile, candidate));
+		if (index >= 0) tileArray.splice(index, 1);
 	}
 
 	return tileArray;
@@ -341,7 +345,7 @@ function getNumberOfTilesAvailable(index, type) {
 		return 0;
 	}
 
-	return 4 - visibleTiles.filter(tile => tile.index == index && tile.type == type).length;
+	return Math.max(0, 4 - visibleTiles.filter(tile => tile.index == index && tile.type == type).length);
 }
 
 //Return if a tile is furiten
@@ -376,6 +380,14 @@ function getTilesInTileArray(tileArray, index, type) {
 function updateAvailableTiles() {
 	visibleTiles = dora.concat(ownHand, discards[0], discards[1], discards[2], discards[3], calls[0], calls[1], calls[2], calls[3]);
 	visibleTiles = visibleTiles.filter(tile => typeof tile != 'undefined');
+	// Extracted norths are public tiles too; they cannot remain in the unseen pool.
+	if (getNumberOfPlayers() == 3) {
+		for (var player = 0; player < 3; player++) {
+			for (var kita = 0; kita < getNumberOfKitaOfPlayer(player); kita++) {
+				visibleTiles.push({ index: 4, type: 3, dora: false });
+			}
+		}
+	}
 
 	// Precompute which types already have a red five visible (avoids concat in inner loop)
 	var redFiveVisible = [false, false, false]; // indexed by type 0-2
@@ -410,6 +422,7 @@ function updateAvailableTiles() {
 	for (let vis of visibleTiles) {
 		vis.doraValue = getTileDoraValue(vis);
 	}
+	invalidateDefenseRuntimeCache();
 }
 
 //Return sum of red dora/dora indicators for tile
@@ -597,40 +610,21 @@ function calculateShanten(triples, pairs, doubles) {
 	return shanten;
 }
 
-// Calculate Score for given han and fu. For higher han values the score is "fluid" to better account for situations where the exact han value is unknown
-// (like when an opponent has around 5.5 han => 10k)
+// Ron payments before honba/sticks. Sanma has the same ron payments as yonma.
+function calculateRonScore(player, han, fu = 30) {
+	if (han < 1) return 0;
+	var base = han >= 13 ? 8000 : han >= 11 ? 6000 : han >= 8 ? 4000 :
+		han >= 6 ? 3000 : han >= 5 ? 2000 : Math.min(2000, fu * Math.pow(2, 2 + han));
+	return Math.ceil(base * (getSeatWind(player) == 1 ? 6 : 4) / 100) * 100;
+}
+
+// Expected han can be fractional. Interpolate adjacent legal ron payments so
+// integer estimates respect rounding and every limit tier (including mangan).
 function calculateScore(player, han, fu = 30) {
-	var score = (fu * Math.pow(2, 2 + han) * 4);
-
-	if (han > 4) {
-		score = 8000;
-	}
-
-	if (han > 5) {
-		score = 8000 + ((han - 5) * 4000);
-	}
-	if (han > 6) {
-		score = 12000 + ((han - 6) * 2000);
-	}
-	if (han > 8) {
-		score = 16000 + ((han - 8) * 2666);
-	}
-	if (han > 11) {
-		score = 24000 + ((han - 11) * 4000);
-	}
-	if (han >= 13) {
-		score = 32000;
-	}
-
-	if (getSeatWind(player) == 1) { //Is Dealer
-		score *= 1.5;
-	}
-
-	if (getNumberOfPlayers() == 3) {
-		score *= 0.75;
-	}
-
-	return score;
+	var lower = Math.floor(han);
+	var fraction = han - lower;
+	return calculateRonScore(player, lower, fu) * (1 - fraction) +
+		calculateRonScore(player, lower + 1, fu) * fraction;
 }
 
 //Calculate the Fu Value for given parameters. Not 100% accurate, but good enough

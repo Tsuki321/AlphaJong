@@ -218,6 +218,7 @@ function initHintPanel() {
 	hintPanelDiv.style.position = "fixed";
 	hintPanelDiv.style.zIndex = "100002";
 	hintPanelDiv.style.minWidth = "230px";
+	hintPanelDiv.style.maxWidth = "min(560px, 90vw)";
 	hintPanelDiv.style.backgroundColor = "rgba(24,24,24,0.88)";
 	hintPanelDiv.style.borderRadius = "7px";
 	hintPanelDiv.style.boxShadow = "0 3px 14px rgba(0,0,0,0.6)";
@@ -259,7 +260,7 @@ function initHintPanel() {
 	hintPanelContent.style.padding = "8px 12px";
 	hintPanelContent.style.color = "white";
 	hintPanelContent.style.fontSize = "16px";
-	hintPanelContent.style.whiteSpace = "nowrap";
+	hintPanelContent.style.whiteSpace = "normal";
 	hintPanelContent.style.fontFamily = "sans-serif";
 	hintPanelDiv.appendChild(hintPanelContent);
 

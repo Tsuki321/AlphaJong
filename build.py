@@ -70,6 +70,7 @@ def main():
     data = addFileToString(data, "gui.js")
     data = addFileToString(data, "api.js")
     data = addFileToString(data, "utils.js")
+    data = addFileToString(data, "hand_analysis.js")
     data = addFileToString(data, "logging.js")
     data = addFileToString(data, "yaku.js")
     data = addFileToString(data, "ai_offense.js")

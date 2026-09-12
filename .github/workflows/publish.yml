@@ -19,6 +19,15 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate independent shanten reference cases
+        run: |
+          python -m pip install mahjong==1.4.0
+          python test/generate_shanten_reference.py test/shanten-reference.json
+
       - name: Run headless regression tests
         env:
           # The regression suite runs the full discard loop (real AI simulation), which measures
@@ -26,6 +35,7 @@ jobs:
           # mode, which the bundle job enables and this job does not, and it has failed since it
           # was introduced. 900 leaves runner headroom while still catching a real slowdown.
           ALPHAJONG_MAX_MS_PER_TEST: '900'
+          ALPHAJONG_REFERENCE_FIXTURES: test/shanten-reference.json
         run: npm run test:headless
 
       - name: Run Mahjong Soul API contract tests
@@ -42,6 +52,13 @@ jobs:
         env:
           ALPHAJONG_FAST: '1'
         run: npm run test:bundle
+
+      - name: Save test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: test-results/
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
