@@ -627,88 +627,54 @@ function calculateScore(player, han, fu = 30) {
 		calculateRonScore(player, lower + 1, fu) * fraction;
 }
 
-//Calculate the Fu Value for given parameters. Not 100% accurate, but good enough
+// Dora can increase a legal hand's value, but cannot supply its first yaku.
+function calculateScoreWithYaku(player, yaku, dora, fu = 30) {
+	return yaku >= 1 ? calculateScore(player, yaku + dora, fu) : 0;
+}
+
+// Score the supplied decomposition without regrouping tiles across melds.
+// waitTiles is retained for existing callers; possible winning groups determine
+// the wait, including ambiguous interpretations of the same winning tile.
 function calculateFu(triples, openTiles, pair, waitTiles, winningTile, ron = true) {
-	var fu = 20;
+	var groups = getMelds(triples, false);
+	var openGroups = getMelds(openTiles);
+	if (groups.length == 0 && openGroups.length == 0 && pair.length == 14) return 25;
+	var triplets = groups.filter(meld => isSameTile(meld[0], meld[1]));
+	var winningGroups = groups.filter(meld => meld.some(tile => isSameTile(tile, winningTile)));
+	if (isSameTile(pair[0], winningTile)) winningGroups.push(pair);
 
-	var sequences = getSequences(triples);
-	var closedTriplets = getTriplets(triples);
-	var openTriplets = getTriplets(openTiles);
-
-	var kans = removeTilesFromTileArray(openTiles, getTriples(openTiles));
-
-	closedTriplets.forEach(function (t) {
-		if (isTerminalOrHonor(t.tile1)) {
-			if (!isSameTile(t.tile1, winningTile)) {
-				fu += 8;
-			}
-			else { //Ron on that tile: counts as open
-				fu += 4;
-			}
-		}
-		else {
-			if (!isSameTile(t.tile1, winningTile)) {
-				fu += 4;
-			}
-			else { //Ron on that tile: counts as open
-				fu += 2;
-			}
-		}
-	});
-
-	openTriplets.forEach(function (t) {
-		if (isTerminalOrHonor(t.tile1)) {
-			fu += 4;
-		}
-		else {
-			fu += 2;
-		}
-	});
-
-	//Kans: Add to existing fu of pon
-	kans.forEach(function (tile) {
-		if (openTiles.filter(t => isSameTile(t, tile) && t.from != localPosition2Seat(0)).length > 0) { //Is open
-			if (isTerminalOrHonor(tile)) {
-				fu += 12;
-			}
-			else {
-				fu += 6;
-			}
-		}
-		else { //Closed Kans
-			if (isTerminalOrHonor(tile)) {
-				fu += 28;
-			}
-			else {
-				fu += 14;
-			}
-		}
-	});
-
-
-	if (typeof pair[0] != 'undefined' && isValueTile(pair[0])) {
-		fu += 2;
-		if (pair[0].index == seatWind && seatWind == roundWind) {
-			fu += 2;
-		}
+	function isRyanmen(meld) {
+		if (meld.length != 3 || isSameTile(meld[0], meld[1])) return false;
+		var sorted = meld.slice().sort((a, b) => a.index - b.index);
+		return (isSameTile(sorted[0], winningTile) && sorted[2].index < 9) ||
+			(isSameTile(sorted[2], winningTile) && sorted[0].index > 1);
 	}
 
-	if (fu == 20 && (sequences.findIndex(function (t) { //Is there a way to interpret the wait as ryanmen when at 20 fu? -> dont add fu
-		return (isSameTile(t.tile1, winningTile) && t.tile3.index < 9) || (isSameTile(t.tile3, winningTile) && t.tile1.index > 1);
-	}) >= 0)) {
-		fu += 0;
-	} //if we are at more than 20 fu: check if the wait can be interpreted in other ways to add more fu
-	else if ((waitTiles.length != 2 || waitTiles[0].type != waitTiles[1].type || Math.abs(waitTiles[0].index - waitTiles[1].index) != 1)) {
-		if (closedTriplets.findIndex(function (t) { return isSameTile(t.tile1, winningTile); }) < 0) { // 0 fu for shanpon
-			fu += 2;
+	var pairFu = pair[0] && isValueTile(pair[0]) ? 2 : 0;
+	if (pairFu && pair[0].index == seatWind && seatWind == roundWind) pairFu += 2;
+	if (isClosed && groups.length == 4 && openGroups.length == 0 &&
+		triplets.length == 0 && pairFu == 0 && winningGroups.some(isRyanmen)) {
+		return ron ? 30 : 20; //Pinfu is worth more than an alternative two-fu wait.
+	}
+
+	var fixedFu = openGroups.reduce((total, meld) => {
+		if (!isSameTile(meld[0], meld[1])) return total;
+		return total + 2 * (isTerminalOrHonor(meld[0]) ? 2 : 1) *
+			(meld.length == 4 ? 4 : 1) * (isConcealedKan(meld) ? 2 : 1);
+	}, 0);
+
+	if (winningGroups.length == 0) winningGroups.push(null);
+	return Math.max(...winningGroups.map(winningGroup => {
+		var fu = 20 + pairFu + fixedFu;
+		for (let meld of triplets) {
+			fu += 2 * (isTerminalOrHonor(meld[0]) ? 2 : 1) * (ron && meld === winningGroup ? 1 : 2);
 		}
-	}
-
-	if (ron && isClosed) {
-		fu += 10;
-	}
-
-	return Math.ceil(fu / 10) * 10;
+		if (winningGroup && (winningGroup.length == 2 ||
+			(!isSameTile(winningGroup[0], winningGroup[1]) && !isRyanmen(winningGroup)))) fu += 2;
+		if (!ron) fu += 2;
+		if (ron && isClosed) fu += 10;
+		return Math.max(30, Math.ceil(fu / 10) * 10);
+	}));
 }
 
 //Is the tile a dragon or valuable wind?

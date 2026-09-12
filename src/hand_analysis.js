@@ -19,8 +19,47 @@ function getTileCounts(tiles) {
 	return counts;
 }
 
+function getMelds(meldTiles = [], includeKans = true) {
+	if (!includeKans) {
+		// A concealed decomposition already consists of three-tile groups.
+		// In particular, 111 + 123 must never be read as a kan of 1s.
+		var groups = [];
+		for (var index = 0; index + 2 < meldTiles.length; index += 3) {
+			groups.push(meldTiles.slice(index, index + 3));
+		}
+		return groups;
+	}
+	function split(index) {
+		if (index == meldTiles.length) return [];
+		var triple = meldTiles.slice(index, index + 3);
+		if (triple.length < 3) return null;
+		var fourth = meldTiles[index + 3];
+		var sorted = triple.slice().sort((a, b) => a.index - b.index);
+		var isTriple = triple.every(tile => isSameTile(tile, triple[0])) ||
+			(sorted[0].type < 3 && sorted.every(tile => tile.type == sorted[0].type) &&
+				sorted[1].index == sorted[0].index + 1 && sorted[2].index == sorted[0].index + 2);
+		if (isTriple && !(fourth && fourth.kan)) {
+			var rest = split(index + 3);
+			if (rest != null) return [triple].concat(rest);
+		}
+		// Live calls mark the fourth tile. Legacy debug strings need inference,
+		// but it is valid only if the entire remaining list also splits into melds.
+		if (fourth && fourth.kan !== false &&
+			triple.every(tile => isSameTile(tile, fourth))) {
+			var rest = split(index + 4);
+			if (rest != null) return [triple.concat(fourth)].concat(rest);
+		}
+		return null;
+	}
+	return split(0) || [];
+}
+
 function getMeldCount(meldTiles = calls[0] || []) {
-	return Math.floor(meldTiles.filter(tile => !tile.kan).length / 3);
+	return getMelds(meldTiles).length;
+}
+
+function isConcealedKan(meld) {
+	return meld.length == 4 && meld.every(tile => tile.from == localPosition2Seat(0));
 }
 
 // For each possible number of melds (0..4) and heads (0..1), find the

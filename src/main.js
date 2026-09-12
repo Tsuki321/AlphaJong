@@ -27,14 +27,18 @@ if (!isDebug()) {
 
 function toggleRun() {
 	clearCrtStrategyMsg();
+	decisionEpoch++;
+	oldOps = "";
 	if (run) {
 		log("AlphaJong deactivated!");
 		run = false;
+		setAutoCallWin(false);
 		startButton.innerHTML = "Start Bot";
 	}
 	else {
 		log("AlphaJong activated!");
 		run = true;
+		setAutoCallWin(MODE === AIMODE.AUTO);
 		startButton.innerHTML = "Stop Bot";
 		main();
 	}
@@ -100,7 +104,7 @@ function main() {
 		setTimeout(main, 500);
 
 		if (MODE === AIMODE.HELP) {
-			oldOps = [];
+			oldOps = "";
 		}
 		return;
 	}
@@ -110,33 +114,41 @@ function main() {
 	setTimeout(mainOwnTurn, 200 + (Math.random() * 200));
 }
 
-var oldOps = []
+var oldOps = "";
 function recordPlayerOps() {
-	oldOps = []
-
-	let ops = getOperationList();
-	for (let op of ops) {
-		oldOps.push(op.type)
-	}
+	oldOps = getDecisionStateKey();
 }
 
 function checkPlayerOpChanged() {
-	let ops = getOperationList();
-	if (ops.length !== oldOps.length) {
-		return true;
-	}
+	return getDecisionStateKey() !== oldOps;
+}
 
-	for (let i = 0; i < ops.length; i++) {
-		if (ops[i].type !== oldOps[i]) {
-			return true;
-		}
-	}
+function getDecisionStateKey() {
+	return JSON.stringify([
+		getRound(), getRoundWind(), getCurrentPlayer(), getTilesLeft(),
+		getDora().map(getTileIdentityKey),
+		getPlayerHand().map(tile => [getTileIdentityKey(tile.val), tile.valid !== false]),
+		getOperationList().map(operation => [operation.type, operation.combination || []]),
+		getTileIdentityKey(getTileForCall()),
+		Array.from({ length: getNumberOfPlayers() }, (_, player) => {
+			var pond = getDiscardsOfPlayer(player);
+			return [getPlayerScore(player), isPlayerRiichi(player), getNumberOfTilesInHand(player),
+				getNumberOfKitaOfPlayer(player),
+				pond.pais.map(tile => getTileIdentityKey(tile.val)),
+				getTileIdentityKey(pond.last_pai && pond.last_pai.val),
+				getCallsOfPlayer(player).map(tile => [getTileIdentityKey(tile), tile.from, tile.kan])];
+		})
+	]);
+}
 
-	return false;
+function isDecisionCurrent() {
+	return run && isInGame() && getOperationList().length > 0 && activeDecisionState != null &&
+		!activeDecisionState.actionSent && activeDecisionState.epoch == decisionEpoch &&
+		activeDecisionState.mode == MODE && activeDecisionState.key == getDecisionStateKey();
 }
 
 async function mainOwnTurn() {
-	if (threadIsRunning) {
+	if (!run || threadIsRunning) {
 		return;
 	}
 	threadIsRunning = true;
@@ -152,13 +164,12 @@ async function mainOwnTurn() {
 			if (!checkPlayerOpChanged()) {
 				scheduleMain(1000);
 				return;
-			} else {
-				recordPlayerOps();
 			}
 		}
 
 		setData(); //Set current state of the board to local variables
 		clearHandAnalysisCache();
+		activeDecisionState = { epoch: decisionEpoch, mode: MODE, key: getDecisionStateKey() };
 
 		var operations = getOperationList();
 
@@ -178,7 +189,7 @@ async function mainOwnTurn() {
 
 		isConsideringCall = true;
 		for (let operation of operations) { //Priority Operations: Should be done before discard on own turn
-			if (getOperationList().length == 0) {
+			if (!isDecisionCurrent()) {
 				break;
 			}
 			switch (operation.type) {
@@ -207,7 +218,7 @@ async function mainOwnTurn() {
 		}
 
 		for (let operation of operations) {
-			if (getOperationList().length == 0) {
+			if (!isDecisionCurrent()) {
 				break;
 			}
 			switch (operation.type) {
@@ -228,6 +239,11 @@ async function mainOwnTurn() {
 		}
 
 		log(" ");
+
+		if (MODE === AIMODE.HELP && isDecisionCurrent()) {
+			// An interrupted or failed calculation must be retried for this board.
+			recordPlayerOps();
+		}
 
 		if (MODE === AIMODE.AUTO) {
 			showCrtActionMsg("Own turn completed.");
@@ -251,6 +267,8 @@ async function mainOwnTurn() {
 		}
 	}
 	finally {
+		activeDecisionState = null;
+		isConsideringCall = false;
 		threadIsRunning = false;
 	}
 
@@ -304,9 +322,8 @@ function setData(mainUpdate = true) {
 		}
 	}
 	if (tilesLeft < getTilesLeft()) { //Check if new round/reload
-		if (MODE === AIMODE.AUTO) {
-			setAutoCallWin(true);
-		}
+		decisionEpoch++;
+		setAutoCallWin(run && MODE === AIMODE.AUTO);
 		strategy = STRATEGIES.GENERAL;
 		strategyAllowsCalls = true;
 		initialDiscardedTilesSafety();

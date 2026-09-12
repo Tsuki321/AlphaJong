@@ -48,6 +48,8 @@ var DEBUG_BUTTON = false; //Display a Debug Button in the GUI
 //### GLOBAL VARIABLES DO NOT CHANGE ###
 var run = false; //Is the bot running
 var threadIsRunning = false;
+var decisionEpoch = 0;
+var activeDecisionState = null;
 const AIMODE = { //ENUM of AI mode
 	AUTO: 0,
 	HELP: 1,

@@ -139,10 +139,12 @@ function showDebugString() {
 }
 
 function aiModeChange() {
+	decisionEpoch++;
+	oldOps = "";
 	window.localStorage.setItem("alphajongAIMode", aimodeCombobox.value);
 	MODE = parseInt(aimodeCombobox.value);
 
-	setAutoCallWin(MODE === AIMODE.AUTO);
+	setAutoCallWin(run && MODE === AIMODE.AUTO);
 }
 
 function roomChange() {
@@ -213,7 +215,12 @@ function clearCrtStrategyMsg() {
 // Create, style and append the floating hint panel
 function initHintPanel() {
 	var savedPosStr = window.localStorage.getItem("alphajongHintPos");
-	var savedPos = savedPosStr !== null ? JSON.parse(savedPosStr) : null;
+	var savedPos = null;
+	try {
+		var parsedPos = savedPosStr !== null ? JSON.parse(savedPosStr) : null;
+		if (parsedPos && Number.isFinite(parsedPos.left) && Number.isFinite(parsedPos.top)) savedPos = parsedPos;
+	}
+	catch { /* Ignore invalid saved layout data. */ }
 
 	hintPanelDiv.style.position = "fixed";
 	hintPanelDiv.style.zIndex = "100002";

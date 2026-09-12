@@ -1,5 +1,7 @@
 // Rules regressions and independent shanten fixtures generated only in CI.
 async function runAccuracyRegressionTests() {
+	runMeldScoringRegressionTests();
+	runDefenseSafetyRegressionTests();
 	baselinePredictionState();
 	assertEqual(getStandardShanten(getTilesFromString("123m456p789s11122z")), -1, "Complete regular hand");
 	assertEqual(getStandardShanten(getTilesFromString("123m456p789s1112z")), 0, "Single-tile wait");
@@ -109,5 +111,127 @@ async function runAccuracyRegressionTests() {
 			assertEqual(getThirteenOrphansShanten(hand, []), fixture.kokushi, "Reference kokushi shanten: " + fixture.hand);
 		}
 	}
+	baselinePredictionState();
+}
+
+// Rule cases: https://www.worldriichi.org/s/WRC-Rules-2025-42fx.pdf (fu and yaku).
+// Mahjong Soul's double-wind pair uses 4 fu; WRC's 2-fu option is not used here.
+function runMeldScoringRegressionTests() {
+	baselinePredictionState();
+	assertEqual(getMeldCount(getTilesFromString("1111m2222p3333s")), 3, "Three kans are three melds");
+	assertEqual(getMeldCount(getTilesFromString("1111m2222p3333s4444z")), 4, "Four kans are four melds");
+	assertEqual(getMeldCount(getTilesFromString("111123m")), 2, "A triplet followed by a sequence is not a kan");
+	assertEqual(getStandardShanten(getTilesFromString("456s77z"), getTilesFromString("1111m2222p3333z")), -1, "Three fixed kans leave one meld and a pair");
+	readDebugString(["6z", "123m456p789s11122z", "", "1111m2222p3333s", "", "", "", "", "", "", "0,0,0,0", "2", "1", "50"].join("|"));
+	assertEqual(getNumberOfTilesInHand(1), 4, "Debug hands subtract three concealed tiles per kan");
+	baselinePredictionState();
+
+	var liveKan = getTilesFromString("1111m").map((tile, i) => ({ ...tile, kan: i == 3, from: 0 }));
+	assertEqual(getMelds(liveKan.concat(getTilesFromString("234p")))[0].length, 4, "A marked kan keeps its fourth tile");
+	assertEqual(getMeldCount(getTilesFromString("123m").concat(liveKan)), 2, "A marked kan after a chi preserves both melds");
+
+	var sequences = getTilesFromString("123123123m456p");
+	var triplets = getTilesFromString("111222333m456p");
+	var pair = getTilesFromString("77s");
+	assertEqual(getYaku(sequences.concat(pair), [], { triples: sequences, pairs: pair }).closed, 1, "Sequence interpretation has iipeikou without sanankou");
+	assertEqual(getYaku(triplets.concat(pair), [], { triples: triplets, pairs: pair }).closed, 2, "Triplet interpretation has sanankou without iipeikou");
+	isClosed = false;
+	assertEqual(getYaku(getTilesFromString("456p77s"), getTilesFromString("111222333m")).open, 0, "Fixed pons cannot be rearranged into sequence yaku");
+	assertEqual(getYaku([]).closed, 0, "Empty hand has no yaku");
+	assertEqual(getHonitsu([]).open, 0, "Empty hand has no half flush");
+	assertEqual(getChinitsu([]).closed, 0, "Empty hand has no full flush");
+
+	baselinePredictionState();
+	var honorKan = getTilesFromString("1111z").map((tile, i) => ({ ...tile, kan: i == 3, from: 0 }));
+	var kanHand = getTilesFromString("222p333s456m77p");
+	assertEqual(getYaku(kanHand, honorKan).closed, 3, "Concealed kan counts toward sanankou plus yakuhai");
+	honorKan[0].from = 1;
+	isClosed = false;
+	assertEqual(getYaku(kanHand, honorKan).open, 1, "Open kan cannot supply the third concealed triplet");
+
+	var terminalTriplets = getTilesFromString("111999m111p111z");
+	var honorPair = getTilesFromString("22z");
+	assertEqual(getChanta(terminalTriplets, [], honorPair).open, 0, "Chanta requires a sequence");
+	assertEqual(getJunchan(terminalTriplets, [], honorPair).closed, 0, "Junchan requires a sequence");
+	assertEqual(getHonrou(terminalTriplets, honorPair).open, 2, "All terminals and honors scores honroutou");
+	strategy = STRATEGIES.CHIITOITSU;
+	assertEqual(getYaku(getTilesFromString("1199m1199p11s2233z")).closed, 2, "Seven pairs can also have honroutou");
+
+	baselinePredictionState();
+	var fuSequences = getTilesFromString("123m456p789s234s");
+	var fuPair = getTilesFromString("55p");
+	assertEqual(calculateFu(fuSequences, [], fuPair, [], getTileFromString("4s")), 30, "Pinfu ron is 30 fu");
+	assertEqual(calculateFu(fuSequences, [], fuPair, [], getTileFromString("4s"), false), 20, "Pinfu tsumo stays at 20 fu");
+	assertEqual(calculateFu(fuSequences, [], fuPair, [], getTileFromString("7s")), 40, "Edge wait prevents pinfu");
+	assertEqual(calculateFu(fuSequences, [], fuPair, [], getTileFromString("7s"), false), 30, "Non-pinfu tsumo receives two fu");
+	assertEqual(calculateFu([], [], getTilesFromString("1122m3344p5566s77z"), [], getTileFromString("7z")), 25, "Seven pairs has a fixed 25 fu");
+	seatWind = roundWind = 1;
+	assertEqual(calculateFu(getTilesFromString("222m345p456s789s"), [], getTilesFromString("11z"), [], getTileFromString("4p")), 40, "Double-wind pair is counted with the middle wait");
+
+	baselinePredictionState();
+	honorKan = getTilesFromString("1111z").map((tile, i) => ({ ...tile, kan: i == 3, from: 0 }));
+	var fuTriples = getTilesFromString("333m456p789s");
+	assertEqual(calculateFu(fuTriples, honorKan, getTilesFromString("22p"), [], getTileFromString("9s")), 70, "Concealed honor kan contributes 32 fu");
+	assertEqual(calculateFu(fuTriples, honorKan, getTilesFromString("22p"), [], getTileFromString("9s"), false), 60, "Concealed honor kan on tsumo uses concealed fu");
+	honorKan[0].from = 1;
+	isClosed = false;
+	assertEqual(calculateFu(fuTriples, honorKan, getTilesFromString("22p"), [], getTileFromString("9s")), 40, "Open honor kan contributes 16 fu");
+	assertEqual(calculateFu(fuTriples, honorKan, getTilesFromString("22p"), [], getTileFromString("9s"), false), 50, "Open hand tsumo receives its two fu");
+	var simpleKan = getTilesFromString("7777s").map((tile, i) => ({ ...tile, kan: i == 3, from: 1 }));
+	assertEqual(calculateFu(getTilesFromString("222234m456p"), simpleKan, getTilesFromString("33z"), [], getTileFromString("2m")), 40, "Ambiguous ron can complete the sequence and keep the triplet concealed");
+
+	assertEqual(calculateScoreWithYaku(0, 0, 6), 0, "Six dora cannot make a no-yaku hand legal");
+	assertGreaterThan(calculateScoreWithYaku(0, 1, 2), 0, "Dora increases the value of a hand with yaku");
+	isClosed = true;
+	assertGreaterThan(calculateTilePriority(0.5, { open: 0, closed: 0 }, 0), 0, "Closed progress toward riichi retains decision value");
+	isClosed = false;
+	assertEqual(calculateTilePriority(0.5, { open: 0, closed: 0 }, 0), 0, "Open no-yaku progress has no immediate win value");
+	tilesLeft = 1;
+	assertGreaterThan(calculateTilePriority(0.5, { open: 0, closed: 0 }, 0), 0, "Exhaustive-draw tenpai remains valuable without a yaku");
+
+	baselinePredictionState();
+	isClosed = false;
+	calls[0] = getTilesFromString("123m");
+	var noYakuHand = getTilesFromString("456p123s77z45s");
+	ownHand = noYakuHand.concat(getTileFromString("9m"));
+	dora = getTilesFromString("6z");
+	updateAvailableTiles();
+	var value = getHandValues(noYakuHand, getTileFromString("9m"));
+	assertEqual(value.shanten, 0, "No-yaku hand can be structurally tenpai");
+	assertGreaterThan(value.ukeire, 0, "Structural waits remain visible without a yaku");
+	assertEqual(value.waits, 0, "Dora-only open waits are not winning waits");
+	assertEqual(value.score.open, 0, "Dora-only open wait has no ron payment");
+	baselinePredictionState();
+}
+
+function runDefenseSafetyRegressionTests() {
+	baselinePredictionState();
+	calls[1] = getTilesFromString("1111m2222p3333s");
+	discards[1] = getTilesFromString("456789p");
+	updateAvailableTiles();
+	assertLessThan(isPlayerTenpai(1), 1, "Three kans do not imply four-meld tenpai");
+	assertApprox(getConfidenceInYakuPrediction(1), 0.9, 1e-12, "Kan count drives meld confidence once per meld");
+
+	baselinePredictionState();
+	discards[1] = getTilesFromString("123456789p12345s");
+	updateAvailableTiles();
+	var connectedChance = isPlayerTenpai(1);
+	var originalLinkState = getPlayerLinkState;
+	try {
+		getPlayerLinkState = () => 0;
+		assertGreaterThan(connectedChance, 0, "Late concealed hand has tenpai risk");
+		assertEqual(isPlayerTenpai(1), connectedChance, "Disconnection does not erase tenpai risk");
+	}
+	finally { getPlayerLinkState = originalLinkState; }
+
+	baselinePredictionState();
+	discards[2] = getTilesFromString("5p");
+	assertGreaterThan(getMostRecentDiscardDanger(getTileFromString("5p"), 1, true), 0, "Missing discard timing is unknown, not genbutsu");
+	discards[2][0].numberOfPlayerHandChanges = [0, 0, 0, 0];
+	assertEqual(getMostRecentDiscardDanger(getTileFromString("5p"), 1, true), 0, "Known post-change discard remains safe");
+	availableTiles = [];
+	assertTrue(Number.isFinite(getExpectedDoraInHand(1)), "Empty unseen pool cannot divide by zero");
+	playerDiscardSafetyList[1] = [-1, -1, -1];
+	assertEqual(isPlayerPushing(1), 0, "Unknown observations do not imply folding");
 	baselinePredictionState();
 }

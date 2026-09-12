@@ -5,12 +5,14 @@
 
 //Returns the closed and open yaku value of the hand
 function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
-	var kanCount = inputCalls.filter(tile => tile.kan).length;
+	var callMelds = getMelds(inputCalls);
+	var kanCount = callMelds.filter(meld => meld.length == 4).length;
 
 	//Remove 4th tile from Kans, which could lead to false yaku calculation
-	var filteredCalls = inputCalls.filter(tile => !tile.kan);
+	var filteredCalls = callMelds.flatMap(meld => meld.slice(0, 3));
 
 	var hand = inputHand.concat(filteredCalls); //Add calls to hand
+	if (hand.length == 0) return { open: 0, closed: 0 };
 
 	var yakuOpen = 0;
 	var yakuClosed = 0;
@@ -19,17 +21,18 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 	// ### 1 Han ###
 
 	if (triplesAndPairs == null) { //Can be set as a parameter to save calculation time if already precomputed
-		triplesAndPairs = getTriplesAndPairs(hand);
+		triplesAndPairs = getTriplesAndPairs(inputHand);
 	}
-	else {
-		triplesAndPairs = {
-			triples: [...triplesAndPairs.triples],
-			pairs: [...triplesAndPairs.pairs]
-		};
-		triplesAndPairs.triples = triplesAndPairs.triples.concat(filteredCalls);
-	}
-	var triplets = getTripletsAsArray(hand);
-	var sequences = getBestSequenceCombination(removeTilesFromTileArray(inputHand, triplets.concat(triplesAndPairs.pairs))).concat(getBestSequenceCombination(filteredCalls));
+	var concealedGroups = getMelds(triplesAndPairs.triples, false);
+	triplesAndPairs = {
+		triples: triplesAndPairs.triples.concat(filteredCalls),
+		pairs: [...triplesAndPairs.pairs]
+	};
+	// Keep groups from one decomposition; regrouping their flattened tiles can
+	// award mutually incompatible sequence and triplet yaku.
+	var groups = concealedGroups.concat(callMelds.map(meld => meld.slice(0, 3)));
+	var triplets = groups.filter(meld => meld.every(tile => isSameTile(tile, meld[0]))).flat();
+	var sequences = groups.filter(meld => !isSameTile(meld[0], meld[1])).flat();
 
 	//Pinfu is applied in ai_offense when fu is 30, same with Riichi.
 	//There's no certain way to check for it here, so ignore it
@@ -73,7 +76,9 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 		//Sanankou
 		//3 concealed triplets
 		//Open*
-		var sanankou = getSanankou(inputHand);
+		var concealedTriplets = concealedGroups.filter(meld => meld.every(tile => isSameTile(tile, meld[0])));
+		var concealedKans = callMelds.filter(isConcealedKan).map(meld => meld.slice(0, 3));
+		var sanankou = getSanankou(concealedTriplets.concat(concealedKans).flat());
 		yakuOpen += sanankou.open;
 		yakuClosed += sanankou.closed;
 
@@ -123,7 +128,7 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 	//Honrou
 	//All Terminals and Honors (means: Also 4 triplets)
 	//Open
-	var honrou = getHonrou(triplets, triplesAndPairs.pairs);
+	var honrou = getHonrou(triplets, triplesAndPairs.pairs, hand);
 	yakuOpen += honrou.open;
 	yakuClosed += honrou.closed;
 
@@ -356,7 +361,7 @@ function getDaisangen(hand) {
 
 //Chanta
 function getChanta(triplets, sequences, pairs) {
-	if ((sequences.filter(tile => tile.index == 1 || tile.index == 9).length * 3) == sequences.length &&
+	if (sequences.length > 0 && (sequences.filter(tile => tile.index == 1 || tile.index == 9).length * 3) == sequences.length &&
 		(triplets.concat(pairs)).filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length +
 		(sequences.filter(tile => tile.index == 1 || tile.index == 9).length * 3) >= 13) {
 		return { open: 1, closed: 2 };
@@ -365,17 +370,20 @@ function getChanta(triplets, sequences, pairs) {
 }
 
 //Honrou
-function getHonrou(triplets, pairs) {
+function getHonrou(triplets, pairs, hand = triplets.concat(pairs)) {
+	if (strategy == STRATEGIES.CHIITOITSU && hand.length >= 13 && hand.every(isTerminalOrHonor)) {
+		return { open: 0, closed: 2 };
+	}
 	if (triplets.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length >= 12 &&
 		pairs.filter(tile => tile.type == 3 || tile.index == 1 || tile.index == 9).length >= 2) {
-		return { open: 2, closed: 2 }; // - Added to Chanta
+		return { open: 2, closed: 2 };
 	}
 	return { open: 0, closed: 0 };
 }
 
 //Junchan
 function getJunchan(triplets, sequences, pairs) {
-	if ((sequences.filter(tile => tile.index == 1 || tile.index == 9).length * 3) == sequences.length &&
+	if (sequences.length > 0 && (sequences.filter(tile => tile.index == 1 || tile.index == 9).length * 3) == sequences.length &&
 		(triplets.concat(pairs)).filter(tile => tile.type != 3 && (tile.index == 1 || tile.index == 9)).length +
 		(sequences.filter(tile => tile.index == 1 || tile.index == 9).length * 3) >= 13) {
 		return { open: 1, closed: 1 }; // - Added to Chanta
@@ -396,6 +404,7 @@ function getIttsuu(triples) {
 
 //Honitsu
 function getHonitsu(hand) {
+	if (hand.length == 0) return { open: 0, closed: 0 };
 	var typeCounts = [0, 0, 0, 0]; // counts for types 0, 1, 2, 3
 	for (let tile of hand) {
 		typeCounts[tile.type]++;
@@ -411,6 +420,7 @@ function getHonitsu(hand) {
 
 //Chinitsu
 function getChinitsu(hand) {
+	if (hand.length == 0) return { open: 0, closed: 0 };
 	var typeCounts = [0, 0, 0];
 	for (let tile of hand) {
 		if (tile.type < 3) typeCounts[tile.type]++;

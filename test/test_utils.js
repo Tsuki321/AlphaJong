@@ -58,7 +58,7 @@ function readDebugString(debugString) {
 	seatWind = parseInt(debugArray[11]);
 	roundWind = parseInt(debugArray[12]);
 	tilesLeft = parseInt(debugArray[13]);
-	testPlayerHand = [13 - calls[0].length, 13 - calls[1].length, 13 - calls[2].length, 13 - calls[3].length];
+	testPlayerHand = calls.map(melds => 13 - 3 * getMeldCount(melds));
 	isClosed = calls[0].length == 0;
 }
 
@@ -81,6 +81,6 @@ function read3PlayerDebugString(debugString) {
 	seatWind = parseInt(debugArray[9]);
 	roundWind = parseInt(debugArray[10]);
 	tilesLeft = parseInt(debugArray[11]);
-	testPlayerHand = [13 - calls[0].length, 13 - calls[1].length, 13 - calls[2].length];
+	testPlayerHand = calls.slice(0, 3).map(melds => 13 - 3 * getMeldCount(melds));
 	isClosed = calls[0].length == 0;
 }

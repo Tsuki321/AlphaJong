@@ -154,9 +154,8 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 	}
 
 	//Is Tile close to the tile discarded on the riichi turn? -> 10% more dangerous
-	if (isPlayerRiichi(player) && riichiTiles[getCorrectPlayerNumber(player)] != null &&
-		typeof riichiTiles[getCorrectPlayerNumber(player)] != 'undefined') {
-		if (isTileCloseToOtherTile(tile, riichiTiles[getCorrectPlayerNumber(player)])) {
+	if (isPlayerRiichi(player) && riichiTiles[player] != null) {
+		if (isTileCloseToOtherTile(tile, riichiTiles[player])) {
 			danger *= 1.1;
 		}
 	}
@@ -184,7 +183,7 @@ function getDealInChanceForTileAndPlayer(player, tile, playerPerspective = 0) {
 	if (total <= 0) {
 		return 0;
 	}
-	return getTileDangerForPlayer(tile, player, playerPerspective) / total; //Then compare the given tile with it, this is our deal in percentage
+	return Math.min(1, Math.max(0, getTileDangerForPlayer(tile, player, playerPerspective) / total));
 }
 
 //Total amount of waits possible
@@ -265,6 +264,7 @@ function getExpectedDoraInHand(player) {
 	if (isPlayerRiichi(player)) { //amount of dora indicators multiplied by chance to hit uradora
 		uradora = getUradoraChance();
 	}
+	if (availableTiles.length == 0) return uradora;
 	return (((getNumberOfTilesInHand(player) + (discards[player].length / 2)) / availableTiles.length) * getNumberOfDoras(availableTiles)) + uradora;
 }
 
@@ -299,10 +299,7 @@ function getMostRecentDiscardDanger(tile, player, includeOthers) {
 		if (!includeOthers || player == 0) {
 			continue;
 		}
-		if (r != null && typeof (r.numberOfPlayerHandChanges) == 'undefined') {
-			danger = 0;
-		}
-		else if (r != null && r.numberOfPlayerHandChanges[player] < danger) {
+		if (r != null && Array.isArray(r.numberOfPlayerHandChanges) && r.numberOfPlayerHandChanges[player] < danger) {
 			danger = r.numberOfPlayerHandChanges[player];
 		}
 	}
@@ -338,15 +335,13 @@ function wasTileCalledFromOtherPlayers(player, tile) {
 
 //Returns a number from 0 to 1 how likely it is that the player is tenpai
 function isPlayerTenpai(player) {
-	var numberOfCalls = parseInt(calls[player].length / 3);
+	var numberOfCalls = getMeldCount(calls[player]);
 	if (isPlayerRiichi(player) || numberOfCalls >= 4) {
 		return 1;
 	}
 
-	if (getPlayerLinkState(player) == 0) { //disconnect
-		return 0;
-	}
-
+	// A disconnected player can still have a ready hand. Connection status
+	// provides no evidence that a discard is safe.
 	//Based on: https://pathofhouou.blogspot.com/2021/04/analysis-tenpai-chance-by-tedashis-and.html
 	//This is only accurate for high level games!
 	var tenpaiChanceList = [[], [], [], []];
@@ -432,7 +427,7 @@ function hasYaku(player) {
 
 //Return a confidence between 0 and 1 for how predictable the strategy of another player is (many calls -> very predictable)
 function getConfidenceInYakuPrediction(player) {
-	var confidence = Math.pow(parseInt(calls[player].length / 3), 2) / 10;
+	var confidence = Math.pow(getMeldCount(calls[player]), 2) / 10;
 	if (confidence > 1) {
 		confidence = 1;
 	}
@@ -444,7 +439,7 @@ function isDoingHonitsu(player, type) {
 	if (calls[player].length == 0 || calls[player].some(tile => tile.type != type && tile.type != 3)) { //Calls of different type -> false
 		return 0;
 	}
-	if (calls[player].length >= 12) {
+	if (getMeldCount(calls[player]) >= 4) {
 		return 1;
 	}
 	var earlyDiscards = discards[player].slice(0, 10);
@@ -455,7 +450,7 @@ function isDoingHonitsu(player, type) {
 	if (percentageOfDiscards > 0.2) {
 		return 0;
 	}
-	var confidence = (Math.pow(calls[player].length / 3, 2) / 10) - percentageOfDiscards + 0.1;
+	var confidence = (Math.pow(getMeldCount(calls[player]), 2) / 10) - percentageOfDiscards + 0.1;
 	if (confidence > 1) {
 		confidence = 1;
 	}
@@ -486,7 +481,7 @@ function isDoingChinitsu(player, type) {
 
 	//Require a committed single-suit call signal (2+ melds) before believing a full flush.
 	//One pon plus a couple of honor discards is far too common to justify a 5 han estimate.
-	if (calls[player].length < 6) {
+	if (getMeldCount(calls[player]) < 2) {
 		return 0;
 	}
 
@@ -495,7 +490,7 @@ function isDoingChinitsu(player, type) {
 
 //Returns a value between 0 and 1 for how likely the player could be doing toitoi
 function isDoingToiToi(player) {
-	if (calls[player].length > 0 && getSequences(calls[player]).length == 0) { //Only triplets called
+	if (calls[player].length > 0 && getMelds(calls[player]).every(meld => meld.every(tile => isSameTile(tile, meld[0])))) {
 		return getConfidenceInYakuPrediction(player) - 0.1;
 	}
 	return 0;
@@ -516,9 +511,10 @@ function isDoingTanyao(player) {
 //Returns how many Yakuhai the player has
 function isDoingYakuhai(player) {
 	var playerSeatWind = getSeatWind(player);
-	var yakuhai = Math.floor(calls[player].filter(tile => tile.type == 3 && (tile.index > 4 || tile.index == playerSeatWind || tile.index == roundWind)).length / 3);
+	var honorMelds = getMelds(calls[player]).filter(meld => meld[0].type == 3);
+	var yakuhai = honorMelds.filter(meld => meld[0].index > 4 || meld[0].index == playerSeatWind || meld[0].index == roundWind).length;
 	if (playerSeatWind == roundWind) {
-		yakuhai += Math.floor(calls[player].filter(tile => tile.type == 3 && tile.index == playerSeatWind).length / 3);
+		yakuhai += honorMelds.filter(meld => meld[0].index == playerSeatWind).length;
 	}
 	return yakuhai;
 }

@@ -27,16 +27,32 @@ function getDiscardContainerFallback() {
 }
 
 function sendReq2MJ(method, payload) {
+	if (MODE !== AIMODE.AUTO || !isActionCurrent()) return false;
 	if (typeof app == 'undefined' || app == null || typeof app.NetAgent == 'undefined' || app.NetAgent == null) {
 		return false;
 	}
 	try {
 		app.NetAgent.sendReq2MJ('FastTest', method, payload);
+		markActionSent();
 		return true;
 	}
 	catch {
 		return false;
 	}
+}
+
+function isActionCurrent() {
+	try {
+		return typeof isDecisionCurrent == 'function' && isDecisionCurrent();
+	}
+	catch {
+		// The client may be replacing its board objects during a round change.
+		return false;
+	}
+}
+
+function markActionSent() {
+	if (activeDecisionState != null) activeDecisionState.actionSent = true;
 }
 
 function triggerOperationAnimation() {
@@ -184,7 +200,11 @@ function seat2LocalPosition(playerSeat) {
 	if (manager == null || typeof manager.seat2LocalPosition != 'function') {
 		return playerSeat;
 	}
-	return manager.seat2LocalPosition(playerSeat);
+	var position = manager.seat2LocalPosition(playerSeat);
+	for (var player = 0; player < getNumberOfPlayers(); player++) {
+		if (getCorrectPlayerNumber(player) == position) return player;
+	}
+	return -1;
 }
 
 function getCurrentPlayer() {
@@ -253,6 +273,7 @@ function getTileForCall() {
 }
 
 function makeCall(type) {
+	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
 		if (!sendReq2MJ('inputChiPengGang', { type: type, index: 0, timeuse: Math.random() * 2 + 1 })) {
 			log("Failed to send call request.");
@@ -265,6 +286,7 @@ function makeCall(type) {
 }
 
 function makeCallWithOption(type, option) {
+	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
 		if (!sendReq2MJ('inputChiPengGang', { type: type, index: option, timeuse: Math.random() * 2 + 1 })) {
 			log("Failed to send call option request.");
@@ -277,6 +299,7 @@ function makeCallWithOption(type, option) {
 }
 
 function declineCall(operation) {
+	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
 		try {
 			if (operation == getOperationList()[getOperationList().length - 1].type) { //Is last operation -> Send decline Command
@@ -296,6 +319,7 @@ function declineCall(operation) {
 }
 
 function sendRiichiCall(tile, moqie) {
+	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
 		sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.liqi, tile: tile, moqie: moqie, timeuse: Math.random() * 2 + 1 }); //Moqie: Throwing last drawn tile (Riichi -> false)
 	} else {
@@ -305,6 +329,7 @@ function sendRiichiCall(tile, moqie) {
 }
 
 function sendKitaCall() {
+	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
 		var manager = getDesktopManagerInstance();
 		if (manager == null || manager.mainrole == null || manager.mainrole.last_tile == null) {
@@ -322,6 +347,7 @@ function sendKitaCall() {
 }
 
 function sendAbortiveDrawCall() {
+	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
 		if (!sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.jiuzhongjiupai, index: 0, timeuse: Math.random() * 2 + 1 })) {
 			log("Failed to send abortive draw request.");
@@ -334,12 +360,14 @@ function sendAbortiveDrawCall() {
 }
 
 function callDiscard(tileNumber) {
+	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
 		try {
 			var player = getDesktopPlayer(0);
 			if (player != null && Array.isArray(player.hand) && player.hand[tileNumber] != null && player.hand[tileNumber].valid) {
 				player._choose_pai = player.hand[tileNumber];
 				player.DoDiscardTile();
+				markActionSent();
 			}
 		}
 		catch {
@@ -364,7 +392,6 @@ function callDiscard(tileNumber) {
 }
 
 function getPlayerLinkState(player) {
-	player = getCorrectPlayerNumber(player);
 	if (typeof view == 'undefined' || view == null || typeof view.DesktopMgr == 'undefined' || view.DesktopMgr == null || !Array.isArray(view.DesktopMgr.player_link_state)) {
 		return 1;
 	}
@@ -382,12 +409,14 @@ function getNumberOfTilesInHand(player) {
 }
 
 function isEndscreenShown() {
-	return this != null && view != null && view.DesktopMgr != null &&
-		view.DesktopMgr.Inst != null && view.DesktopMgr.Inst.gameEndResult != null;
+	var manager = getDesktopManagerInstance();
+	return manager != null && manager.gameEndResult != null;
 }
 
 function isDisconnect() {
-	return uiscript.UI_Hanguplogout.Inst != null && uiscript.UI_Hanguplogout.Inst._me.visible;
+	return typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Hanguplogout != null &&
+		uiscript.UI_Hanguplogout.Inst != null && uiscript.UI_Hanguplogout.Inst._me != null &&
+		uiscript.UI_Hanguplogout.Inst._me.visible === true;
 }
 
 function isPlayerRiichi(player) {
@@ -560,17 +589,28 @@ function trackDiscardTiles() {
 
 		desktopPlayer.container_qipai.AddQiPai = (function (_super) { // Extend the MJ-Soul Discard function
 			return function () {
-				if (arguments[1]) { // Contains true when Riichi
-					riichiTiles[seat2LocalPosition(this.player.seat)] = arguments[0]; // Track tile in riichiTiles Variable
+				decisionEpoch++;
+				var player = -1;
+				var danger = -1; //Unknown observation while another decision owns the simulation state.
+				try {
+					player = seat2LocalPosition(this.player.seat);
+					if (player >= 0 && !threadIsRunning) {
+						setData(false);
+						visibleTiles.push(arguments[0]);
+						availableTiles = removeTilesFromTileArray(availableTiles, [arguments[0]]);
+						invalidateDefenseRuntimeCache();
+						danger = getTileDanger(arguments[0], player);
+						if (arguments[2] && danger < 0.01) danger = 0.05;
+					}
 				}
-				setData(false);
-				visibleTiles.push(arguments[0]);
-				var danger = getTileDanger(arguments[0], seat2LocalPosition(this.player.seat));
-				if (arguments[2] && danger < 0.01) { // Ignore Tsumogiri of a safetile, set it to average danger
-					danger = 0.05;
+				catch (error) {
+					log("Discard observation failed: " + error.message);
 				}
-				arguments[0].tsumogiri = arguments[2];
-				playerDiscardSafetyList[seat2LocalPosition(this.player.seat)].push(danger);
+				if (player >= 0 && Array.isArray(playerDiscardSafetyList[player])) {
+					if (arguments[1]) riichiTiles[player] = arguments[0];
+					arguments[0].tsumogiri = arguments[2];
+					playerDiscardSafetyList[player].push(danger);
+				}
 				return _super.apply(this, arguments); // Call original function
 			};
 		})(desktopPlayer.container_qipai.AddQiPai);
