@@ -137,11 +137,19 @@ function runMeldScoringRegressionTests() {
 	assertEqual(getYaku(triplets.concat(pair), [], { triples: triplets, pairs: pair }).closed, 2, "Triplet interpretation has sanankou without iipeikou");
 	isClosed = false;
 	assertEqual(getYaku(getTilesFromString("456p77s"), getTilesFromString("111222333m")).open, 0, "Fixed pons cannot be rearranged into sequence yaku");
+	var dragonTriples = getTilesFromString("234s555666z");
+	var dragonPair = getTilesFromString("77z");
+	assertEqual(getYaku(dragonTriples.concat(dragonPair, getTileFromString("7z")), getTilesFromString("123m"),
+		{ triples: dragonTriples, pairs: dragonPair }).open, 4, "An unused dragon cannot turn shousangen into daisangen");
 	assertEqual(getYaku([]).closed, 0, "Empty hand has no yaku");
 	assertEqual(getHonitsu([]).open, 0, "Empty hand has no half flush");
 	assertEqual(getChinitsu([]).closed, 0, "Empty hand has no full flush");
 
 	baselinePredictionState();
+	var flushTriples = getTilesFromString("123456789234m");
+	var flushPair = getTilesFromString("55m");
+	assertEqual(getYaku(flushTriples.concat(flushPair, getTileFromString("9p")), [],
+		{ triples: flushTriples, pairs: flushPair }).closed, 8, "An unused off-suit draw cannot erase chinitsu and ittsuu");
 	var honorKan = getTilesFromString("1111z").map((tile, i) => ({ ...tile, kan: i == 3, from: 0 }));
 	var kanHand = getTilesFromString("222p333s456m77p");
 	assertEqual(getYaku(kanHand, honorKan).closed, 3, "Concealed kan counts toward sanankou plus yakuhai");
@@ -200,7 +208,22 @@ function runMeldScoringRegressionTests() {
 	assertEqual(value.shanten, 0, "No-yaku hand can be structurally tenpai");
 	assertGreaterThan(value.ukeire, 0, "Structural waits remain visible without a yaku");
 	assertEqual(value.waits, 0, "Dora-only open waits are not winning waits");
-	assertEqual(value.score.open, 0, "Dora-only open wait has no ron payment");
+	// score estimates improvements over two draws. Drawing 7z and 4s, then
+	// discarding 5s, gives 123m 456p 123s 777z 44s with a legal yakuhai.
+	assertGreaterThan(value.score.open, 0, "A future dragon triplet can give the hand a legal score");
+	for (let wait of ["3s", "6s"]) {
+		var completed = noYakuHand.concat(getTileFromString(wait));
+		assertEqual(getYaku(completed, calls[0]).open, 0, "Current " + wait + " wait has no yaku");
+		assertEqual(calculateScoreWithYaku(0, getYaku(completed, calls[0]).open,
+			getNumberOfDoras(completed.concat(calls[0]))), 0, "Dora cannot pay a no-yaku " + wait + " ron");
+	}
+	// Make both remaining dragons visible so that two draws cannot create
+	// yakuhai either. Existing structural waits still have no legal payment.
+	discards[1] = getTilesFromString("77z");
+	updateAvailableTiles();
+	value = getHandValues(noYakuHand, getTileFromString("9m"));
+	assertEqual(value.waits, 0, "Dead yakuhai improvements do not create winning waits");
+	assertEqual(value.score.open, 0, "No-yaku hand has no future score when its yakuhai tiles are dead");
 	baselinePredictionState();
 }
 

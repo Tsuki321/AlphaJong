@@ -446,7 +446,8 @@ function getHandValues(hand, discardedTile) {
 	var yakuCache = {};
 
 	function getCachedYaku(currentHand, inputTriplesAndPairs) {
-		var cacheKey = getTileCacheKey(currentHand) + "|" + getTileCacheKey(calls[0]);
+		var cacheKey = getTileCacheKey(currentHand) + "|" + getTileCacheKey(calls[0]) + "|" +
+			inputTriplesAndPairs.triples.map(getTileIdentityKey).join(",") + "|" + getTileCacheKey(inputTriplesAndPairs.pairs);
 		if (typeof yakuCache[cacheKey] == 'undefined') {
 			yakuCache[cacheKey] = getYaku(currentHand, calls[0], inputTriplesAndPairs);
 		}

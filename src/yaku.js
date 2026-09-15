@@ -11,9 +11,6 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 	//Remove 4th tile from Kans, which could lead to false yaku calculation
 	var filteredCalls = callMelds.flatMap(meld => meld.slice(0, 3));
 
-	var hand = inputHand.concat(filteredCalls); //Add calls to hand
-	if (hand.length == 0) return { open: 0, closed: 0 };
-
 	var yakuOpen = 0;
 	var yakuClosed = 0;
 
@@ -24,6 +21,11 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 		triplesAndPairs = getTriplesAndPairs(inputHand);
 	}
 	var concealedGroups = getMelds(triplesAndPairs.triples, false);
+	// Two-draw simulations can contain a tile that will be discarded. Once a
+	// complete decomposition is chosen, only its tiles can contribute yaku.
+	var complete = concealedGroups.length + callMelds.length == 4 && triplesAndPairs.pairs.length == 2;
+	var hand = (complete ? triplesAndPairs.triples.concat(triplesAndPairs.pairs) : inputHand).concat(filteredCalls);
+	if (hand.length == 0) return { open: 0, closed: 0 };
 	triplesAndPairs = {
 		triples: triplesAndPairs.triples.concat(filteredCalls),
 		pairs: [...triplesAndPairs.pairs]
