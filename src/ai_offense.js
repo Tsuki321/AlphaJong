@@ -40,7 +40,7 @@ async function callTriple(combinations, operation) {
 	log("Consider call on " + getTileName(getTileForCall()));
 
 	var handValue = getHandValues(ownHand);
-	if (isClosed) handValue.score.closed = getClosedHandDecisionValue(handValue.score);
+	if (isClosed) handValue.score.closed = Math.max(handValue.score.closed, calculateRonScore(0, 1) / 2);
 
 	if (!strategyAllowsCalls && (tilesLeft > 4 || handValue.shanten > 1)) { //No Calls allowed
 		log("Strategy allows no calls! Declined!");
