@@ -40,7 +40,7 @@ async function callTriple(combinations, operation) {
 	log("Consider call on " + getTileName(getTileForCall()));
 
 	var handValue = getHandValues(ownHand);
-	if (isClosed) handValue.score.closed = Math.max(handValue.score.closed, calculateRonScore(0, 1) / 2);
+	if (isClosed) handValue.score.closed = getClosedHandDecisionValue(handValue.score);
 
 	if (!strategyAllowsCalls && (tilesLeft > 4 || handValue.shanten > 1)) { //No Calls allowed
 		log("Strategy allows no calls! Declined!");
@@ -796,14 +796,18 @@ function getHandValues(hand, discardedTile) {
 	};
 }
 
-//Calculates a relative priority based on how "good" the given values are.
-//The resulting priority value is useless as an absolute value, only use it relatively to compare with other values of the same hand.
+function getClosedHandDecisionValue(expectedScore) {
+	// A future riichi can supply the first yaku, so retain its dora and hand
+	// value at a discount for committing to riichi. This is a decision utility;
+	// the actual no-yaku ron payment remains zero in expectedScore.closed.
+	return Math.max(expectedScore.closed, (expectedScore.riichi || calculateRonScore(0, 1)) / 2);
+}
+
+// Relative priority for comparing discards from the same hand.
 function calculateTilePriority(efficiency, expectedScore, danger) {
 	var score = expectedScore.open;
 	if (isClosed) {
-		// Keep a modest utility for progress toward a future riichi even when
-		// the present shape has no yaku. This is a decision utility, not a payment.
-		score = Math.max(expectedScore.closed, calculateRonScore(0, 1) / 2);
+		score = getClosedHandDecisionValue(expectedScore);
 	}
 	if (tilesLeft <= getNumberOfPlayers()) score = Math.max(score, 1000); //Value of avoiding noten at an exhaustive draw.
 

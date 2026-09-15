@@ -192,8 +192,11 @@ function runMeldScoringRegressionTests() {
 	assertGreaterThan(calculateScoreWithYaku(0, 1, 2), 0, "Dora increases the value of a hand with yaku");
 	isClosed = true;
 	assertGreaterThan(calculateTilePriority(0.5, { open: 0, closed: 0 }, 0), 0, "Closed progress toward riichi retains decision value");
+	var noDoraPriority = calculateTilePriority(0.5, { open: 0, closed: 0, riichi: 1000 }, 0);
+	assertGreaterThan(calculateTilePriority(0.5, { open: 0, closed: 0, riichi: 3900 }, 0), noDoraPriority,
+		"Equal closed progress preserves dora value through a future riichi");
 	isClosed = false;
-	assertEqual(calculateTilePriority(0.5, { open: 0, closed: 0 }, 0), 0, "Open no-yaku progress has no immediate win value");
+	assertEqual(calculateTilePriority(0.5, { open: 0, closed: 0, riichi: 3900 }, 0), 0, "Open no-yaku progress cannot borrow riichi value");
 	tilesLeft = 1;
 	assertGreaterThan(calculateTilePriority(0.5, { open: 0, closed: 0 }, 0), 0, "Exhaustive-draw tenpai remains valuable without a yaku");
 
