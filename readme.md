@@ -16,6 +16,24 @@ Compatible with both 3 and 4 player mode.
 * You can check "Autostart" to let the bot automatically start new games.
 * Detailed logging is output to the browser console ([F12] in most browsers)
 
+### Client compatibility
+
+AlphaJong currently requires Mahjong Soul's older JavaScript client. The
+[English](https://mahjongsoul.game.yo-star.com/), [Japanese](https://game.mahjongsoul.com/),
+and [traditional Chinese](https://game.maj-soul.com/1/) entry pages checked on
+September 18, 2026 load Unity WebGL instead. That client does not expose the game interface used by this
+script. AlphaJong cannot read the board, show move recommendations, or play on it;
+waiting longer or enabling Autostart will not resolve the incompatibility.
+
+The overlay now reports an unsupported Unity client instead of waiting forever
+for the lobby. Restoring play on Unity requires a new game integration.
+
+On a compatible JavaScript client, the script recognizes an active lobby even if
+the old loading flag is missing. If **Cannot access the game** appears while you
+are already in that lobby, update or reinstall the userscript and reload the page.
+The userscript requests page access explicitly; do not override its injection
+mode to an isolated content script in your userscript manager.
+
 ### Automatic Updates
 
 The script includes `@updateURL` and `@downloadURL` headers that point to the latest build on this repository.  

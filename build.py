@@ -52,6 +52,10 @@ def main():
 // @version      {version}
 // @description  A Mahjong Soul Bot.
 // @author       Jimboom7
+// @grant        none
+// @sandbox      raw
+// @inject-into  page
+// @run-at       document-end
 // @match        https://mahjongsoul.game.yo-star.com/*
 // @match        https://majsoul.com/*
 // @match        https://game.maj-soul.com/*

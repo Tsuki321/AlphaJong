@@ -3,6 +3,12 @@
 // Main Class, starts the bot and sets up all necessary variables.
 //################################
 
+var startupStartedAt = Date.now();
+var startupFinished = false;
+var startupError = "";
+var lobbyLoadTimer = null;
+var afkTimer = null;
+
 //GUI can be re-opened by pressing + on the Numpad
 if (!isDebug()) {
 	initGui();
@@ -17,7 +23,6 @@ if (!isDebug()) {
 	if (AUTORUN) {
 		log("Autorun start");
 		run = true;
-		setInterval(preventAFK, 30000);
 	}
 
 	log(`crt mode ${AIMODE_NAME[MODE]}`);
@@ -26,6 +31,9 @@ if (!isDebug()) {
 }
 
 function toggleRun() {
+	if (startupError) {
+		return;
+	}
 	clearCrtStrategyMsg();
 	decisionEpoch++;
 	oldOps = "";
@@ -45,27 +53,75 @@ function toggleRun() {
 }
 
 function waitForMainLobbyLoad() {
-	if (isInGame()) { // In case game is already ongoing after reload
-		refreshRoomSelection();
+	clearTimeout(lobbyLoadTimer);
+	lobbyLoadTimer = null;
+	if (startupFinished || startupError) {
+		return;
+	}
+
+	if (isUnsupportedUnityClient()) {
+		startupError = "This Mahjong Soul page uses Unity WebGL. This version of AlphaJong only supports " +
+			"the older JavaScript client and cannot read or play games on this client.";
+		run = false;
+		decisionEpoch++;
+		clearInterval(afkTimer);
+		afkTimer = null;
+		startButton.textContent = "Start Bot";
+		startButton.disabled = true;
+		autorunCheckbox.disabled = true;
+		roomCombobox.disabled = true;
+		showCrtActionMsg("Unsupported game client.");
+		showStartupNotice(startupError);
+		log(startupError);
+		return;
+	}
+
+	if (!hasFinishedMainLobbyLoading()) {
+		if (Date.now() - startupStartedAt >= 30000) {
+			if (hasLegacyClient()) {
+				showCrtActionMsg("Waiting for login or lobby.");
+				showStartupNotice("Mahjong Soul has not reported a ready lobby. Finish signing in. " +
+					"If the lobby is already visible, this client may need a compatibility update. Still checking.");
+			} else {
+				showCrtActionMsg("Cannot access the game.");
+				showStartupNotice("AlphaJong cannot access Mahjong Soul's game data. If the lobby is already open, " +
+					"update or reinstall AlphaJong and reload the page. Still checking for the game.");
+			}
+		} else {
+			showCrtActionMsg("Waiting for Mahjong Soul.");
+		}
+		lobbyLoadTimer = setTimeout(waitForMainLobbyLoad, 2000);
+		return;
+	}
+
+	startupFinished = true;
+	startButton.disabled = false;
+	showStartupNotice("");
+	refreshRoomSelection();
+	if (AUTORUN && run && afkTimer == null) {
+		afkTimer = setInterval(preventAFK, 30000);
+	}
+	if (isInGame()) { // In case a game is already ongoing after reload
 		main();
 		return;
 	}
 
-	if (!hasFinishedMainLobbyLoading()) { //Otherwise wait for Main Lobby to load and then search for game
-		log("Waiting for Main Lobby to load...");
-		showCrtActionMsg("Wait for Loading.");
-		setTimeout(waitForMainLobbyLoad, 2000);
-		return;
-	}
 	log("Main Lobby loaded!");
-	refreshRoomSelection();
 	startGame();
-	setTimeout(main, 10000);
-	log("Main Loop started.");
+	if (run) {
+		showCrtActionMsg("Waiting for Game to start.");
+		setTimeout(main, 10000);
+		log("Main Loop started.");
+	} else {
+		showCrtActionMsg("Bot is not running.");
+	}
 }
 
 //Main Loop
 function main() {
+	if (startupError) {
+		return;
+	}
 	if (!run) {
 		showCrtActionMsg("Bot is not running.");
 		return;

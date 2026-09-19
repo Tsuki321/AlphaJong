@@ -53,6 +53,15 @@ jobs:
           ALPHAJONG_FAST: '1'
         run: npm run test:bundle
 
+      - name: Run assembled userscript API and startup tests
+        run: npm run test:bundle-api
+
+      - name: Save validated userscript
+        uses: actions/upload-artifact@v4
+        with:
+          name: validated-userscript
+          path: AlphaJong.user.js
+
       - name: Save test reports
         if: always()
         uses: actions/upload-artifact@v4

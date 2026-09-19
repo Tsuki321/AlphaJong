@@ -5,7 +5,8 @@
   "scripts": {
     "test:headless": "node test/run_headless_tests.mjs test/run_tests.html",
     "test:api": "node test/run_headless_tests.mjs test/run_api_tests.html",
-    "test:bundle": "node test/run_headless_tests.mjs test/run_bundle_tests.html"
+    "test:bundle": "node test/run_headless_tests.mjs test/run_bundle_tests.html",
+    "test:bundle-api": "node test/run_headless_tests.mjs test/run_bundle_api_tests.html"
   },
   "devDependencies": {
     "playwright": "^1.53.0"

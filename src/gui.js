@@ -13,6 +13,7 @@ var currentActionOutput = document.createElement("input");
 var debugButton = document.createElement("button");
 var hideButton = document.createElement("button");
 var hintsButton = document.createElement("button");
+var startupNotice = document.createElement("div");
 
 // Floating, draggable hint panel (shown in HELP mode)
 var hintPanelDiv = document.createElement("div");
@@ -21,8 +22,12 @@ var hintPanelContent = document.createElement("div");
 var hintPanelCloseButton = document.createElement("button");
 
 function initGui() {
-	if (getRooms() == null) { // Wait for minimal loading to be done
-		setTimeout(initGui, 1000);
+	if (guiDiv.isConnected) {
+		return;
+	}
+	// Diagnostics must remain visible even when the game API never loads.
+	if (document.body == null) {
+		document.addEventListener("DOMContentLoaded", initGui, { once: true });
 		return;
 	}
 
@@ -38,9 +43,10 @@ function initGui() {
 	guiSpan.style.padding = "5px";
 
 	startButton.innerHTML = "Start Bot";
-	if (window.localStorage.getItem("alphajongAutorun") == "true") {
+	if (AUTORUN && !startupError) {
 		startButton.innerHTML = "Stop Bot";
 	}
+	startButton.disabled = !startupFinished || Boolean(startupError);
 	startButton.style.marginRight = "15px";
 	startButton.onclick = function () {
 		toggleRun();
@@ -56,6 +62,7 @@ function initGui() {
 
 	autorunCheckbox.type = "checkbox";
 	autorunCheckbox.id = "autorun";
+	autorunCheckbox.disabled = Boolean(startupError);
 	autorunCheckbox.onclick = function () {
 		autorunCheckboxClick();
 	};
@@ -76,17 +83,13 @@ function initGui() {
 		roomChange();
 	};
 
-	if (window.localStorage.getItem("alphajongAutorun") != "true") {
-		roomCombobox.disabled = true;
-	}
 	guiSpan.appendChild(roomCombobox);
 
 	currentActionOutput.readOnly = "true";
 	currentActionOutput.size = "20";
 	currentActionOutput.style.marginRight = "15px";
-	showCrtActionMsg("Bot is not running.");
-	if (window.localStorage.getItem("alphajongAutorun") == "true") {
-		showCrtActionMsg("Bot started.");
+	if (!currentActionOutput.value) {
+		showCrtActionMsg("Waiting for Mahjong Soul.");
 	}
 	guiSpan.appendChild(currentActionOutput);
 
@@ -113,12 +116,18 @@ function initGui() {
 	guiSpan.appendChild(hideButton);
 
 	guiDiv.appendChild(guiSpan);
+	startupNotice.setAttribute("role", "status");
+	startupNotice.style.cssText = "max-width: 640px; margin: 8px auto; padding: 10px; " +
+		"background: #30251b; color: #fff; border: 1px solid #d3a45e; border-radius: 5px; " +
+		"font: 14px/1.5 sans-serif; text-align: left; white-space: normal;";
+	startupNotice.hidden = !startupNotice.textContent;
+	guiDiv.appendChild(startupNotice);
 	document.body.appendChild(guiDiv);
 
 	// Build and attach the floating hint panel
 	initHintPanel();
 
-	toggleGui();
+	guiDiv.style.display = "block";
 }
 
 function toggleGui() {
@@ -158,7 +167,6 @@ function hideButtonClick() {
 
 function autorunCheckboxClick() {
 	if (autorunCheckbox.checked) {
-		roomCombobox.disabled = false;
 		window.localStorage.setItem("alphajongAutorun", "true");
 		AUTORUN = true;
 	}
@@ -167,6 +175,7 @@ function autorunCheckboxClick() {
 		window.localStorage.setItem("alphajongAutorun", "false");
 		AUTORUN = false;
 	}
+	refreshRoomSelection();
 }
 
 // Refresh the AI mode
@@ -184,7 +193,13 @@ function refreshAIMode() {
 // Refresh the contents of the Room Selection Combobox with values appropiate for the rank
 function refreshRoomSelection() {
 	roomCombobox.innerHTML = ""; // Clear old entries
-	getRooms().forEach(function (room) {
+	var rooms = getRooms();
+	if (rooms == null || typeof rooms.forEach != 'function') {
+		roomCombobox.appendChild(new Option("Waiting for rooms...", ""));
+		roomCombobox.disabled = true;
+		return;
+	}
+	rooms.forEach(function (room) {
 		if (isInRank(room.id) && room.mode != 0) { // Rooms with mode = 0 are 1 Game only, not sure why they are in the code but not selectable in the UI...
 			var option = document.createElement("option");
 			option.text = getRoomName(room);
@@ -193,6 +208,12 @@ function refreshRoomSelection() {
 		}
 	});
 	roomCombobox.value = ROOM;
+	roomCombobox.disabled = !AUTORUN || Boolean(startupError);
+}
+
+function showStartupNotice(message) {
+	startupNotice.textContent = message;
+	startupNotice.hidden = !message;
 }
 
 // Show msg to currentActionOutput

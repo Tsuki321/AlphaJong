@@ -64,16 +64,18 @@ function triggerOperationAnimation() {
 
 
 function preventAFK() {
-	if (typeof GameMgr == 'undefined') {
+	if (typeof GameMgr == 'undefined' || GameMgr == null || GameMgr.Inst == null) {
 		return;
 	}
-	if (GameMgr.Inst == null) {
-		return;
+	if (GameMgr.Inst._pre_mouse_point != null) {
+		GameMgr.Inst._pre_mouse_point.x = Math.floor(Math.random() * 100) + 1;
+		GameMgr.Inst._pre_mouse_point.y = Math.floor(Math.random() * 100) + 1;
 	}
-	GameMgr.Inst._pre_mouse_point.x = Math.floor(Math.random() * 100) + 1;
-	GameMgr.Inst._pre_mouse_point.y = Math.floor(Math.random() * 100) + 1;
-	GameMgr.Inst.clientHeatBeat(); // Prevent Client-side AFK
-	if (typeof app != 'undefined' && app != null && app.NetAgent != null) {
+	if (typeof GameMgr.Inst.clientHeatBeat == 'function') {
+		GameMgr.Inst.clientHeatBeat(); // Prevent Client-side AFK
+	}
+	if (typeof app != 'undefined' && app != null && app.NetAgent != null &&
+		typeof app.NetAgent.sendReq2Lobby == 'function') {
 		app.NetAgent.sendReq2Lobby('Lobby', 'heatbeat', { no_operation_counter: 0 }); //Prevent Server-side AFK
 	}
 
@@ -86,10 +88,30 @@ function preventAFK() {
 }
 
 function hasFinishedMainLobbyLoading() {
-	if (typeof GameMgr == 'undefined') {
-		return false;
+	if (isInGame()) {
+		return true;
 	}
-	return GameMgr.Inst.login_loading_end || isInGame();
+	if (typeof GameMgr != 'undefined' && GameMgr != null && GameMgr.Inst != null &&
+		GameMgr.Inst.login_loading_end) {
+		return true;
+	}
+	// The lobby can be open even when the older loading flag is absent or stale.
+	// Inst alone is insufficient: the client also keeps closed UI instances around.
+	return typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Lobby != null &&
+		uiscript.UI_Lobby.Inst != null && uiscript.UI_Lobby.Inst.enabled === true;
+}
+
+function hasLegacyClient() {
+	return (typeof GameMgr != 'undefined' && GameMgr != null) ||
+		(typeof view != 'undefined' && view != null && view.DesktopMgr != null) ||
+		(typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Lobby != null);
+}
+
+function isUnsupportedUnityClient() {
+	// Check the actual client, not the hostname: regional sites can change engines.
+	return !hasLegacyClient() && document.getElementById("unity-canvas") != null &&
+		(typeof createUnityInstance == 'function' ||
+			document.querySelector('script[src*=".loader.js"]') != null);
 }
 
 function searchForGame() {
