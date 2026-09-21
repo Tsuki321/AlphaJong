@@ -195,7 +195,7 @@ function refreshRoomSelection() {
 	roomCombobox.innerHTML = ""; // Clear old entries
 	var rooms = getRooms();
 	if (rooms == null || typeof rooms.forEach != 'function') {
-		roomCombobox.appendChild(new Option("Waiting for rooms...", ""));
+		roomCombobox.appendChild(new Option(typeof getUnityClient === "function" && getUnityClient() ? "Choose a match in game" : "Waiting for rooms...", ""));
 		roomCombobox.disabled = true;
 		return;
 	}

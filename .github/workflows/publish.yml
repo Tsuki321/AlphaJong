@@ -41,6 +41,12 @@ jobs:
       - name: Run Mahjong Soul API contract tests
         run: npm run test:api
 
+      - name: Run Unity protocol and board reconstruction tests
+        run: npm run test:unity
+
+      - name: Run Unity native WebSocket transport tests
+        run: npm run test:unity-browser
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
@@ -56,6 +62,9 @@ jobs:
       - name: Run assembled userscript API and startup tests
         run: npm run test:bundle-api
 
+      - name: Run assembled Unity integration tests
+        run: npm run test:unity-integration
+
       - name: Save validated userscript
         uses: actions/upload-artifact@v4
         with:
@@ -69,9 +78,59 @@ jobs:
           name: test-reports
           path: test-results/
 
+  unity-browser:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Exercise native WebSocket interception
+        env:
+          ALPHAJONG_BROWSER: ${{ matrix.browser }}
+        run: npm run test:unity-browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unity-${{ matrix.browser }}-reports
+          path: test-results/
+
+  unity-public:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+          # Use the exact artifact already built and validated by the test job.
+        with:
+          name: validated-userscript
+          path: build/unity-public
+      - name: Verify the current public Unity loader and page startup
+        env:
+          ALPHAJONG_PUBLIC_SMOKE: '1'
+          ALPHAJONG_UNITY_BUNDLE: build/unity-public/AlphaJong.user.js
+        run: npm run test:unity-public
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unity-public-reports
+          path: test-results/
+
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: test
+    needs: [test, unity-browser]
     runs-on: ubuntu-latest
     permissions:
       contents: write

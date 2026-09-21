@@ -11,6 +11,7 @@ var afkTimer = null;
 
 //GUI can be re-opened by pressing + on the Numpad
 if (!isDebug()) {
+	if (typeof initUnityClient === "function") initUnityClient();
 	initGui();
 	window.onkeyup = function (e) {
 		var key = e.keyCode ? e.keyCode : e.which;
@@ -59,7 +60,22 @@ function waitForMainLobbyLoad() {
 		return;
 	}
 
-	if (isUnsupportedUnityClient()) {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity && isUnityPage()) {
+		autorunCheckbox.disabled = true;
+		roomCombobox.disabled = true;
+		if (!unity.state.isLobbyReady()) {
+			var connected = unity.transport.getStatus().connected;
+			showCrtActionMsg(connected ? "Waiting for sign-in." : "Connecting to Mahjong Soul.");
+			if (Date.now() - startupStartedAt >= 30000) showStartupNotice("Sign in to Mahjong Soul, then enter a standard match. " +
+				"If already signed in, reload this page once so AlphaJong can observe the game connection.");
+			lobbyLoadTimer = setTimeout(waitForMainLobbyLoad, 1000);
+			return;
+		}
+		showStartupNotice("Unity integration is active. Choose a standard match in Mahjong Soul; Auto plays your turns and Help shows recommendations. " +
+			"Matchmaking and in-game tile highlighting are not available here.");
+	}
+	if (!unity && isUnsupportedUnityClient()) {
 		startupError = "This Mahjong Soul page uses Unity WebGL. This version of AlphaJong only supports " +
 			"the older JavaScript client and cannot read or play games on this client.";
 		run = false;
@@ -96,9 +112,9 @@ function waitForMainLobbyLoad() {
 
 	startupFinished = true;
 	startButton.disabled = false;
-	showStartupNotice("");
+	if (!unity) showStartupNotice("");
 	refreshRoomSelection();
-	if (AUTORUN && run && afkTimer == null) {
+	if (!unity && AUTORUN && run && afkTimer == null) {
 		afkTimer = setInterval(preventAFK, 30000);
 	}
 	if (isInGame()) { // In case a game is already ongoing after reload
@@ -125,6 +141,17 @@ function main() {
 	if (!run) {
 		showCrtActionMsg("Bot is not running.");
 		return;
+	}
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		var unityStatus = unity.state.getStatus();
+		if (!unity.state.isInGame()) {
+			showCrtActionMsg(unityStatus.phase === "lobby" ? "Enter a match in Mahjong Soul." : "Waiting for game state.");
+			showStartupNotice(unityStatus.phase === "paused" ? unityStatus.reason : "");
+			setTimeout(main, 1000);
+			return;
+		}
+		showStartupNotice("");
 	}
 	if (!isInGame()) {
 		checkForEnd();
@@ -341,7 +368,7 @@ function setData(mainUpdate = true) {
 		ownHand[ownHand.length - 1].valid = tile.valid; //Is valid discard
 	}
 
-	if (MARK_TSUMOGIRI) {
+	if (MARK_TSUMOGIRI && !(typeof getUnityClient === "function" && getUnityClient())) {
 		for (var j = 1; j < getNumberOfPlayers(); j++) {
 			if (getDiscardsOfPlayer(j).last_pai != null && getDiscardsOfPlayer(j).last_pai.val.tsumogiri) {
 				getDiscardsOfPlayer(j).last_pai.GetDefaultColor = function () { return new Laya.Vector4(0.85, 0.85, 0.85, 1); }
@@ -385,6 +412,14 @@ function setData(mainUpdate = true) {
 		initialDiscardedTilesSafety();
 		riichiTiles = [null, null, null, null];
 		playerDiscardSafetyList = [[], [], [], []];
+		var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+		if (unity) {
+			for (var event of unity.state.getDiscardEvents()) {
+				if (event.player === 0) continue;
+				playerDiscardSafetyList[event.player].push(-1);
+				if (event.riichi) riichiTiles[event.player] = event.tile;
+			}
+		}
 		extendMJSoulFunctions();
 	}
 
@@ -400,6 +435,10 @@ function setData(mainUpdate = true) {
 
 //Search for Game
 function startGame() {
+	if (typeof getUnityClient === "function" && getUnityClient()) {
+		if (run) showCrtActionMsg("Enter a match in Mahjong Soul.");
+		return;
+	}
 	if (!isInGame() && run && AUTORUN) {
 		log("Searching for Game in Room " + ROOM);
 		showCrtActionMsg("Searching for Game...");
@@ -409,6 +448,7 @@ function startGame() {
 
 //Check if End Screen is shown
 function checkForEnd() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return;
 	if (isEndscreenShown() && AUTORUN) {
 		run = false;
 		setTimeout(goToLobby, 25000);

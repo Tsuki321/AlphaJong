@@ -55,7 +55,7 @@ def main():
 // @grant        none
 // @sandbox      raw
 // @inject-into  page
-// @run-at       document-end
+// @run-at       document-start
 // @match        https://mahjongsoul.game.yo-star.com/*
 // @match        https://majsoul.com/*
 // @match        https://game.maj-soul.com/*
@@ -70,6 +70,9 @@ def main():
     if not os.path.exists("build"):
         os.mkdir("build")
 
+    data = addFileToString(data, "unity_protocol.js")
+    data = addFileToString(data, "unity_state.js")
+    data = addFileToString(data, "unity_transport.js")
     data = addFileToString(data, "parameters.js")
     data = addFileToString(data, "gui.js")
     data = addFileToString(data, "api.js")
@@ -79,6 +82,7 @@ def main():
     data = addFileToString(data, "yaku.js")
     data = addFileToString(data, "ai_offense.js")
     data = addFileToString(data, "ai_defense.js")
+    data = addFileToString(data, "unity_client.js")
     data = addFileToString(data, "main.js")
         
     with open('build/AlphaJong_' + version + '.user.js', 'w', encoding="utf-8") as fp:
