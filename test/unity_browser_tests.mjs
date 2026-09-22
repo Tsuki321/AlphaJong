@@ -320,8 +320,8 @@ try {
       protocol: window.__socket.protocol,
       binaryType: window.__socket.binaryType,
       openEvent: window.__openIsNative,
-      invalidUrl: (() => { try { new WebSocket('file:///invalid'); } catch (error) { return error.name; } })(),
-      requiresNew: (() => { try { WebSocket('ws://127.0.0.1/'); } catch (error) { return error.name; } })()
+      invalidUrl: (() => { try { new WebSocket('ws://['); } catch (error) { return error.name; } })(),
+      requiresNew: (() => { try { WebSocket(window.__socket.url); } catch (error) { return error.name; } })()
     }));
     assert.deepEqual(native, { hookedBeforePage: true, constants: [0, 1, 2, 3], prototype: true,
       instance: true, subclass: true, protocol: "lq-test", binaryType: "arraybuffer", openEvent: true,

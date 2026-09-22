@@ -7,26 +7,10 @@ import { chromium } from 'playwright';
 const bundle = await readFile(process.env.ALPHAJONG_UNITY_BUNDLE || 'AlphaJong.user.js', 'utf8');
 assert.match(bundle, /@run-at\s+document-start/);
 assert.match(bundle, /AlphaJongUnityProtocol/);
-const browser = await chromium.launch({ headless: true });
-const results = [];
-try {
-  for (const players of [4, 3]) {
-    const context = await browser.newContext();
-    await context.route('https://unity.test/**', route => route.fulfill({ contentType: 'text/html',
-      body: '<!doctype html><html><head></head><body><canvas id="unity-canvas"></canvas><script>function createUnityInstance(){}</script></body></html>' }));
-    let received = 0;
-    await context.routeWebSocket('wss://unity.test/game', socket => socket.onMessage(() => { received++; }));
-    const page = await context.newPage();
-    const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await page.addInitScript({ content: bundle });
-    await page.goto('https://unity.test/');
-    await page.evaluate(async () => {
-      window.fixtureSocket = new WebSocket('wss://unity.test/game');
-      fixtureSocket.binaryType = 'arraybuffer';
-      await new Promise(resolve => fixtureSocket.addEventListener('open', resolve, { once: true }));
-    });
-    const result = await page.evaluate(async players => {
+// Playwright scopes each init script inside a function. Inject this test function
+// in that same scope so it can exercise the userscript without exporting its
+// production internals onto the game page.
+const runScenario = async players => {
       var checks = 0;
       function check(value, message) { checks++; if (!value) throw new Error(message); }
       var codec = AlphaJongUnityProtocol, socket = fixtureSocket;
@@ -100,13 +84,44 @@ try {
       run = false;
       clearTimeout(lobbyLoadTimer);
       return { players, checks, hint: hintPanelContent.textContent, phase: alphaJongUnityClient.state.getStatus().phase };
-    }, players);
-    assert.deepEqual(errors, []);
-    assert.ok(received >= 3, 'Native connection received login/auth/action packets');
-    results.push(result);
-    await context.close();
+};
+
+const browser = await chromium.launch({ headless: true });
+const report = { passed: false, results: [] };
+try {
+  for (const players of [4, 3]) {
+    const context = await browser.newContext();
+    const errors = [];
+    try {
+      await context.route('https://unity.test/**', route => route.fulfill({ contentType: 'text/html',
+        body: '<!doctype html><html><head></head><body><canvas id="unity-canvas"></canvas><script>function createUnityInstance(){}</script></body></html>' }));
+      let received = 0;
+      await context.routeWebSocket('wss://unity.test/game', socket => socket.onMessage(() => { received++; }));
+      const page = await context.newPage();
+      page.on('pageerror', error => errors.push(error.message));
+      await page.addInitScript({ content: `${bundle}\nwindow.__runUnityScenario = ${runScenario.toString()};` });
+      await page.goto('https://unity.test/');
+      assert.deepEqual(errors, [], 'The userscript starts without page errors');
+      await page.evaluate(async () => {
+        window.fixtureSocket = new WebSocket('wss://unity.test/game');
+        fixtureSocket.binaryType = 'arraybuffer';
+        await new Promise(resolve => fixtureSocket.addEventListener('open', resolve, { once: true }));
+      });
+      const result = await page.evaluate(players => window.__runUnityScenario(players), players);
+      assert.deepEqual(errors, []);
+      assert.ok(received >= 3, 'Native connection received login/auth/action packets');
+      report.results.push(result);
+    } catch (error) {
+      report.failure = { players, error: error.stack || String(error), pageErrors: errors };
+      throw error;
+    } finally {
+      await context.close();
+    }
   }
-} finally { await browser.close(); }
-await mkdir('test-results', { recursive: true });
-await writeFile('test-results/unity-integration.json', JSON.stringify({ passed: true, results }, null, 2));
-console.log(`Unity assembled integration passed: ${results.reduce((sum, result) => sum + result.checks, 0)} checks across 3P and 4P.`);
+  report.passed = true;
+} finally {
+  await browser.close();
+  await mkdir('test-results', { recursive: true });
+  await writeFile('test-results/unity-integration.json', JSON.stringify(report, null, 2));
+}
+console.log(`Unity assembled integration passed: ${report.results.reduce((sum, result) => sum + result.checks, 0)} checks across 3P and 4P.`);

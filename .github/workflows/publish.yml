@@ -62,6 +62,12 @@ jobs:
       - name: Run assembled userscript API and startup tests
         run: npm run test:bundle-api
 
+      - name: Save assembled userscript for diagnosis
+        uses: actions/upload-artifact@v4
+        with:
+          name: assembled-userscript
+          path: AlphaJong.user.js
+
       - name: Run assembled Unity integration tests
         run: npm run test:unity-integration
 

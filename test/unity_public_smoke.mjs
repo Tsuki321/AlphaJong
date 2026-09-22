@@ -109,9 +109,12 @@ try {
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.addInitScript({ content: `window.__smokeNativeWebSocket = window.WebSocket;\n${bundle}` });
+  await page.addInitScript({ content: `window.__smokeNativeWebSocket = window.WebSocket;\n${bundle}
+    window.__smokeUnityBridgeInstalled = () => typeof AlphaJongUnityTransport === 'object' &&
+      alphaJongUnityClient !== null && alphaJongUnityClient.transport.getStatus().installed;
+  ` });
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
-  await page.waitForFunction(() => typeof AlphaJongUnityTransport === "object" &&
+  await page.waitForFunction(() => window.__smokeUnityBridgeInstalled?.() &&
     window.WebSocket !== window.__smokeNativeWebSocket, undefined, { timeout: 10000 });
   await page.getByRole("button", { name: /Start Bot|Stop Bot/ }).waitFor({ state: "visible", timeout: 10000 });
   const pageState = await page.evaluate(() => ({
