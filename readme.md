@@ -16,6 +16,33 @@ Compatible with both 3 and 4 player mode.
 * You can check "Autostart" to let the bot automatically start new games.
 * Detailed logging is output to the browser console ([F12] in most browsers)
 
+### Client compatibility
+
+This branch adds an experimental integration for Mahjong Soul's Unity WebGL client.
+It observes the game's existing WebSocket connection and feeds your hand and the
+public board into AlphaJong's decision engine. Standard three- and four-player
+games are supported by the adapter; special event modes pause with an explanation.
+
+After installing the updated userscript, **reload Mahjong Soul once**, sign in,
+choose a match in the game, and click **Start Bot**. **Help** displays suggestions;
+**Auto** sends legal turn operations through the game connection. The script must
+run at `document-start` in the page context so it sees the connection from the start.
+
+Unity matchmaking and tile color changes are not integrated. Autostart does not
+queue Unity matches; use the game's own matchmaking controls. Reconnection can
+restore a complete action replay. An incomplete or unknown restore pauses play
+until a fresh round or a complete replay arrives.
+
+The test suite exercises the protocol, reconstructed state, native WebSockets,
+and the assembled userscript. Public-page smoke tests inspect the current Unity
+loader without signing in. These checks do **not** establish authenticated live
+gameplay compatibility. See [Unity integration details](doc/Unity-Integration.md)
+for the verified interfaces and limitations.
+
+The older JavaScript client remains supported. Its lobby is recognized even if
+the old loading flag is missing. Do not override userscript injection to an
+isolated content script in your userscript manager.
+
 ### Automatic Updates
 
 The script includes `@updateURL` and `@downloadURL` headers that point to the latest build on this repository.  

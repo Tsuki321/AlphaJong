@@ -3,8 +3,15 @@
 // Main Class, starts the bot and sets up all necessary variables.
 //################################
 
+var startupStartedAt = Date.now();
+var startupFinished = false;
+var startupError = "";
+var lobbyLoadTimer = null;
+var afkTimer = null;
+
 //GUI can be re-opened by pressing + on the Numpad
 if (!isDebug()) {
+	if (typeof initUnityClient === "function") initUnityClient();
 	initGui();
 	window.onkeyup = function (e) {
 		var key = e.keyCode ? e.keyCode : e.which;
@@ -17,7 +24,6 @@ if (!isDebug()) {
 	if (AUTORUN) {
 		log("Autorun start");
 		run = true;
-		setInterval(preventAFK, 30000);
 	}
 
 	log(`crt mode ${AIMODE_NAME[MODE]}`);
@@ -26,6 +32,9 @@ if (!isDebug()) {
 }
 
 function toggleRun() {
+	if (startupError) {
+		return;
+	}
 	clearCrtStrategyMsg();
 	decisionEpoch++;
 	oldOps = "";
@@ -45,30 +54,104 @@ function toggleRun() {
 }
 
 function waitForMainLobbyLoad() {
-	if (isInGame()) { // In case game is already ongoing after reload
-		refreshRoomSelection();
+	clearTimeout(lobbyLoadTimer);
+	lobbyLoadTimer = null;
+	if (startupFinished || startupError) {
+		return;
+	}
+
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity && isUnityPage()) {
+		autorunCheckbox.disabled = true;
+		roomCombobox.disabled = true;
+		if (!unity.state.isLobbyReady()) {
+			var connected = unity.transport.getStatus().connected;
+			showCrtActionMsg(connected ? "Waiting for sign-in." : "Connecting to Mahjong Soul.");
+			if (Date.now() - startupStartedAt >= 30000) showStartupNotice("Sign in to Mahjong Soul, then enter a standard match. " +
+				"If already signed in, reload this page once so AlphaJong can observe the game connection.");
+			lobbyLoadTimer = setTimeout(waitForMainLobbyLoad, 1000);
+			return;
+		}
+		showStartupNotice("Unity integration is active. Choose a standard match in Mahjong Soul; Auto plays your turns and Help shows recommendations. " +
+			"Matchmaking and in-game tile highlighting are not available here.");
+	}
+	if (!unity && isUnsupportedUnityClient()) {
+		startupError = "This Mahjong Soul page uses Unity WebGL. This version of AlphaJong only supports " +
+			"the older JavaScript client and cannot read or play games on this client.";
+		run = false;
+		decisionEpoch++;
+		clearInterval(afkTimer);
+		afkTimer = null;
+		startButton.textContent = "Start Bot";
+		startButton.disabled = true;
+		autorunCheckbox.disabled = true;
+		roomCombobox.disabled = true;
+		showCrtActionMsg("Unsupported game client.");
+		showStartupNotice(startupError);
+		log(startupError);
+		return;
+	}
+
+	if (!hasFinishedMainLobbyLoading()) {
+		if (Date.now() - startupStartedAt >= 30000) {
+			if (hasLegacyClient()) {
+				showCrtActionMsg("Waiting for login or lobby.");
+				showStartupNotice("Mahjong Soul has not reported a ready lobby. Finish signing in. " +
+					"If the lobby is already visible, this client may need a compatibility update. Still checking.");
+			} else {
+				showCrtActionMsg("Cannot access the game.");
+				showStartupNotice("AlphaJong cannot access Mahjong Soul's game data. If the lobby is already open, " +
+					"update or reinstall AlphaJong and reload the page. Still checking for the game.");
+			}
+		} else {
+			showCrtActionMsg("Waiting for Mahjong Soul.");
+		}
+		lobbyLoadTimer = setTimeout(waitForMainLobbyLoad, 2000);
+		return;
+	}
+
+	startupFinished = true;
+	startButton.disabled = false;
+	if (!unity) showStartupNotice("");
+	refreshRoomSelection();
+	if (!unity && AUTORUN && run && afkTimer == null) {
+		afkTimer = setInterval(preventAFK, 30000);
+	}
+	if (isInGame()) { // In case a game is already ongoing after reload
 		main();
 		return;
 	}
 
-	if (!hasFinishedMainLobbyLoading()) { //Otherwise wait for Main Lobby to load and then search for game
-		log("Waiting for Main Lobby to load...");
-		showCrtActionMsg("Wait for Loading.");
-		setTimeout(waitForMainLobbyLoad, 2000);
-		return;
-	}
 	log("Main Lobby loaded!");
-	refreshRoomSelection();
 	startGame();
-	setTimeout(main, 10000);
-	log("Main Loop started.");
+	if (run) {
+		showCrtActionMsg("Waiting for Game to start.");
+		setTimeout(main, 10000);
+		log("Main Loop started.");
+	} else {
+		showCrtActionMsg("Bot is not running.");
+	}
 }
 
 //Main Loop
 function main() {
+	if (startupError) {
+		return;
+	}
 	if (!run) {
 		showCrtActionMsg("Bot is not running.");
 		return;
+	}
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		var unityStatus = unity.state.getStatus();
+		if (!unity.state.isInGame()) {
+			showCrtActionMsg(unityStatus.phase === "lobby" ? "Enter a match in Mahjong Soul." : "Waiting for game state.");
+			showStartupNotice(unityStatus.phase === "paused" ? unityStatus.reason : "");
+			setTimeout(main, 1000);
+			return;
+		}
+		showStartupNotice("");
 	}
 	if (!isInGame()) {
 		checkForEnd();
@@ -285,7 +368,7 @@ function setData(mainUpdate = true) {
 		ownHand[ownHand.length - 1].valid = tile.valid; //Is valid discard
 	}
 
-	if (MARK_TSUMOGIRI) {
+	if (MARK_TSUMOGIRI && !(typeof getUnityClient === "function" && getUnityClient())) {
 		for (var j = 1; j < getNumberOfPlayers(); j++) {
 			if (getDiscardsOfPlayer(j).last_pai != null && getDiscardsOfPlayer(j).last_pai.val.tsumogiri) {
 				getDiscardsOfPlayer(j).last_pai.GetDefaultColor = function () { return new Laya.Vector4(0.85, 0.85, 0.85, 1); }
@@ -329,6 +412,14 @@ function setData(mainUpdate = true) {
 		initialDiscardedTilesSafety();
 		riichiTiles = [null, null, null, null];
 		playerDiscardSafetyList = [[], [], [], []];
+		var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+		if (unity) {
+			for (var event of unity.state.getDiscardEvents()) {
+				if (event.player === 0) continue;
+				playerDiscardSafetyList[event.player].push(-1);
+				if (event.riichi) riichiTiles[event.player] = event.tile;
+			}
+		}
 		extendMJSoulFunctions();
 	}
 
@@ -344,6 +435,10 @@ function setData(mainUpdate = true) {
 
 //Search for Game
 function startGame() {
+	if (typeof getUnityClient === "function" && getUnityClient()) {
+		if (run) showCrtActionMsg("Enter a match in Mahjong Soul.");
+		return;
+	}
 	if (!isInGame() && run && AUTORUN) {
 		log("Searching for Game in Room " + ROOM);
 		showCrtActionMsg("Searching for Game...");
@@ -353,6 +448,7 @@ function startGame() {
 
 //Check if End Screen is shown
 function checkForEnd() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return;
 	if (isEndscreenShown() && AUTORUN) {
 		run = false;
 		setTimeout(goToLobby, 25000);

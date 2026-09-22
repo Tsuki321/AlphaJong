@@ -4,6 +4,8 @@
 //################################
 
 function getDesktopManagerInstance() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.state.getManager();
 	if (typeof view == 'undefined' || view == null || typeof view.DesktopMgr == 'undefined' || view.DesktopMgr == null) {
 		return null;
 	}
@@ -28,6 +30,12 @@ function getDiscardContainerFallback() {
 
 function sendReq2MJ(method, payload) {
 	if (MODE !== AIMODE.AUTO || !isActionCurrent()) return false;
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		if (!unity.send(method, payload)) return false;
+		markActionSent();
+		return true;
+	}
 	if (typeof app == 'undefined' || app == null || typeof app.NetAgent == 'undefined' || app.NetAgent == null) {
 		return false;
 	}
@@ -64,16 +72,19 @@ function triggerOperationAnimation() {
 
 
 function preventAFK() {
-	if (typeof GameMgr == 'undefined') {
+	if (typeof getUnityClient === "function" && getUnityClient()) return;
+	if (typeof GameMgr == 'undefined' || GameMgr == null || GameMgr.Inst == null) {
 		return;
 	}
-	if (GameMgr.Inst == null) {
-		return;
+	if (GameMgr.Inst._pre_mouse_point != null) {
+		GameMgr.Inst._pre_mouse_point.x = Math.floor(Math.random() * 100) + 1;
+		GameMgr.Inst._pre_mouse_point.y = Math.floor(Math.random() * 100) + 1;
 	}
-	GameMgr.Inst._pre_mouse_point.x = Math.floor(Math.random() * 100) + 1;
-	GameMgr.Inst._pre_mouse_point.y = Math.floor(Math.random() * 100) + 1;
-	GameMgr.Inst.clientHeatBeat(); // Prevent Client-side AFK
-	if (typeof app != 'undefined' && app != null && app.NetAgent != null) {
+	if (typeof GameMgr.Inst.clientHeatBeat == 'function') {
+		GameMgr.Inst.clientHeatBeat(); // Prevent Client-side AFK
+	}
+	if (typeof app != 'undefined' && app != null && app.NetAgent != null &&
+		typeof app.NetAgent.sendReq2Lobby == 'function') {
 		app.NetAgent.sendReq2Lobby('Lobby', 'heatbeat', { no_operation_counter: 0 }); //Prevent Server-side AFK
 	}
 
@@ -86,10 +97,36 @@ function preventAFK() {
 }
 
 function hasFinishedMainLobbyLoading() {
-	if (typeof GameMgr == 'undefined') {
-		return false;
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.state.isLobbyReady() || unity.state.isInGame();
+	if (isInGame()) {
+		return true;
 	}
-	return GameMgr.Inst.login_loading_end || isInGame();
+	if (typeof GameMgr != 'undefined' && GameMgr != null && GameMgr.Inst != null &&
+		GameMgr.Inst.login_loading_end) {
+		return true;
+	}
+	// The lobby can be open even when the older loading flag is absent or stale.
+	// Inst alone is insufficient: the client also keeps closed UI instances around.
+	return typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Lobby != null &&
+		uiscript.UI_Lobby.Inst != null && uiscript.UI_Lobby.Inst.enabled === true;
+}
+
+function hasLegacyClient() {
+	return (typeof GameMgr != 'undefined' && GameMgr != null) ||
+		(typeof view != 'undefined' && view != null && view.DesktopMgr != null) ||
+		(typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Lobby != null);
+}
+
+function isUnsupportedUnityClient() {
+	// Check the actual client, not the hostname: regional sites can change engines.
+	return !hasLegacyClient() && document.getElementById("unity-canvas") != null &&
+		(typeof createUnityInstance == 'function' ||
+			document.querySelector('script[src*=".loader.js"]') != null);
+}
+
+function isUnityPage() {
+	return isUnsupportedUnityClient();
 }
 
 function searchForGame() {
@@ -113,6 +150,7 @@ function getOperationList() {
 }
 
 function getOperations() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return AlphaJongUnityState.OPERATIONS;
 	if (typeof mjcore == 'undefined' || mjcore == null || typeof mjcore.E_PlayOperation == 'undefined') {
 		return {};
 	}
@@ -245,6 +283,8 @@ function getRoundWind() {
 }
 
 function setAutoCallWin(win) {
+	// Unity decisions call wins through the same guarded action path as discards.
+	if (typeof getUnityClient === "function" && getUnityClient()) return;
 	if (!isInGame())
 		return;
 	var manager = getDesktopManagerInstance();
@@ -321,10 +361,11 @@ function declineCall(operation) {
 function sendRiichiCall(tile, moqie) {
 	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
-		sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.liqi, tile: tile, moqie: moqie, timeuse: Math.random() * 2 + 1 }); //Moqie: Throwing last drawn tile (Riichi -> false)
+		return sendReq2MJ('inputOperation', { type: getOperations().liqi, tile: tile, moqie: moqie, timeuse: Math.random() * 2 + 1 }); //Moqie: Throwing last drawn tile (Riichi -> false)
 	} else {
 		let tileName = getTileEmojiByName(tile);
 		showCrtStrategyMsg(`Riichi: ${tileName};`);
+		return true;
 	}
 }
 
@@ -336,7 +377,7 @@ function sendKitaCall() {
 			return;
 		}
 		var moqie = manager.mainrole.last_tile.val.toString() == "4z";
-		if (!sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.babei, moqie: moqie, timeuse: Math.random() * 2 + 1 })) {
+		if (!sendReq2MJ('inputOperation', { type: getOperations().babei, moqie: moqie, timeuse: Math.random() * 2 + 1 })) {
 			log("Failed to send Kita request.");
 			return;
 		}
@@ -349,7 +390,7 @@ function sendKitaCall() {
 function sendAbortiveDrawCall() {
 	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
-		if (!sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.jiuzhongjiupai, index: 0, timeuse: Math.random() * 2 + 1 })) {
+		if (!sendReq2MJ('inputOperation', { type: getOperations().jiuzhongjiupai, index: 0, timeuse: Math.random() * 2 + 1 })) {
 			log("Failed to send abortive draw request.");
 			return;
 		}
@@ -365,6 +406,10 @@ function callDiscard(tileNumber) {
 		try {
 			var player = getDesktopPlayer(0);
 			if (player != null && Array.isArray(player.hand) && player.hand[tileNumber] != null && player.hand[tileNumber].valid) {
+				if (typeof getUnityClient === "function" && getUnityClient()) {
+					return sendReq2MJ('inputOperation', { type: getOperations().dapai, tile: player.hand[tileNumber].val.toString(),
+						moqie: player.hand[tileNumber] === player.last_tile });
+				}
 				player._choose_pai = player.hand[tileNumber];
 				player.DoDiscardTile();
 				markActionSent();
@@ -382,7 +427,7 @@ function callDiscard(tileNumber) {
 			` | ${helpHintContext.ukeire} improving unseen tiles (~${(helpHintContext.improvementChance * 100).toFixed(1)}% next draw)` : "";
 		let furitenStr = helpHintContext.furiten ? " | Furiten: self-draw only" : "";
 		showCrtStrategyMsg(`[${strategyStr} | ${shantenStr}] Discard: ${tileName}${drawStr}${furitenStr}`);
-		if (CHANGE_RECOMMEND_TILE_COLOR) {
+		if (CHANGE_RECOMMEND_TILE_COLOR && !(typeof getUnityClient === "function" && getUnityClient())) {
 			view.DesktopMgr.Inst.mainrole.hand.forEach(
 				tile => tile.val.toString() == tileID ?
 					tile._SetColor(new Laya.Vector4(0.5, 0.8, 0.9, 1))
@@ -392,6 +437,11 @@ function callDiscard(tileNumber) {
 }
 
 function getPlayerLinkState(player) {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		var manager = unity.state.getManager();
+		return manager ? manager.player_link_state[localPosition2Seat(player)] : 1;
+	}
 	if (typeof view == 'undefined' || view == null || typeof view.DesktopMgr == 'undefined' || view.DesktopMgr == null || !Array.isArray(view.DesktopMgr.player_link_state)) {
 		return 1;
 	}
@@ -414,6 +464,7 @@ function isEndscreenShown() {
 }
 
 function isDisconnect() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return false; // Unity owns reconnects.
 	return typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Hanguplogout != null &&
 		uiscript.UI_Hanguplogout.Inst != null && uiscript.UI_Hanguplogout.Inst._me != null &&
 		uiscript.UI_Hanguplogout.Inst._me.visible === true;
@@ -429,6 +480,8 @@ function isPlayerRiichi(player) {
 }
 
 function isInGame() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.state.isInGame();
 	try {
 		return this != null && view != null && view.DesktopMgr != null &&
 			view.DesktopMgr.Inst != null && view.DesktopMgr.player_link_state != null &&
@@ -502,6 +555,7 @@ function isInRank(room) {
 
 // Map of all Rooms
 function getRooms() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return null;
 	try {
 		return cfg.desktop.matchmode;
 	}
@@ -512,6 +566,7 @@ function getRooms() {
 
 // Returns the room of the current game as a number: Bronze = 1, Silver = 2 etc.
 function getCurrentRoom() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return 0;
 	try {
 		var manager = getDesktopManagerInstance();
 		if (manager == null || manager.game_config == null || manager.game_config.meta == null) {
@@ -540,6 +595,8 @@ function getRoomName(room) {
 
 //How much seconds left for a turn (base value, 20 at start)
 function getOverallTimeLeft() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.getTimeLeft();
 	try {
 		return uiscript.UI_DesktopInfo.Inst._timecd._add;
 	}
@@ -550,6 +607,11 @@ function getOverallTimeLeft() {
 
 //How much time was left in the last turn?
 function getLastTurnTimeLeft() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		var manager = unity.state.getManager();
+		return manager ? manager.time_add + manager.time_fixed : 25;
+	}
 	try {
 		return uiscript.UI_DesktopInfo.Inst._timecd._pre_sec;
 	}

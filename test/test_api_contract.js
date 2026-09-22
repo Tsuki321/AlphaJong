@@ -219,6 +219,11 @@ function runApiActionTests() {
 	assertApiEqual(sendReq2MJ("inputOperation", { type: 7, tile: "1m" }), true, "Restored network can send a current decision");
 	assertApiEqual(fixture.requests[0].service, "FastTest", "Actions use the game service");
 	assertApiEqual(fixture.requests[0].payload.tile, "1m", "Action payload is preserved");
+
+	resetApiState();
+	armApiDecision();
+	globalThis.app = undefined;
+	assertApiEqual(sendRiichiCall("1m", false), false, "Riichi reports a failed send so discard can continue");
 }
 
 async function runApiDecisionLifecycleTests() {
@@ -301,6 +306,178 @@ async function runApiDiscardObserverTests() {
 	});
 }
 
+async function runApiStartupTests() {
+	var timeouts = new Map();
+	var intervals = new Map();
+	var timerId = 0;
+	var matches = [];
+	var reloaded = false;
+	var unityFixture = document.createElement("div");
+	var rooms = [{ id: 2, mode: 1, room: 100, room_name_en: "Casual" }];
+	rooms.get = id => rooms.find(room => room.id == id);
+	var overrides = {
+		GameMgr: undefined, view: undefined, uiscript: undefined, cfg: undefined,
+		game: undefined, app: undefined, createUnityInstance: undefined,
+		startupStartedAt: Date.now(), startupFinished: false, startupError: "",
+		lobbyLoadTimer: null, afkTimer: null, AUTORUN: false, run: false, errorCounter: 0,
+		setTimeout: (callback, delay) => { timeouts.set(++timerId, { callback, delay }); return timerId; },
+		clearTimeout: id => timeouts.delete(id),
+		setInterval: (callback, delay) => { intervals.set(++timerId, { callback, delay }); return timerId; },
+		clearInterval: id => intervals.delete(id),
+		goToLobby: () => { reloaded = true; }, log: () => {}
+	};
+	function resetStartup() {
+		globalThis.GameMgr = undefined;
+		globalThis.view = undefined;
+		globalThis.uiscript = undefined;
+		globalThis.cfg = undefined;
+		globalThis.game = undefined;
+		globalThis.app = undefined;
+		globalThis.createUnityInstance = undefined;
+		startupStartedAt = Date.now();
+		startupFinished = false;
+		startupError = "";
+		lobbyLoadTimer = null;
+		afkTimer = null;
+		AUTORUN = false;
+		run = false;
+		errorCounter = 0;
+		timeouts.clear();
+		intervals.clear();
+		matches.length = 0;
+		reloaded = false;
+		unityFixture.replaceChildren();
+		startButton.disabled = true;
+		autorunCheckbox.disabled = false;
+		currentActionOutput.value = "";
+		showStartupNotice("");
+	}
+	function openLegacyLobby(loadingFlag = true) {
+		globalThis.GameMgr = { Inst: { login_loading_end: loadingFlag }, client_language: "en" };
+		globalThis.uiscript = {
+			UI_Lobby: { Inst: { enabled: true } },
+			UI_PiPeiYuYue: { Inst: { addMatch: room => matches.push(room) } }
+		};
+		globalThis.cfg = { desktop: { matchmode: rooms } };
+		globalThis.game = { Tools: { room_mode_desc: () => "East" } };
+	}
+	function tickTimeout() {
+		var [id, timer] = timeouts.entries().next().value;
+		timeouts.delete(id);
+		timer.callback();
+	}
+
+	try {
+		await withApiOverrides(overrides, async () => {
+			resetStartup();
+			assertApiEqual(hasFinishedMainLobbyLoading(), false, "Missing client globals are not a ready lobby");
+			for (let manager of [null, {}, { Inst: null }, { Inst: {} }, { Inst: { login_loading_end: false } }]) {
+				globalThis.GameMgr = manager;
+				assertApiEqual(hasFinishedMainLobbyLoading(), false, "Partially loaded game manager is safe to poll");
+				preventAFK();
+			}
+			openLegacyLobby();
+			globalThis.uiscript = undefined;
+			assertApiEqual(hasFinishedMainLobbyLoading(), true, "Existing loading flag still recognizes the lobby");
+			for (let flag of [false, undefined]) {
+				openLegacyLobby(flag);
+				if (flag === undefined) delete GameMgr.Inst.login_loading_end;
+				assertApiEqual(hasFinishedMainLobbyLoading(), true, "An open lobby works without a current loading flag");
+				uiscript.UI_Lobby.Inst.enabled = false;
+				uiscript.UI_Lobby.Inst._me = { visible: true };
+				assertApiEqual(hasFinishedMainLobbyLoading(), false, "A preloaded but disabled lobby is not ready");
+				uiscript.UI_Lobby.Inst = null;
+				assertApiEqual(hasFinishedMainLobbyLoading(), false, "A missing lobby instance is safe to poll");
+			}
+
+			resetStartup();
+			initGui();
+			assertApiEqual(guiDiv.isConnected, true, "Controls render even if the client API never appears");
+			assertApiEqual(startButton.disabled, true, "Starting is unavailable before the client is ready");
+			assertApiEqual(roomCombobox.disabled, true, "Absent room data leaves room selection disabled");
+			var controlCount = guiSpan.childElementCount;
+			initGui();
+			assertApiEqual(guiSpan.childElementCount, controlCount, "GUI initialization cannot duplicate the controls");
+			assertApiEqual(guiDiv.style.display, "block", "Repeated initialization does not hide the GUI");
+			waitForMainLobbyLoad();
+			assertApiEqual(timeouts.size, 1, "An ordinary loading page keeps one pending lobby check");
+			assertApiEqual(startupNotice.hidden, true, "Ordinary loading does not report a compatibility problem");
+			startupStartedAt -= 31000;
+			tickTimeout();
+			assertApiEqual(currentActionOutput.value, "Cannot access the game.", "Missing API gets an actionable status after the grace period");
+			assertApiEqual(startupNotice.hidden, false, "The missing API explanation is visible");
+			assertApiEqual(timeouts.size, 1, "A slow client can still recover after the diagnostic appears");
+			openLegacyLobby(false);
+			tickTimeout();
+			assertApiEqual(startButton.disabled, false, "A late visible lobby enables Start Bot");
+			assertApiEqual(startupNotice.hidden, true, "Successful loading clears the earlier diagnostic");
+			assertApiEqual(currentActionOutput.value, "Bot is not running.", "A stopped bot no longer displays a loading message");
+			assertApiEqual(roomCombobox.options.length, 1, "Late room configuration is populated");
+			assertApiEqual(roomCombobox.options[0].value, "2", "Late room configuration replaces the placeholder");
+			assertApiEqual(timeouts.size + intervals.size + matches.length, 0, "Loading alone never starts a stopped bot");
+
+			resetStartup();
+			globalThis.GameMgr = { Inst: null };
+			startupStartedAt -= 31000;
+			waitForMainLobbyLoad();
+			assertApiEqual(currentActionOutput.value, "Waiting for login or lobby.", "A client still signing in gets a separate status");
+
+			resetStartup();
+			AUTORUN = true;
+			run = true;
+			openLegacyLobby(false);
+			waitForMainLobbyLoad();
+			waitForMainLobbyLoad();
+			assertApiEqual(matches.length, 1, "Autorun searches once when an open lobby has a stale loading flag");
+			assertApiEqual(intervals.size, 1, "Heartbeat starts once and only after the client is ready");
+			assertApiEqual(timeouts.size, 1, "Repeated startup checks cannot create multiple game loops");
+			assertApiEqual(roomCombobox.disabled, false, "Loaded rooms are selectable for Autorun");
+
+			resetStartup();
+			resetApiState();
+			view.DesktopMgr.Inst.oplist = [];
+			assertApiEqual(hasFinishedMainLobbyLoading(), true, "An ongoing game is ready even without GameMgr");
+			waitForMainLobbyLoad();
+			assertApiEqual(currentActionOutput.value, "Waiting for own turn.", "Reloading in a match enters the real game loop");
+			assertApiEqual(timeouts.values().next().value.delay, 500, "An ongoing match uses the turn poll instead of the lobby poll");
+			assertApiEqual(roomCombobox.disabled, true, "Absent room data cannot crash a mid-game reload");
+
+			resetStartup();
+			document.body.appendChild(unityFixture);
+			unityFixture.innerHTML = '<canvas id="unity-canvas"></canvas>';
+			assertApiEqual(isUnsupportedUnityClient(), false, "A canvas name alone does not declare a client incompatible");
+			// Inert script matches the official Unity entry pages without fetching their assets.
+			var loader = document.createElement("script");
+			loader.type = "text/plain";
+			loader.src = "Build/en-WebGL-release-4.0.10(11).loader.js";
+			unityFixture.appendChild(loader);
+			assertApiEqual(isUnsupportedUnityClient(), true, "The official Unity page structure is recognized before Unity finishes loading");
+			loader.remove();
+			globalThis.createUnityInstance = () => {};
+			assertApiEqual(isUnsupportedUnityClient(), true, "An initialized Unity loader is also recognized");
+			AUTORUN = true;
+			run = true;
+			var savedAutorun = localStorage.getItem("alphajongAutorun");
+			waitForMainLobbyLoad();
+			assertApiEqual(guiDiv.isConnected && !startupNotice.hidden, true, "Unity incompatibility is visible without any legacy API");
+			assertApiEqual(startupNotice.textContent.includes("Unity WebGL"), true, "The notice explains the actual incompatible client");
+			assertApiEqual(run, false, "Unsupported Unity stops a saved Autorun session");
+			assertApiEqual(startButton.disabled && autorunCheckbox.disabled && roomCombobox.disabled, true, "Unsupported client controls cannot launch a game loop");
+			assertApiEqual(localStorage.getItem("alphajongAutorun"), savedAutorun, "Client detection preserves the user's saved preferences");
+			toggleRun();
+			main();
+			waitForMainLobbyLoad();
+			assertApiEqual(currentActionOutput.value, "Unsupported game client.", "Stale callbacks cannot overwrite the compatibility error");
+			assertApiEqual(timeouts.size + intervals.size + matches.length, 0, "Unity never starts polling, heartbeats, or matchmaking");
+			assertApiEqual(reloaded, false, "Unsupported clients are not sent into a reload loop");
+			openLegacyLobby();
+			assertApiEqual(isUnsupportedUnityClient(), false, "An available legacy API takes precedence over leftover Unity elements");
+		});
+	} finally {
+		unityFixture.remove();
+	}
+}
+
 async function runApiContractTests() {
 	DEBUG = false; // Keep startup disabled while exercising production action guards.
 	try {
@@ -309,6 +486,7 @@ async function runApiContractTests() {
 		runApiActionTests();
 		await runApiDecisionLifecycleTests();
 		await runApiDiscardObserverTests();
+		await runApiStartupTests();
 	}
 	catch (error) { testFailures.push(error.stack || String(error)); }
 	finally {
