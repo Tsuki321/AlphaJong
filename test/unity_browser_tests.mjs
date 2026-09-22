@@ -287,7 +287,7 @@ async function test(name, callback) {
   const started = Date.now();
   try {
     await callback();
-    for (const current of fixtures) assert.deepEqual(current.errors, [], "No browser page errors");
+    for (const current of fixtures) assert.deepEqual(current.errors, current.expectedErrors || [], "No unexpected browser page errors");
     assert.deepEqual(serverErrors, [], "No fixture server errors");
     report.passed++;
     report.tests.push({ name, passed: true, durationMs: Date.now() - started });
@@ -320,13 +320,35 @@ try {
       protocol: window.__socket.protocol,
       binaryType: window.__socket.binaryType,
       openEvent: window.__openIsNative,
-      invalidUrl: (() => { try { new WebSocket('ws://['); } catch (error) { return error.name; } })(),
       requiresNew: (() => { try { WebSocket(window.__socket.url); } catch (error) { return error.name; } })()
     }));
     assert.deepEqual(native, { hookedBeforePage: true, constants: [0, 1, 2, 3], prototype: true,
       instance: true, subclass: true, protocol: "lq-test", binaryType: "arraybuffer", openEvent: true,
-      invalidUrl: "SyntaxError", requiresNew: "TypeError" });
+      requiresNew: "TypeError" });
     assert.equal(current.channel.subprotocol, "lq-test");
+  });
+
+  await test("invalid constructor errors match the unwrapped native WebSocket", async () => {
+    const native = await fixture();
+    const wrapped = await fixture();
+    assert.deepEqual(native.errors, []);
+    assert.deepEqual(wrapped.errors, []);
+    const probe = useNative => {
+      const Constructor = useNative ? window.__nativeWebSocket : WebSocket;
+      try { new Constructor('ws://['); }
+      catch (error) { return { name: error.name, message: error.message }; }
+    };
+    const baseline = await native.page.evaluate(probe, true);
+    const intercepted = await wrapped.page.evaluate(probe, false);
+    assert.equal(baseline.name, "SyntaxError");
+    assert.deepEqual(intercepted, baseline);
+    await Promise.all([native.page, wrapped.page].map(page =>
+      page.evaluate(() => new Promise(resolve => setTimeout(resolve, 0)))));
+    // WebKit reports even a caught native URL DOMException as a page error.
+    // Require the wrapper to preserve the same reporting behavior exactly.
+    assert.deepEqual(wrapped.errors, native.errors);
+    native.expectedErrors = native.errors.slice();
+    wrapped.expectedErrors = native.errors.slice();
   });
 
   await test("failed native sends are not recorded as successful protocol activity", async () => {

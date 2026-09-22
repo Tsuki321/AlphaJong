@@ -361,10 +361,11 @@ function declineCall(operation) {
 function sendRiichiCall(tile, moqie) {
 	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
-		sendReq2MJ('inputOperation', { type: getOperations().liqi, tile: tile, moqie: moqie, timeuse: Math.random() * 2 + 1 }); //Moqie: Throwing last drawn tile (Riichi -> false)
+		return sendReq2MJ('inputOperation', { type: getOperations().liqi, tile: tile, moqie: moqie, timeuse: Math.random() * 2 + 1 }); //Moqie: Throwing last drawn tile (Riichi -> false)
 	} else {
 		let tileName = getTileEmojiByName(tile);
 		showCrtStrategyMsg(`Riichi: ${tileName};`);
+		return true;
 	}
 }
 

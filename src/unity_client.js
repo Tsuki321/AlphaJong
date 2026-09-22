@@ -58,7 +58,12 @@ function initUnityClient() {
 			}
 			if (payload.type === 7) {
 				var riichi = operations.find(operation => operation.type === 7);
-				return riichi != null && riichi.combination.some(option => option.split("|")[0] === payload.tile);
+				var inHand = manager.mainrole.hand.some(entry => entry.valid && entry.val.toString() === payload.tile &&
+					(payload.moqie !== true || entry === manager.mainrole.last_tile));
+				// A red five can represent both fives in the server's riichi options.
+				// Compare tile value, but send only an eligible tile actually in hand.
+				return inHand && riichi != null && riichi.combination.some(option =>
+					option.split("|")[0].replace(/^0/, "5") === payload.tile.replace(/^0/, "5"));
 			}
 			return [4, 6, 8, 10, 11].includes(payload.type) && validOption(operations, payload);
 		}

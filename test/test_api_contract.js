@@ -219,6 +219,11 @@ function runApiActionTests() {
 	assertApiEqual(sendReq2MJ("inputOperation", { type: 7, tile: "1m" }), true, "Restored network can send a current decision");
 	assertApiEqual(fixture.requests[0].service, "FastTest", "Actions use the game service");
 	assertApiEqual(fixture.requests[0].payload.tile, "1m", "Action payload is preserved");
+
+	resetApiState();
+	armApiDecision();
+	globalThis.app = undefined;
+	assertApiEqual(sendRiichiCall("1m", false), false, "Riichi reports a failed send so discard can continue");
 }
 
 async function runApiDecisionLifecycleTests() {

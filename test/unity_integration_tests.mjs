@@ -81,6 +81,40 @@ const runScenario = async players => {
       action(6, 'ActionDealTile', { seat: 2, left_tile_count: players === 4 ? 67 : 52 });
       check(!isInGame() && getOperationList().length === 0, 'Missing game action pauses stale decisions');
       check(alphaJongUnityClient.send('inputOperation', { type: 1, tile: '1m' }) === false, 'Paused game state cannot act');
+      if (players === 4) {
+        // Both red and normal five are present, but the server lists only 0p as
+        // the riichi representative. The normal five remains a legal discard.
+        action(7, 'ActionNewRound', { ju: 0, chang: 0, ben: 1, tiles: hand('123m4056p789s1122z'),
+          scores: seats.map(() => 25000), left_tile_count: 69, doras: ['7z'],
+          operation: { seat: 0, time_add: 20000, time_fixed: 5000,
+            operation_list: [{ type: 1 }, { type: 7, combination: ['0p'] }] } });
+        setData();
+        activeDecisionState = { epoch: decisionEpoch, mode: MODE, key: getDecisionStateKey() };
+        check(alphaJongUnityClient.send('inputOperation', { type: 7, tile: '5p', moqie: true }) === false,
+          'Riichi cannot claim an undrawn tile as tsumogiri');
+        check(alphaJongUnityClient.send('inputOperation', { type: 7, tile: '5m', moqie: false }) === false,
+          'Riichi cannot send a tile absent from the hand');
+        check(sendRiichiCall('5p', false) === true, 'Riichi accepts a normal five when the option represents it as red');
+
+        // A call decision has no current discard permission. Its hypothetical
+        // post-call discard still needs to be evaluated by the real AI.
+        action(8, 'ActionNewRound', { ju: 3, chang: 0, ben: 0, tiles: hand('234567p55z678s12s'),
+          scores: seats.map(() => 25000), left_tile_count: 69, doras: ['7z'] });
+        action(9, 'ActionDiscardTile', { seat: 3, tile: '5z', moqie: true,
+          operation: { seat: 0, time_add: 20000, time_fixed: 5000,
+            operation_list: [{ type: 3, combination: ['5z|5z'] }] } });
+        setData();
+        strategyAllowsCalls = true;
+        MODE = AIMODE.HELP;
+        clearCrtStrategyMsg();
+        check(getPlayerHand().every(tile => !tile.valid), 'Call-only operations cannot discard from the live hand');
+        var permissionState = getPlayerHand().map(tile => tile.valid);
+        await mainOwnTurn();
+        check(hintPanelContent.textContent.length > 0, 'The real AI completes call evaluation with a recommendation');
+        check(getPlayerHand().every((tile, index) => tile.valid === permissionState[index]),
+          'Call simulation preserves the live hand permissions');
+        check(calls[0].length === 0 && isClosed, 'Call simulation restores melds and closed-hand status');
+      }
       run = false;
       clearTimeout(lobbyLoadTimer);
       return { players, checks, hint: hintPanelContent.textContent, phase: alphaJongUnityClient.state.getStatus().phase };

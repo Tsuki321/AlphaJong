@@ -79,7 +79,8 @@ async function callTriple(combinations, operation) {
 	var newHandTriples;
 	var wouldFold = false;
 	await withSimulatedCallState(callTiles, async function () {
-		newHand = removeTilesFromTileArray(ownHand, callTiles); //Remove called tiles from hand
+		// Evaluate the future discard without changing the live hand's permissions.
+		newHand = removeTilesFromTileArray(ownHand, callTiles).map(tile => ({ ...tile, valid: true }));
 		tilePrios = await getTilePriorities(newHand);
 		if (tilePrios.length == 0 || (!isDebug() && !isDecisionCurrent())) return;
 		tilePrios = sortOutUnsafeTiles(tilePrios);
@@ -321,8 +322,7 @@ function callRiichi(tiles) {
 						moqie = true;
 					}
 					log("Discard: " + getTileName(tile.tile, false));
-					sendRiichiCall(comb, moqie);
-					return true;
+					return sendRiichiCall(comb, moqie) !== false;
 				}
 				else {
 					return false;
