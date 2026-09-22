@@ -1,9 +1,13 @@
 // ==UserScript==
 // @name         AlphaJong
 // @namespace    alphajong
-// @version      1.3.12
+// @version      1.3.13
 // @description  A Mahjong Soul Bot.
 // @author       Jimboom7
+// @grant        none
+// @sandbox      raw
+// @inject-into  page
+// @run-at       document-start
 // @match        https://mahjongsoul.game.yo-star.com/*
 // @match        https://majsoul.com/*
 // @match        https://game.maj-soul.com/*
@@ -13,6 +17,1135 @@
 // @updateURL    https://raw.githubusercontent.com/Tsuki321/AlphaJong/master/AlphaJong.user.js
 // @downloadURL  https://raw.githubusercontent.com/Tsuki321/AlphaJong/master/AlphaJong.user.js
 // ==/UserScript==
+
+
+// Mahjong Soul's protobuf wire subset, independent of Unity and third-party runtimes.
+// Field numbers checked against the current Unity descriptors; see doc/Unity-Integration.md.
+// Authentication secrets and other players' private data are deliberately not decoded.
+var AlphaJongUnityProtocol = (function () {
+	"use strict";
+	var schemas = Object.create(null);
+	function define(name, fields) {
+		schemas[name] = fields.map(field => {
+			var parts = field.split(":");
+			return { id: Number(parts[0]), name: parts[1], type: parts[2], repeated: parts[3] === "r" };
+		});
+	}
+	define("Wrapper", ["1:name:s", "2:data:bytes"]);
+	define("Empty", []);
+	define("Error", ["1:code:u"]);
+	define("ResCommon", ["1:error:Error"]);
+	define("Account", ["1:account_id:u"]);
+	define("ResLogin", ["1:error:Error", "2:account_id:u", "3:account:Account"]);
+	define("ReqAuthGame", ["1:account_id:u"]);
+	define("ResAuthGame", ["1:error:Error", "3:seat_list:u:r", "4:is_game_start:b", "5:game_config:GameConfig", "6:ready_id_list:u:r"]);
+	define("GameConfig", ["1:category:u", "2:mode:GameMode", "3:meta:GameMetaData"]);
+	define("GameMode", ["1:mode:u", "4:ai:b", "6:detail_rule:GameDetailRule"]);
+	define("GameMetaData", ["1:room_id:u", "2:mode_id:u", "3:contest_uid:u"]);
+	define("GameDetailRule", ["1:time_fixed:u", "2:time_add:u", "3:dora_count:u",
+		"42:guyi_mode:u", "43:dora3_mode:u", "44:begin_open_mode:u", "45:jiuchao_mode:u",
+		"46:muyu_mode:u", "47:open_hand:u", "48:xuezhandaodi:u", "49:huansanzhang:u", "50:chuanma:u",
+		"51:reveal_discard:u", "52:field_spell_mode:u", "53:zhanxing:u", "54:tianming_mode:u",
+		"70:yongchang_mode:u", "71:hunzhiyiji_mode:u", "72:wanxiangxiuluo_mode:u", "73:beishuizhizhan_mode:u", "74:amusement_switches:u:r"]);
+	define("OptionalOperation", ["1:type:u", "2:combination:s:r", "3:change_tiles:s:r", "4:change_tile_states:i:r", "5:gap_type:u"]);
+	define("OptionalOperationList", ["1:seat:u", "2:operation_list:OptionalOperation:r", "4:time_add:u", "5:time_fixed:u"]);
+	define("LiQiSuccess", ["1:seat:u", "2:score:i", "3:liqibang:u", "4:failed:b"]);
+	define("GameEnd", ["1:scores:i:r"]);
+	define("ActionPrototype", ["1:step:u", "2:name:s", "3:data:bytes"]);
+	define("ActionMJStart", []);
+	define("ActionNewRound", ["1:chang:u", "2:ju:u", "3:ben:u", "4:tiles:s:r", "5:dora:s",
+		"6:scores:i:r", "7:operation:OptionalOperationList", "8:liqibang:u", "11:al:b", "13:left_tile_count:u", "14:doras:s:r"]);
+	define("ActionDealTile", ["1:seat:u", "2:tile:s", "3:left_tile_count:u", "4:operation:OptionalOperationList",
+		"5:liqi:LiQiSuccess", "6:doras:s:r", "7:zhenting:b", "9:tile_state:u"]);
+	define("ActionDiscardTile", ["1:seat:u", "2:tile:s", "3:is_liqi:b", "4:operation:OptionalOperationList",
+		"5:moqie:b", "6:zhenting:b", "8:doras:s:r", "9:is_wliqi:b", "10:tile_state:u", "12:revealed:b", "13:scores:i:r", "14:liqibang:u"]);
+	define("ActionChiPengGang", ["1:seat:u", "2:type:u", "3:tiles:s:r", "4:froms:u:r", "5:liqi:LiQiSuccess",
+		"6:operation:OptionalOperationList", "7:zhenting:b", "9:tile_states:u:r", "11:scores:i:r", "12:liqibang:u"]);
+	define("ActionAnGangAddGang", ["1:seat:u", "2:type:u", "3:tiles:s", "4:operation:OptionalOperationList", "6:doras:s:r", "7:zhenting:b"]);
+	define("ActionBaBei", ["1:seat:u", "4:operation:OptionalOperationList", "6:doras:s:r", "7:zhenting:b", "9:moqie:b", "10:tile_state:u"]);
+	define("ActionHule", ["2:old_scores:i:r", "3:delta_scores:i:r", "4:wait_timeout:u", "5:scores:i:r", "6:gameend:GameEnd", "7:doras:s:r"]);
+	define("NoTileScoreInfo", ["1:seat:u", "2:old_scores:i:r", "3:delta_scores:i:r"]);
+	define("ActionNoTile", ["1:liujumanguan:b", "3:scores:NoTileScoreInfo:r", "4:gameend:b"]);
+	define("ActionLiuJu", ["1:type:u", "2:gameend:GameEnd", "3:seat:u", "5:liqi:LiQiSuccess"]);
+	define("GameSnapshot", []); // Recognized, but not used to manufacture missing action history.
+	define("GameRestore", ["1:snapshot:GameSnapshot", "2:actions:ActionPrototype:r", "3:passed_waiting_time:u", "4:game_state:u"]);
+	define("ReqSyncGame", ["1:round_id:s", "2:step:u"]);
+	define("ResSyncGame", ["1:error:Error", "2:is_end:b", "3:step:u", "4:game_restore:GameRestore"]);
+	define("ReqSelfOperation", ["1:type:u", "2:index:u", "3:tile:s", "4:cancel_operation:b", "5:moqie:b", "6:timeuse:u", "7:tile_state:i", "11:auto_operation:b"]);
+	define("ReqChiPengGang", ["1:type:u", "2:index:u", "3:cancel_operation:b", "6:timeuse:u"]);
+	define("NotifyPlayerConnectionState", ["1:seat:u", "2:state:u"]);
+	define("NotifyGamePause", ["1:paused:b"]);
+	define("NotifyGameEndResult", []);
+	define("NotifyGameTerminate", []);
+	define("NotifyAccountLogout", []);
+	define("NotifyAnotherLogin", []);
+	var methods = {
+		".lq.FastTest.authGame": ["ReqAuthGame", "ResAuthGame"],
+		".lq.FastTest.enterGame": ["Empty", "ResSyncGame"],
+		".lq.FastTest.syncGame": ["ReqSyncGame", "ResSyncGame"],
+		".lq.FastTest.finishSyncGame": ["Empty", "ResCommon"],
+		".lq.FastTest.inputOperation": ["ReqSelfOperation", "ResCommon"],
+		".lq.FastTest.inputChiPengGang": ["ReqChiPengGang", "ResCommon"],
+		".lq.FastTest.confirmNewRound": ["Empty", "ResCommon"],
+		".lq.FastTest.checkNetworkDelay": ["Empty", "ResCommon"],
+		".lq.Lobby.login": ["Empty", "ResLogin"],
+		".lq.Lobby.oauth2Login": ["Empty", "ResLogin"],
+		".lq.Lobby.emailLogin": ["Empty", "ResLogin"]
+	};
+	var encoder = new TextEncoder(), decoder = new TextDecoder("utf-8", { fatal: true });
+	function bytes(value) {
+		if (value instanceof ArrayBuffer) return new Uint8Array(value);
+		if (ArrayBuffer.isView(value)) return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+		throw new Error("Expected a binary game message");
+	}
+	function readVarint(reader) {
+		var result = 0n;
+		for (var index = 0; index < 10; index++) {
+			if (reader.pos >= reader.data.length) throw new Error("Truncated varint");
+			var byte = reader.data[reader.pos++];
+			if (index === 9 && byte > 1) throw new Error("Varint overflow");
+			result |= BigInt(byte & 127) << BigInt(index * 7);
+			if (byte < 128) return result;
+		}
+		throw new Error("Invalid varint");
+	}
+	function readBytes(reader, count) {
+		if (!Number.isSafeInteger(count) || count < 0 || reader.pos + count > reader.data.length) throw new Error("Truncated message");
+		var data = reader.data.subarray(reader.pos, reader.pos + count);
+		reader.pos += count;
+		return data;
+	}
+	function wireType(type) { return ["u", "i", "b"].includes(type) ? 0 : 2; }
+	function readValue(reader, type, depth) {
+		if (wireType(type) === 0) {
+			var value = readVarint(reader);
+			if (type === "b") return value !== 0n;
+			return Number(type === "i" ? BigInt.asIntN(32, value) : BigInt.asUintN(32, value));
+		}
+		var data = readBytes(reader, Number(readVarint(reader)));
+		if (type === "s") return decoder.decode(data);
+		if (type === "bytes") return data.slice();
+		return decodeMessage(type, data, depth + 1);
+	}
+	function skip(reader, wire) {
+		if (wire === 0) readVarint(reader);
+		else if (wire === 1) readBytes(reader, 8);
+		else if (wire === 2) readBytes(reader, Number(readVarint(reader)));
+		else if (wire === 5) readBytes(reader, 4);
+		else throw new Error("Unsupported protobuf wire type");
+	}
+	function typeName(name) { return String(name).replace(/^\.?lq\./, ""); }
+	function decodeMessage(name, input, depth) {
+		depth = depth || 0;
+		if (depth > 24) throw new Error("Game message nesting limit");
+		var fields = schemas[typeName(name)];
+		if (!fields) throw new Error("Unknown game message type: " + name);
+		var data = bytes(input);
+		if (data.length > 4194304) throw new Error("Game message size limit");
+		var reader = { data: data, pos: 0 }, result = {};
+		for (var field of fields) result[field.name] = field.repeated ? [] :
+			field.type === "b" ? false : field.type === "s" ? "" : field.type === "bytes" ? new Uint8Array() :
+			wireType(field.type) === 0 ? 0 : null;
+		while (reader.pos < data.length) {
+			var tag = Number(readVarint(reader)), id = Math.floor(tag / 8), wire = tag % 8;
+			if (id <= 0 || id > 536870911) throw new Error("Invalid protobuf field");
+			var field = fields.find(entry => entry.id === id);
+			if (!field) { skip(reader, wire); continue; }
+			if (field.repeated && wire === 2 && wireType(field.type) === 0) {
+				var packed = { data: readBytes(reader, Number(readVarint(reader))), pos: 0 };
+				while (packed.pos < packed.data.length) result[field.name].push(readValue(packed, field.type, depth));
+			} else {
+				if (wire !== wireType(field.type)) throw new Error("Incorrect game field encoding");
+				var value = readValue(reader, field.type, depth);
+				if (field.repeated) result[field.name].push(value);
+				else result[field.name] = value;
+			}
+		}
+		return result;
+	}
+	function writeVarint(output, value) {
+		value = BigInt.asUintN(64, BigInt(value));
+		while (value > 127n) { output.push(Number(value & 127n) | 128); value >>= 7n; }
+		output.push(Number(value));
+	}
+	function append(output, data) { for (var byte of data) output.push(byte); }
+	function writeValue(output, type, value) {
+		if (wireType(type) === 0) {
+			if (type === "b") writeVarint(output, value ? 1 : 0);
+			else {
+				if (!Number.isInteger(value) || value < (type === "i" ? -2147483648 : 0) || value > (type === "i" ? 2147483647 : 4294967295)) throw new Error("Invalid game integer");
+				writeVarint(output, value);
+			}
+		} else {
+			var data = type === "s" ? encoder.encode(value) : type === "bytes" ? bytes(value) : encodeMessage(type, value);
+			writeVarint(output, data.length); append(output, data);
+		}
+	}
+	function encodeMessage(name, message) {
+		var fields = schemas[typeName(name)];
+		if (!fields) throw new Error("Unknown game message type: " + name);
+		var output = [];
+		for (var field of fields) {
+			var value = message[field.name];
+			if (value == null) continue;
+			if (field.repeated) {
+				if (!Array.isArray(value)) throw new Error("Invalid repeated game field");
+				if (wireType(field.type) === 0 && value.length) {
+					var packed = []; for (var item of value) writeValue(packed, field.type, item);
+					writeVarint(output, field.id * 8 + 2); writeVarint(output, packed.length); append(output, packed);
+				} else for (var item of value) { writeVarint(output, field.id * 8 + wireType(field.type)); writeValue(output, field.type, item); }
+			} else if (value !== false && value !== 0 && value !== "") {
+				writeVarint(output, field.id * 8 + wireType(field.type)); writeValue(output, field.type, value);
+			}
+		}
+		return Uint8Array.from(output);
+	}
+	function decodeEnvelope(input) {
+		var data = bytes(input), kind = data[0];
+		if (![1, 2, 3].includes(kind) || data.length < (kind === 1 ? 1 : 3)) throw new Error("Invalid game envelope");
+		var wrapper = decodeMessage("Wrapper", data.subarray(kind === 1 ? 1 : 3));
+		if (kind !== 3 && !/^\.lq\.[A-Za-z][\w.]*$/.test(wrapper.name)) throw new Error("Not a Mahjong Soul message");
+		if (kind === 3 && wrapper.name !== "") throw new Error("Unexpected response name");
+		return { kind: ["", "notification", "request", "response"][kind], id: kind === 1 ? null : data[1] | data[2] << 8,
+			method: wrapper.name, data: wrapper.data };
+	}
+	function encodeEnvelope(kind, id, method, data) {
+		var code = { notification: 1, request: 2, response: 3 }[kind];
+		if (!code || (code !== 1 && (!Number.isInteger(id) || id < 0 || id > 65535))) throw new Error("Invalid game envelope");
+		var body = encodeMessage("Wrapper", { name: code === 3 ? "" : method, data: data });
+		var output = new Uint8Array(body.length + (code === 1 ? 1 : 3));
+		output[0] = code;
+		if (code !== 1) { output[1] = id & 255; output[2] = id >>> 8; }
+		output.set(body, code === 1 ? 1 : 3);
+		return output;
+	}
+	function xorAction(input) {
+		var data = bytes(input).slice(), keys = [132, 94, 78, 66, 57, 162, 31, 96, 28], base = 23 ^ data.length;
+		for (var index = 0; index < data.length; index++) data[index] ^= (base + 5 * index + keys[index % keys.length]) & 255;
+		return data;
+	}
+	function decodeAction(action, live) {
+		return { step: action.step, name: action.name, data: decodeMessage(action.name, live ? xorAction(action.data) : action.data) };
+	}
+	function decodeFrame(input, requestMethod) {
+		var envelope = decodeEnvelope(input), method = envelope.kind === "response" ? requestMethod : envelope.method;
+		var route = methods[method], name = envelope.kind === "notification" ? typeName(method) : route && route[envelope.kind === "request" ? 0 : 1];
+		var message = name && schemas[name] ? decodeMessage(name, envelope.data) : null;
+		if (name === "ActionPrototype") message = decodeAction(message, true);
+		if (message && message.game_restore) message.game_restore.actions = message.game_restore.actions.map(action => decodeAction(action, false));
+		return { kind: envelope.kind, id: envelope.id, method: method || "", message: message };
+	}
+	function encodeRequest(id, method, message) {
+		var route = methods[method];
+		if (!route) throw new Error("Unsupported game request");
+		return encodeEnvelope("request", id, method, encodeMessage(route[0], message));
+	}
+	return Object.freeze({ decodeFrame: decodeFrame, decodeEnvelope: decodeEnvelope, encodeEnvelope: encodeEnvelope,
+		encodeRequest: encodeRequest, decodeMessage: decodeMessage, encodeMessage: encodeMessage, xorAction: xorAction });
+})();
+
+
+// Reconstruct only the local hand and public board from the browser's game
+// messages. This module has no network, DOM, Unity, or legacy-client dependency.
+// Wire field names: https://mahjongsoul.game.yo-star.com/v0.11.243.w/res/proto/liqi.json
+// Unity schema: https://github.com/shinkuan/Akagi/blob/v3/src/bridge/majsoul/proto/liqi.proto
+var AlphaJongUnityState = (function () {
+	"use strict";
+
+	var OPERATIONS = Object.freeze({ none: 0, dapai: 1, eat: 2, peng: 3, an_gang: 4,
+		ming_gang: 5, add_gang: 6, liqi: 7, zimo: 8, rong: 9, jiuzhongjiupai: 10, babei: 11 });
+	var SUITS = { p: 0, m: 1, s: 2, z: 3 };
+	var ACTIONS = new Set(["ActionMJStart", "ActionNewRound", "ActionDealTile", "ActionDiscardTile",
+		"ActionChiPengGang", "ActionAnGangAddGang", "ActionBaBei", "ActionHule",
+		"ActionNoTile", "ActionLiuJu"]);
+	var SPECIAL_RULES = ["guyi_mode", "dora3_mode", "begin_open_mode", "jiuchao_mode",
+		"muyu_mode", "open_hand", "xuezhandaodi", "huansanzhang", "chuanma",
+		"reveal_discard", "field_spell_mode", "zhanxing", "tianming_mode", "yongchang_mode",
+		"hunzhiyiji_mode", "wanxiangxiuluo_mode", "beishuizhizhan_mode", "amusement_switches"];
+
+	function integer(value, min, max) {
+		return Number.isInteger(value) && value >= min && value <= max;
+	}
+	function requireState(condition, reason) {
+		if (!condition) throw new Error(reason);
+	}
+	function tile(name) {
+		requireState(typeof name === "string" && /^(?:[1-9][mps]|0[mps]|[1-7]z)$/.test(name), "Invalid tile identity");
+		return { index: name[0] === "0" ? 5 : Number(name[0]), type: SUITS[name[1]], dora: name[0] === "0",
+			toString: function () { return name; } };
+	}
+	function sameValue(a, b) {
+		return a != null && b != null && a.type === b.type && a.index === b.index;
+	}
+	function tileList(names) {
+		requireState(Array.isArray(names), "Missing tile list");
+		return names.map(tile);
+	}
+	function wrapper(value) {
+		return { val: value, valid: false, old: false };
+	}
+	function shortName(name) {
+		return typeof name === "string" ? name.split(".").pop() : "";
+	}
+	function outgoing(frame, direction) {
+		return direction === "out" || direction === "outbound" || direction === "send" ||
+			frame.kind === "request" || frame.kind === 2;
+	}
+	function response(frame) {
+		return frame.kind === "response" || frame.kind === 3;
+	}
+	function zero(value) {
+		return value == null ? 0 : value;
+	}
+	function hasError(message) {
+		return message.error != null && zero(message.error.code) !== 0;
+	}
+	function fingerprint(value) {
+		// Keep bounded duplicate markers, not copies of payloads that may include
+		// concealed tiles in a spectator or special-mode packet.
+		var text = JSON.stringify(value), first = 2166136261, second = 5381;
+		for (var i = 0; i < text.length; i++) {
+			first = Math.imul(first ^ text.charCodeAt(i), 16777619);
+			second = Math.imul(second, 33) ^ text.charCodeAt(i);
+		}
+		return text.length + ":" + (first >>> 0) + ":" + (second >>> 0);
+	}
+
+	function create(options) {
+		options = options || {};
+		var now = typeof options.now === "function" ? options.now : Date.now;
+		var accountId = null, seat = -1, playerCount = 0, manager = null;
+		var phase = "waiting", reason = "Waiting for the game connection.", lobbyReady = false;
+		var epoch = 0, lastStep = null, validRound = false, furiten = false, deadline = 0;
+		var lastDiscard = null, replaying = false, actionDigests = new Map(), roundDigests = new Set();
+		var discardEvents = [], pendingAuth = false, gameConfig = null;
+		var syncPending = false;
+
+		function status() {
+			return { phase: phase, reason: reason, lobbyReady: lobbyReady,
+				inGame: manager != null && manager.active === true, seat: seat, playerCount: playerCount,
+				epoch: epoch, step: lastStep, furiten: furiten, operationDeadline: deadline };
+		}
+		function notify(type, action) {
+			if (replaying || typeof options.onChange !== "function") return;
+			try { options.onChange(Object.assign({ type: type, action: action || "" }, status())); }
+			catch (_) { /* UI observation must never interrupt packet processing. */ }
+		}
+		function clearOperations() {
+			deadline = 0;
+			if (manager == null) return;
+			manager.oplist = [];
+			for (var handTile of manager.mainrole.hand) handTile.valid = false;
+		}
+		function invalidate(message) {
+			epoch++;
+			clearOperations();
+			validRound = false;
+			syncPending = false;
+			phase = "paused";
+			reason = message || "Waiting for a complete game state.";
+			if (manager != null) manager.active = false;
+			notify("invalidated");
+			return false;
+		}
+		function pauseForSync() {
+			epoch++;
+			clearOperations();
+			syncPending = true;
+			phase = "synchronizing";
+			reason = "Waiting for the game to restore the round.";
+			if (manager != null) manager.active = false;
+			notify("request");
+		}
+		function positions() { return playerCount === 3 ? [0, 1, 3] : [0, 1, 2, 3]; }
+		function getPlayer(absoluteSeat) {
+			requireState(manager != null && integer(absoluteSeat, 0, playerCount - 1), "Invalid player seat");
+			return manager.players[manager.seat2LocalPosition(absoluteSeat)];
+		}
+		function makeManager() {
+			var count = playerCount, selfSeat = seat, displayPositions = positions();
+			var players = [null, null, null, null];
+			for (var relative = 0; relative < count; relative++) {
+				players[displayPositions[relative]] = {
+					seat: (selfSeat + relative) % count, score: 0, hand: [], last_tile: null,
+					container_qipai: { pais: [], last_pai: null, last_is_liqi: false },
+					container_ming: { mings: [] }, container_babei: { pais: [] },
+					liqibang: { _activeInHierarchy: false }
+				};
+			}
+			return { players: players, mainrole: players[0], active: false, gameEndResult: null,
+				oplist: [], dora: [], left_tile_count: 0, lastqipai: null,
+				index_player: 0, index_ju: 0, index_change: 0, index_ben: 0, liqibang: 0,
+				game_config: gameConfig, player_link_state: Array(count).fill(1), time_add: 20, time_fixed: 5,
+				localPosition2Seat: function (position) {
+					var relativePosition = displayPositions.indexOf(position);
+					return relativePosition < 0 ? -1 : (selfSeat + relativePosition) % count;
+				},
+				seat2LocalPosition: function (absoluteSeat) {
+					return integer(absoluteSeat, 0, count - 1) ? displayPositions[(absoluteSeat - selfSeat + count) % count] : -1;
+				}
+			};
+		}
+		function authenticate(message) {
+			requireState(!hasError(message), "Game authentication failed.");
+			requireState(accountId != null && Array.isArray(message.seat_list), "The local account seat is unknown.");
+			var seats = message.seat_list;
+			requireState((seats.length === 3 || seats.length === 4) && seats.every(id => integer(id, 0, 0xffffffff)), "Unsupported player count.");
+			requireState(seats.filter(id => id === accountId).length === 1, "The account is not an active player.");
+			var config = message.game_config, mode = config && config.mode;
+			requireState(mode && [1, 2, 11, 12].includes(mode.mode), "This game mode is not supported.");
+			requireState((mode.mode >= 10 ? 3 : 4) === seats.length, "Inconsistent game mode and seats.");
+			var rules = mode.detail_rule || {};
+			requireState(!SPECIAL_RULES.some(name => Array.isArray(rules[name]) ? rules[name].length > 0 : !!rules[name]), "This game uses unsupported special rules.");
+			requireState(integer(zero(rules.dora_count), 0, 4), "Unsupported red-five configuration.");
+			seat = seats.indexOf(accountId);
+			playerCount = seats.length;
+			// Retain only board configuration; authentication tokens and player profiles
+			// are never copied into adapter state, diagnostic events, or fixtures.
+			gameConfig = { mode: { mode: mode.mode, detail_rule: {
+				dora_count: zero(rules.dora_count), time_add: zero(rules.time_add), time_fixed: zero(rules.time_fixed)
+			} }, meta: { mode_id: config.meta ? zero(config.meta.mode_id) : 0 } };
+			manager = makeManager();
+			lastStep = null;
+			validRound = false;
+			lastDiscard = null;
+			furiten = false;
+			actionDigests.clear();
+			roundDigests.clear();
+			discardEvents = [];
+			pendingAuth = false;
+			syncPending = false;
+			lobbyReady = true;
+			phase = "authenticated";
+			reason = "Waiting for the round's game state.";
+			epoch++;
+			notify("auth");
+		}
+		function setScores(scores) {
+			requireState(Array.isArray(scores) && scores.length === playerCount &&
+				scores.every(score => Number.isSafeInteger(score)), "Incomplete player scores");
+			scores.forEach((score, absoluteSeat) => { getPlayer(absoluteSeat).score = score; });
+		}
+		function setDora(names) {
+			var indicators = tileList(names);
+			requireState(indicators.length > 0 && indicators.length <= 5, "Invalid dora indicators");
+			manager.dora = indicators;
+		}
+		function baseHandSize(player) { return 13 - 3 * player.container_ming.mings.length; }
+		function checkHand(player, drawn) {
+			requireState(player.hand.length === baseHandSize(player) + (drawn ? 1 : 0), "The hand no longer matches the action sequence");
+		}
+		function checkVisibleTiles() {
+			var visible = manager.dora.concat(manager.mainrole.hand.map(entry => entry.val));
+			for (var player of manager.players) {
+				if (!player) continue;
+				visible.push(...player.container_qipai.pais.map(entry => entry.val));
+				if (player.container_qipai.last_pai) visible.push(player.container_qipai.last_pai.val);
+				visible.push(...player.container_babei.pais.map(entry => entry.val));
+				for (var meld of player.container_ming.mings) visible.push(...meld.pais);
+			}
+			var counts = new Map();
+			for (var value of visible) {
+				requireState(playerCount !== 3 || value.type !== 1 || value.index === 1 || value.index === 9, "An unavailable manzu tile appeared in a three-player game");
+				var key = value.type + ":" + value.index;
+				counts.set(key, (counts.get(key) || 0) + 1);
+				requireState(counts.get(key) <= 4, "The visible board contains too many copies of a tile");
+			}
+		}
+		function removeOwn(names, tsumogiri) {
+			var hand = manager.mainrole.hand, next = hand.slice(), removed = [];
+			for (var name of names) {
+				var index = tsumogiri ? next.indexOf(manager.mainrole.last_tile) : next.findIndex(entry => entry.val.toString() === name);
+				requireState(index >= 0 && next[index].val.toString() === name, "An action uses a tile missing from the local hand");
+				removed.push(next.splice(index, 1)[0].val);
+			}
+			manager.mainrole.hand = next;
+			manager.mainrole.last_tile = null;
+			return removed;
+		}
+		function removeHidden(player, count, tsumogiri) {
+			requireState(player.hand.length >= count, "Invalid public hand count");
+			// Preserve the old/new marker used by defensive hand-change observations.
+			player.hand.splice(tsumogiri ? player.hand.length - count : 0, count);
+			player.last_tile = null;
+		}
+		function setOperations(operation) {
+			clearOperations();
+			if (operation == null) return;
+			requireState(integer(zero(operation.seat), 0, playerCount - 1), "Invalid operation seat");
+			if (zero(operation.seat) !== seat) return;
+			var list = operation.operation_list || [];
+			requireState(Array.isArray(list), "Invalid operation list");
+			var seen = new Set();
+			var operations = list.map(entry => {
+				requireState(entry && integer(entry.type, 1, 11) && !seen.has(entry.type), "Unsupported or repeated operation");
+				seen.add(entry.type);
+				var combination = entry.combination || [];
+				requireState(Array.isArray(combination) && combination.every(value => typeof value === "string" && value.length < 80), "Invalid call options");
+				for (var option of combination) option.split("|").forEach(tile);
+				if ([2, 3, 4, 5, 6, 7].includes(entry.type)) requireState(combination.length > 0, "Missing call options");
+				if (entry.type === 11) requireState(playerCount === 3, "North extraction in a four-player game");
+				return { type: entry.type, combination: combination.slice() };
+			});
+			var discard = operations.find(entry => entry.type === OPERATIONS.dapai);
+			if (discard) {
+				checkHand(manager.mainrole, true);
+				var forbidden = discard.combination.flatMap(value => value.split("|")).map(tile);
+				var riichi = manager.mainrole.liqibang._activeInHierarchy;
+				for (var handTile of manager.mainrole.hand) {
+					handTile.valid = (!riichi || handTile === manager.mainrole.last_tile) &&
+						!forbidden.some(value => sameValue(value, handTile.val));
+				}
+				requireState(manager.mainrole.hand.some(entry => entry.valid), "No legal discard is available");
+			}
+			manager.oplist = operations.filter(entry => !(furiten && entry.type === OPERATIONS.rong));
+			requireState(integer(zero(operation.time_add), 0, 3600000) && integer(zero(operation.time_fixed), 0, 3600000), "Invalid operation timer");
+			// OptionalOperationList timer fields are milliseconds; the existing API
+			// reports seconds. Keep the absolute expiry in milliseconds throughout.
+			manager.time_add = zero(operation.time_add) / 1000;
+			manager.time_fixed = zero(operation.time_fixed) / 1000;
+			var milliseconds = zero(operation.time_add) + zero(operation.time_fixed);
+			if (manager.oplist.length) deadline = now() + milliseconds;
+		}
+		function common(message) {
+			if (Array.isArray(message.doras) && message.doras.length) setDora(message.doras);
+			if (Object.prototype.hasOwnProperty.call(message, "zhenting")) {
+				requireState(typeof message.zhenting === "boolean", "Invalid furiten flag");
+				furiten = message.zhenting;
+			}
+			if (Array.isArray(message.scores) && message.scores.length && typeof message.scores[0] === "number") setScores(message.scores);
+			if (integer(message.liqibang, 1, 100)) manager.liqibang = message.liqibang;
+			if (message.liqi) {
+				var riichiPlayer = getPlayer(zero(message.liqi.seat));
+				riichiPlayer.liqibang._activeInHierarchy = message.liqi.failed !== true;
+				if (message.liqi.failed) riichiPlayer.container_qipai.last_is_liqi = false;
+				if (!message.liqi.failed) {
+					requireState(Number.isSafeInteger(zero(message.liqi.score)), "Invalid riichi score");
+					riichiPlayer.score = zero(message.liqi.score);
+					manager.liqibang = zero(message.liqi.liqibang);
+				}
+			}
+		}
+		function newRound(message) {
+			requireState(manager != null && seat >= 0, "Waiting for game authentication.");
+			var ju = zero(message.ju), chang = zero(message.chang), ben = zero(message.ben);
+			requireState(integer(ju, 0, playerCount - 1) && integer(chang, 0, 3) && integer(ben, 0, 100), "Invalid round identity");
+			var hand = tileList(message.tiles);
+			requireState(hand.length === (seat === ju ? 14 : 13), "The initial local hand is incomplete");
+			var counts = new Map();
+			for (var entry of hand) {
+				requireState(playerCount !== 3 || entry.type !== 1 || entry.index === 1 || entry.index === 9, "An unavailable manzu tile was dealt in a three-player game");
+				var key = entry.type + ":" + entry.index;
+				counts.set(key, (counts.get(key) || 0) + 1);
+				requireState(counts.get(key) <= 4, "Too many copies of a tile in the local hand");
+			}
+			requireState(integer(message.left_tile_count, 0, playerCount === 3 ? 55 : 70), "Missing or invalid wall count");
+			manager = makeManager();
+			manager.index_ju = ju;
+			manager.index_change = chang;
+			manager.index_ben = ben;
+			manager.index_player = ju;
+			manager.left_tile_count = message.left_tile_count;
+			manager.liqibang = zero(message.liqibang);
+			setScores(message.scores);
+			setDora(message.doras && message.doras.length ? message.doras : [message.dora]);
+			for (var absoluteSeat = 0; absoluteSeat < playerCount; absoluteSeat++) {
+				var player = getPlayer(absoluteSeat);
+				player.hand = absoluteSeat === seat ? hand.map(wrapper) :
+					Array.from({ length: absoluteSeat === ju ? 14 : 13 }, () => wrapper(null));
+				if (absoluteSeat === seat && hand.length === 14) player.last_tile = player.hand[player.hand.length - 1];
+			}
+			validRound = true;
+			furiten = false;
+			lastDiscard = null;
+			discardEvents = [];
+			manager.active = !syncPending;
+			phase = syncPending ? "synchronizing" : "game";
+			reason = syncPending ? "Waiting for the game to restore the round." : "";
+			setOperations(message.operation);
+		}
+		function deal(message) {
+			var absoluteSeat = zero(message.seat), player = getPlayer(absoluteSeat);
+			checkHand(player, false);
+			requireState(absoluteSeat === (lastDiscard ? (lastDiscard.seat + 1) % playerCount : manager.index_player), "A draw is out of turn");
+			requireState(integer(message.left_tile_count, 0, manager.left_tile_count), "Invalid wall count after drawing");
+			// Any tile identity sent for another player is deliberately discarded.
+			var drawn = wrapper(absoluteSeat === seat ? tile(message.tile) : null);
+			player.hand.push(drawn);
+			player.last_tile = drawn;
+			manager.index_player = absoluteSeat;
+			manager.left_tile_count = message.left_tile_count;
+			lastDiscard = null;
+			common(message);
+			setOperations(message.operation);
+		}
+		function discard(message, step) {
+			var absoluteSeat = zero(message.seat), player = getPlayer(absoluteSeat), value = tile(message.tile);
+			checkHand(player, true);
+			requireState(manager.index_player === absoluteSeat, "A discard is out of turn");
+			var tsumogiri = message.moqie === true, riichi = message.is_liqi === true || message.is_wliqi === true;
+			value.tsumogiri = tsumogiri;
+			if (absoluteSeat === seat) {
+				var matching = tsumogiri ? player.last_tile : player.hand.find(entry => entry.val.toString() === message.tile);
+				requireState(matching && matching.val.toString() === message.tile, "The discarded tile is missing from the local hand");
+			}
+			var event = { epoch: epoch, step: step, seat: absoluteSeat, player: (absoluteSeat - seat + playerCount) % playerCount,
+				displayPosition: manager.seat2LocalPosition(absoluteSeat), tile: value, riichi: riichi, tsumogiri: tsumogiri, replaying: replaying };
+			if (!replaying && typeof options.onDiscard === "function") {
+				try { options.onDiscard(event); } catch (_) { /* Observation is optional. */ }
+			}
+			discardEvents.push(event);
+			if (discardEvents.length > 512) discardEvents.shift();
+			if (absoluteSeat === seat) removeOwn([message.tile], tsumogiri);
+			else removeHidden(player, 1, tsumogiri);
+			var pond = player.container_qipai, discarded = wrapper(value);
+			if (pond.last_pai) pond.pais.push(pond.last_pai);
+			pond.last_pai = discarded;
+			pond.last_is_liqi = riichi;
+			if (riichi) player.liqibang._activeInHierarchy = true;
+			manager.lastqipai = discarded;
+			lastDiscard = { seat: absoluteSeat, tile: discarded };
+			common(message);
+			setOperations(message.operation);
+		}
+		function call(message) {
+			var absoluteSeat = zero(message.seat), player = getPlayer(absoluteSeat), kind = zero(message.type);
+			var values = tileList(message.tiles), froms = message.froms;
+			requireState(integer(kind, 0, 2) && values.length === (kind === 2 ? 4 : 3), "Invalid exposed meld");
+			requireState(Array.isArray(froms) && froms.length === values.length && froms.every(value => integer(value, 0, playerCount - 1)), "Missing meld origins");
+			var calledIndices = froms.map((from, index) => from !== absoluteSeat ? index : -1).filter(index => index >= 0);
+			requireState(calledIndices.length === 1 && lastDiscard != null, "The called discard is unknown");
+			var calledIndex = calledIndices[0], sourceSeat = froms[calledIndex];
+			requireState(lastDiscard.seat === sourceSeat && lastDiscard.tile.val.toString() === values[calledIndex].toString(), "The meld does not match the last discard");
+			if (kind === 0) {
+				var sorted = values.slice().sort((a, b) => a.index - b.index);
+				requireState(playerCount === 4 && sourceSeat === (absoluteSeat + 3) % 4 && sorted[0].type < 3 &&
+					sorted.every(value => value.type === sorted[0].type) && sorted[1].index === sorted[0].index + 1 &&
+					sorted[2].index === sorted[0].index + 2, "Invalid chi");
+			} else requireState(values.every(value => sameValue(value, values[0])), "Invalid pon or kan");
+			checkHand(player, false);
+			var ownNames = values.filter((_, index) => froms[index] === absoluteSeat).map(value => value.toString());
+			if (absoluteSeat === seat) removeOwn(ownNames, false);
+			else removeHidden(player, ownNames.length, false);
+			var sourcePond = getPlayer(sourceSeat).container_qipai;
+			requireState(sourcePond.last_pai === lastDiscard.tile, "The called discard is no longer in the pond");
+			sourcePond.last_pai = null;
+			sourcePond.last_is_liqi = false;
+			player.container_ming.mings.push({ type: kind, pais: values, from: froms.slice() });
+			player.last_tile = null;
+			manager.index_player = absoluteSeat;
+			lastDiscard = null;
+			common(message);
+			setOperations(message.operation);
+		}
+		function kan(message) {
+			var absoluteSeat = zero(message.seat), player = getPlayer(absoluteSeat), kind = zero(message.type);
+			var value = tile(message.tiles);
+			requireState(kind === 2 || kind === 3, "Unsupported kan type");
+			checkHand(player, true);
+			if (kind === 2) {
+				var pon = player.container_ming.mings.find(meld => meld.type === 1 && meld.pais.length === 3 && meld.pais.every(entry => sameValue(entry, value)));
+				requireState(pon != null, "The added kan has no existing pon");
+				if (absoluteSeat === seat) value = removeOwn([message.tiles], false)[0];
+				else removeHidden(player, 1, false);
+				pon.pais.push(value);
+				pon.from.push(absoluteSeat);
+				pon.type = 2;
+			} else {
+				var values;
+				if (absoluteSeat === seat) {
+					var names = player.hand.filter(entry => sameValue(entry.val, value)).map(entry => entry.val.toString());
+					requireState(names.length === 4, "The concealed kan is incomplete");
+					values = removeOwn(names, false);
+				} else {
+					removeHidden(player, 4, false);
+					var canonical = String(value.index) + message.tiles[1];
+					values = Array.from({ length: 4 }, () => tile(canonical));
+					// All four tiles of a standard concealed kan are public. Red fives
+					// are determined by the authenticated room's configured tile set.
+					var redCount = gameConfig.mode.detail_rule.dora_count;
+					if (value.index === 5 && value.type < 3 && redCount > 0) {
+						values[3] = tile("0" + message.tiles[1]);
+						if (redCount === 4 && value.type === 0) values[2] = tile("0p");
+					}
+				}
+				player.container_ming.mings.push({ type: 3, pais: values, from: Array(4).fill(absoluteSeat) });
+			}
+			manager.index_player = absoluteSeat;
+			manager.lastqipai = wrapper(value); // The exposed tile can be robbed only if the server offers ron.
+			lastDiscard = null;
+			common(message);
+			setOperations(message.operation);
+		}
+		function kita(message) {
+			requireState(playerCount === 3, "North extraction in a four-player game");
+			var absoluteSeat = zero(message.seat), player = getPlayer(absoluteSeat), value = tile("4z");
+			checkHand(player, true);
+			if (absoluteSeat === seat) removeOwn(["4z"], message.moqie === true);
+			else removeHidden(player, 1, message.moqie === true);
+			player.container_babei.pais.push(wrapper(value));
+			manager.index_player = absoluteSeat;
+			manager.lastqipai = wrapper(value);
+			lastDiscard = null;
+			common(message);
+			setOperations(message.operation);
+		}
+		function finishRound(name, message) {
+			common(message);
+			if (name === "ActionNoTile" && Array.isArray(message.scores) && message.scores.length) {
+				var initial = message.scores[0].old_scores, next = initial && initial.slice();
+				requireState(Array.isArray(next) && next.length === playerCount, "Missing exhaustive-draw scores");
+				for (var result of message.scores) {
+					requireState(Array.isArray(result.old_scores) && result.old_scores.length === playerCount &&
+						Array.isArray(result.delta_scores) && result.delta_scores.length === playerCount, "Incomplete exhaustive-draw scores");
+					requireState(result.old_scores.every((score, index) => score === initial[index]) ||
+						result.old_scores.every((score, index) => score === next[index]), "Inconsistent exhaustive-draw scores");
+					next = next.map((score, index) => score + result.delta_scores[index]);
+				}
+				setScores(next);
+			} else if ((!message.scores || !message.scores.length) && Array.isArray(message.old_scores) && Array.isArray(message.delta_scores)) {
+				requireState(message.old_scores.length === playerCount && message.delta_scores.length === playerCount, "Incomplete win scores");
+				setScores(message.old_scores.map((score, index) => score + message.delta_scores[index]));
+			}
+			clearOperations();
+			validRound = false;
+			lastDiscard = null;
+			phase = "round-ended";
+			reason = "Waiting for the next round.";
+			if (message.gameend) endGame(message.gameend);
+		}
+		function endGame(result) {
+			clearOperations();
+			validRound = false;
+			if (manager != null) {
+				manager.active = false;
+				if (result && Array.isArray(result.scores) && result.scores.length) setScores(result.scores);
+				manager.gameEndResult = { ended: true };
+			}
+			phase = "ended";
+			reason = "The game has ended.";
+		}
+		function actionParts(value) {
+			if (!value || typeof value !== "object") return null;
+			if (value.action && typeof value.action === "object") {
+				return { name: shortName(value.action.name || value.name), data: value.action.data || value.action.message,
+					step: value.action.step == null ? value.step : value.action.step };
+			}
+			return { name: shortName(value.name), data: value.data || value.message, step: value.step };
+		}
+		function applyAction(action) {
+			requireState(action && ACTIONS.has(action.name), "Unsupported game action: " + (action ? action.name : "unknown"));
+			requireState(action.data && typeof action.data === "object" && !ArrayBuffer.isView(action.data), "The game action could not be decoded");
+			requireState(integer(action.step, 0, 0xffffffff), "Missing game action sequence");
+			var digest = fingerprint([action.name, action.data]);
+			if (action.name === "ActionMJStart") {
+				if (actionDigests.get(action.step) === digest) return false;
+				requireState(manager != null && lastStep == null, "Unexpected game-start action");
+				epoch++;
+				clearOperations();
+				lastStep = action.step;
+				actionDigests.set(action.step, digest);
+				notify("action", action.name);
+				return true;
+			}
+			if (action.name === "ActionNewRound") {
+				if (roundDigests.has(digest)) return false;
+			} else {
+				if (actionDigests.has(action.step) && actionDigests.get(action.step) === digest) return false;
+				requireState(validRound, "Waiting for a complete round after an interrupted game update.");
+				requireState(lastStep != null && action.step === lastStep + 1, "A game update was missed. Waiting for a fresh round or resynchronization.");
+			}
+			epoch++;
+			clearOperations();
+			switch (action.name) {
+				case "ActionNewRound": newRound(action.data); actionDigests.clear(); roundDigests.add(digest); break;
+				case "ActionDealTile": deal(action.data); break;
+				case "ActionDiscardTile": discard(action.data, action.step); break;
+				case "ActionChiPengGang": call(action.data); break;
+				case "ActionAnGangAddGang": kan(action.data); break;
+				case "ActionBaBei": kita(action.data); break;
+				default: finishRound(action.name, action.data); break;
+			}
+			checkVisibleTiles();
+			lastStep = action.step;
+			actionDigests.set(action.step, digest);
+			if (actionDigests.size > 512) actionDigests.delete(actionDigests.keys().next().value);
+			if (roundDigests.size > 128) roundDigests.delete(roundDigests.values().next().value);
+			notify("action", action.name);
+			return true;
+		}
+		function restore(message, entering) {
+			requireState(!hasError(message), "The game could not restore the round.");
+			if (message.is_end) { epoch++; endGame(null); notify("end"); return; }
+			requireState(manager != null, "Waiting for game authentication.");
+			// First entry can be acknowledged before the first round exists. It
+			// may contain no replay or only the empty ActionMJStart boundary.
+			var initialActions = message.game_restore && message.game_restore.actions;
+			if (entering && !validRound && (lastStep == null || lastStep === 0) &&
+				(!initialActions || initialActions.length === 0 ||
+					(initialActions.length === 1 && shortName(initialActions[0].name) === "ActionMJStart"))) {
+				if (initialActions && initialActions.length) applyAction(actionParts(initialActions[0]));
+				syncPending = false;
+				phase = "authenticated";
+				reason = "Waiting for the round's game state.";
+				notify("entered");
+				return;
+			}
+			requireState(message.game_restore, "The restored game state is missing.");
+			var restoration = message.game_restore, actions = restoration.actions;
+			requireState(Array.isArray(actions) && actions.length > 0 && actions.length <= 1024, "The restored round has no usable actions.");
+			var parsed = actions.map(actionParts);
+			if (parsed[0] && (parsed[0].name === "ActionNewRound" ||
+				(parsed[0].name === "ActionMJStart" && parsed[1] && parsed[1].name === "ActionNewRound"))) {
+				validRound = false;
+				lastStep = null;
+				actionDigests.clear();
+				roundDigests.clear();
+			} else {
+				// Partial action replay is safe only when its exact preceding board is
+				// already known. Opaque snapshots cannot establish discard chronology.
+				requireState(validRound && !restoration.snapshot, "A full round replay is needed to restore this game.");
+			}
+			replaying = true;
+			try { parsed.forEach(applyAction); }
+			finally { replaying = false; }
+			requireState(integer(message.step, 1, 0xffffffff) && message.step === lastStep + 1, "The restored round is missing its latest action.");
+			syncPending = false;
+			if (validRound) {
+				manager.active = true;
+				phase = "game";
+				reason = "";
+			}
+			// The current public bridge records values such as 16 for an elapsed
+			// window, but the schema doesn't label the unit. Use seconds here, as
+			// the reference implementation does: expiring early cannot send a stale
+			// action. A fresh live operation always replaces this restored timer.
+			if (deadline && integer(restoration.passed_waiting_time, 0, 3600000)) deadline -= restoration.passed_waiting_time * 1000;
+			expireOperations();
+			notify("restore");
+		}
+		function expireOperations() {
+			if (deadline && now() >= deadline) {
+				epoch++;
+				clearOperations();
+				notify("timeout");
+			}
+		}
+		function consume(frame, direction) {
+			if (!frame || typeof frame !== "object") return false;
+			var method = shortName(frame.method), message = frame.message || {}, isOutgoing = outgoing(frame, direction);
+			try {
+				if (method === "authGame") {
+					if (isOutgoing) {
+						clearOperations();
+						manager = null; seat = -1; playerCount = 0; validRound = false; lastStep = null;
+						requireState(integer(message.account_id, 1, 0xffffffff), "The game authentication has no player account.");
+						accountId = message.account_id;
+						pendingAuth = true;
+						phase = "authenticating"; reason = "Waiting for the game seat.";
+						epoch++;
+						notify("request");
+					} else if (response(frame)) authenticate(message);
+					return true;
+				}
+				if (method === "syncGame" || method === "enterGame") {
+					if (isOutgoing) pauseForSync();
+					else if (response(frame)) restore(message, method === "enterGame");
+					return true;
+				}
+				if (isOutgoing) {
+					if (["inputOperation", "inputChiPengGang", "confirmNewRound"].includes(method)) {
+						epoch++; clearOperations(); notify("request", method); return true;
+					}
+					return false;
+				}
+				if (response(frame) && ["login", "oauth2Login", "emailLogin"].includes(method)) {
+					if (hasError(message)) return false;
+					var loginAccount = message.account_id || (message.account && message.account.account_id);
+					if (!integer(loginAccount, 1, 0xffffffff)) return false;
+					if (accountId !== loginAccount && manager != null) invalidate("The logged-in account changed.");
+					accountId = loginAccount;
+					lobbyReady = true;
+					if (manager == null && !pendingAuth) { phase = "lobby"; reason = ""; }
+					epoch++; notify("lobby"); return true;
+				}
+				if (method === "ActionPrototype" || method === "NotifyActionPrototype") return applyAction(actionParts(message));
+				if (method.startsWith("Action")) return applyAction({ name: method, data: message, step: frame.step });
+				if (["NotifyGameEndResult", "NotifyGameTerminate"].includes(method)) {
+					epoch++; endGame(null); notify("end"); return true;
+				}
+				if (method === "NotifyPlayerConnectionState" && manager != null) {
+					var playerSeat = zero(message.seat);
+					getPlayer(playerSeat);
+					manager.player_link_state[playerSeat] = zero(message.state) === 0 ? 0 : 1;
+					epoch++; notify("connection"); return true;
+				}
+				if (method === "NotifyGamePause") return invalidate(message.paused ? "The game is paused." : "Waiting for the resumed game state.");
+				if (response(frame) && ["inputOperation", "inputChiPengGang"].includes(method) && hasError(message)) {
+					return invalidate("The game rejected an operation. Waiting for the next complete game state.");
+				}
+				return false;
+			} catch (error) {
+				return invalidate(error && error.message ? error.message : "The game state could not be read.");
+			}
+		}
+
+		return { consume: consume, invalidate: invalidate,
+			getManager: function () { expireOperations(); return manager; },
+			getStatus: function () { expireOperations(); return status(); },
+			getEpoch: function () { expireOperations(); return epoch; },
+			getAccountId: function () { return accountId; }, getSeat: function () { return seat; },
+			getPlayerCount: function () { return playerCount; }, isLobbyReady: function () { return lobbyReady; },
+			isInGame: function () { return manager != null && manager.active === true; },
+			isFuriten: function () { return furiten; },
+			getDiscardEvents: function (afterEpoch) { return discardEvents.filter(event => afterEpoch == null || event.epoch > afterEpoch); }
+		};
+	}
+	return Object.freeze({ create: create, tile: tile, OPERATIONS: OPERATIONS });
+})();
+
+
+// Observe the same native WebSockets used by Unity's _WS_Create/_WS_Send_Binary.
+// Never inspect WASM memory or replace the client connection with a second login.
+var AlphaJongUnityTransport = (function () {
+	"use strict";
+	var installations = new WeakMap();
+	var ACTIONS = new Set([".lq.FastTest.inputOperation", ".lq.FastTest.inputChiPengGang"]);
+	function install(options) {
+		options = options || {};
+		var scope = options.scope || window, protocol = options.protocol || AlphaJongUnityProtocol;
+		if (installations.has(scope)) return installations.get(scope);
+		var NativeSocket = scope.WebSocket, nativeSend = NativeSocket.prototype.send;
+		var active = true, sequence = 0, sockets = new Set(), gameSocket = null, reason = "";
+		var forwardedEvents = new WeakSet();
+		function info(record) { return { id: record.id, game: record.game, currentGame: record === gameSocket, known: record.known, connected: record.socket.readyState === 1 }; }
+		function callback(name) {
+			if (!active || typeof options[name] !== "function") return;
+			try { options[name].apply(null, Array.prototype.slice.call(arguments, 1)); }
+			catch (_) { /* Client traffic always continues if an observer fails. */ }
+		}
+		function status() {
+			return { installed: active, connected: Array.from(sockets).some(record => record.known && record.socket.readyState === 1),
+				gameConnected: gameSocket != null && gameSocket.socket.readyState === 1,
+				pending: gameSocket ? gameSocket.pending.size : 0,
+				processing: gameSocket ? gameSocket.queued > 0 : false, reason: reason };
+		}
+		function invalidate(record, message) {
+			reason = message;
+			callback("onInvalidate", message, info(record));
+			callback("onStatus", status());
+		}
+		function observe(record, input, direction, method) {
+			try {
+				var frame = protocol.decodeFrame(input, method);
+				if (frame.message != null) callback("onFrame", frame, direction, info(record));
+			} catch (_) {
+				if (record.game) invalidate(record, "A game message could not be decoded. Waiting for a fresh round or reconnection.");
+			}
+		}
+		function copyBinary(data) {
+			if (data instanceof ArrayBuffer) return new Uint8Array(data).slice();
+			if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer, data.byteOffset, data.byteLength).slice();
+			return null;
+		}
+		function rewriteId(data, id) { var copy = data.slice(); copy[1] = id & 255; copy[2] = id >>> 8; return copy; }
+		function forward(record, data, event) {
+			var clone = new scope.MessageEvent("message", { data: data,
+				origin: event ? event.origin : "", lastEventId: event ? event.lastEventId : "" });
+			forwardedEvents.add(clone);
+			record.socket.dispatchEvent(clone);
+		}
+		function allocate(record, preferred) {
+			if (Number.isInteger(preferred) && !record.pending.has(preferred) && !record.reserved.has(preferred)) return preferred;
+			for (var count = 0; count < 65536; count++) {
+				var id = record.nextId;
+				record.nextId = (record.nextId + 1) & 65535;
+				if (!record.pending.has(id) && !record.reserved.has(id)) return id;
+			}
+			throw new Error("Game request ID capacity reached");
+		}
+		function clientSend(record, original) {
+			// Unity passes a view into reused HEAPU8 memory. Copy before send returns.
+			var data = copyBinary(original), envelope;
+			if (data == null) {
+				if (record.known && original instanceof scope.Blob) {
+					record.unsafeSend = true;
+					invalidate(record, "Unsupported asynchronous outgoing game data.");
+				}
+				return nativeSend.call(record.socket, original);
+			}
+			try { envelope = protocol.decodeEnvelope(data); }
+			catch (_) { return nativeSend.call(record.socket, original); }
+			if (envelope.kind !== "request") return nativeSend.call(record.socket, original);
+			record.known = true;
+			if (envelope.method === ".lq.FastTest.authGame") {
+				if (gameSocket && gameSocket !== record) invalidate(gameSocket, "The game connection changed.");
+				record.game = true;
+				gameSocket = record;
+				reason = "";
+			}
+			var wireId;
+			try { wireId = allocate(record, envelope.id); }
+			catch (_) {
+				record.unsafeSend = true;
+				invalidate(record, "Too many pending game requests; reconnect before using AlphaJong.");
+				return nativeSend.call(record.socket, original);
+			}
+			record.pending.set(wireId, { method: envelope.method, logicalId: envelope.id, own: false });
+			var transmitted = wireId === envelope.id ? original : rewriteId(data, wireId);
+			try { nativeSend.call(record.socket, transmitted); }
+			catch (error) { record.pending.delete(wireId); throw error; }
+			if (record.game) callback("onActivity", "outgoing", info(record));
+			observe(record, data, "out");
+			callback("onStatus", status());
+		}
+		function receive(record, data, event, isBlob) {
+			if (record.closed) return;
+			var envelope;
+			try { envelope = protocol.decodeEnvelope(data); }
+			catch (_) {
+				if (record.game) invalidate(record, "The game connection sent an unreadable message.");
+				return;
+			}
+			record.known = true;
+			var pending = envelope.kind === "response" ? record.pending.get(envelope.id) : null;
+			var ownsReply = envelope.kind === "response" && record.reserved.has(envelope.id);
+			if (envelope.kind === "response" && !pending) {
+				if (ownsReply && event) event.stopImmediatePropagation();
+				return;
+			}
+			if (pending) {
+				record.pending.delete(envelope.id);
+				if (pending.own && event) event.stopImmediatePropagation();
+			}
+			if (record.queued) queueObservation(record, data, pending && pending.method);
+			else observe(record, data, "in", pending && pending.method);
+			if (pending && !pending.own && pending.logicalId !== envelope.id) {
+				// Unity still sees the ID it allocated. Do not dispatch the wire ID too.
+				if (event) event.stopImmediatePropagation();
+				var rewritten = rewriteId(data, pending.logicalId);
+				forward(record, isBlob ? new scope.Blob([rewritten]) : rewritten.buffer, event);
+			}
+			callback("onStatus", status());
+		}
+		function enqueue(record, data, deferredEvent) {
+			record.queued++;
+			if (deferredEvent) record.deferred++;
+			record.queue = record.queue.then(async function () {
+				if (record.closed) return;
+				var isBlob = data instanceof scope.Blob;
+				var binary = isBlob ? new Uint8Array(await data.arrayBuffer()) : copyBinary(data);
+				if (record.closed) return;
+				var envelope;
+				try { if (binary) envelope = protocol.decodeEnvelope(binary); }
+				catch (_) {
+					if (record.game) invalidate(record, "The game connection sent an unreadable message.");
+				}
+				if (!envelope) {
+					if (deferredEvent) forward(record, isBlob ? data : binary ? binary.buffer : data, deferredEvent);
+					return;
+				}
+				record.known = true;
+				var pending = envelope.kind === "response" ? record.pending.get(envelope.id) : null;
+				var ownsReply = envelope.kind === "response" && record.reserved.has(envelope.id);
+				if (pending) record.pending.delete(envelope.id);
+				if (envelope.kind !== "response" || pending) observe(record, binary, "in", pending && pending.method);
+				if (deferredEvent && !ownsReply) {
+					var delivered = pending && !pending.own && pending.logicalId !== envelope.id
+						? rewriteId(binary, pending.logicalId) : binary;
+					forward(record, isBlob ? new scope.Blob([delivered]) : delivered.buffer, deferredEvent);
+				}
+			}).catch(function () {
+				if (record.game && !record.closed) invalidate(record, "The game message queue could not be read.");
+			}).finally(function () { record.queued--; if (deferredEvent) record.deferred--; });
+		}
+		function queueObservation(record, data, method) {
+			record.queued++;
+			record.queue = record.queue.then(function () {
+				if (!record.closed) observe(record, data, "in", method);
+			}).finally(function () { record.queued--; });
+		}
+		function hook(socket) {
+			var record = { socket: socket, id: ++sequence, known: false, game: false, unsafeSend: false, closed: false,
+				pending: new Map(), reserved: new Set(), nextId: 32768, queued: 0, deferred: 0, queue: Promise.resolve() };
+			sockets.add(record);
+			Object.defineProperty(socket, "send", { configurable: true, writable: true, value: function (data) {
+				if (this !== socket) return nativeSend.call(this, data);
+				return clientSend(record, data);
+			} });
+			socket.addEventListener("open", function () { callback("onStatus", status()); });
+			socket.addEventListener("close", function () {
+				record.closed = true;
+				if (record === gameSocket) { invalidate(record, "The game disconnected. Waiting for its reconnection."); gameSocket = null; }
+				record.pending.clear(); record.reserved.clear(); sockets.delete(record);
+				callback("onStatus", status());
+			});
+			socket.addEventListener("message", function (event) {
+				if (forwardedEvents.has(event)) return;
+				if (record.game) callback("onActivity", "incoming", info(record));
+				var data = copyBinary(event.data);
+				if (record.deferred) {
+					// Preserve client event order behind a Blob held for private-ID routing.
+					event.stopImmediatePropagation();
+					enqueue(record, data || event.data, event);
+				} else if (event.data instanceof scope.Blob) {
+					var needsRouting = record.reserved.size > 0 || Array.from(record.pending).some(function (entry) {
+						return !entry[1].own && entry[1].logicalId !== entry[0];
+					});
+					// Ordinary Blob observation is passive. A mode change after requests
+					// used private IDs requires deferring delivery until IDs can be read.
+					if (needsRouting) {
+						record.unsafeSend = true;
+						invalidate(record, "Game binary mode changed. Reconnect before using automatic play.");
+						event.stopImmediatePropagation();
+					}
+					enqueue(record, event.data, needsRouting ? event : null);
+				} else if (data) {
+					// Route/suppress responses synchronously even when observation waits
+					// behind a Blob, so private wire IDs can never reach Unity callbacks.
+					receive(record, data, event, false);
+				}
+			});
+			return socket;
+		}
+		var WrappedSocket = new Proxy(NativeSocket, {
+			construct: function (target, args, newTarget) { return hook(Reflect.construct(target, args, newTarget)); }
+		});
+		scope.WebSocket = WrappedSocket;
+		function send(method, payload) {
+			method = method.startsWith(".") ? method : ".lq.FastTest." + method;
+			var record = gameSocket;
+			if (!active || !ACTIONS.has(method) || !record || record.socket.readyState !== 1 ||
+				record.socket.binaryType !== "arraybuffer" || record.queued || record.unsafeSend ||
+				typeof options.canSend !== "function" || options.canSend(method, payload) !== true) return false;
+			var id;
+			try {
+				id = allocate(record);
+				var frame = protocol.encodeRequest(id, method, payload);
+				record.reserved.add(id);
+				record.pending.set(id, { method: method, own: true });
+				noteAction();
+				nativeSend.call(record.socket, frame);
+				observe(record, frame, "out");
+				return true;
+			} catch (_) {
+				if (id != null) { record.pending.delete(id); record.reserved.delete(id); }
+				return false;
+			}
+			function noteAction() { callback("onActivity", "action", info(record)); }
+		}
+		var api = { send: send, getStatus: status, dispose: function () {
+			active = false;
+			if (scope.WebSocket === WrappedSocket) scope.WebSocket = NativeSocket;
+			installations.delete(scope);
+			// Existing connections keep their ID routing until closed, including own
+			// reply tombstones. Removing these listeners could break the live client.
+		} };
+		installations.set(scope, api);
+		return api;
+	}
+	return Object.freeze({ install: install });
+})();
 
 
 //################################
@@ -143,6 +1276,7 @@ var currentActionOutput = document.createElement("input");
 var debugButton = document.createElement("button");
 var hideButton = document.createElement("button");
 var hintsButton = document.createElement("button");
+var startupNotice = document.createElement("div");
 
 // Floating, draggable hint panel (shown in HELP mode)
 var hintPanelDiv = document.createElement("div");
@@ -151,8 +1285,12 @@ var hintPanelContent = document.createElement("div");
 var hintPanelCloseButton = document.createElement("button");
 
 function initGui() {
-	if (getRooms() == null) { // Wait for minimal loading to be done
-		setTimeout(initGui, 1000);
+	if (guiDiv.isConnected) {
+		return;
+	}
+	// Diagnostics must remain visible even when the game API never loads.
+	if (document.body == null) {
+		document.addEventListener("DOMContentLoaded", initGui, { once: true });
 		return;
 	}
 
@@ -168,9 +1306,10 @@ function initGui() {
 	guiSpan.style.padding = "5px";
 
 	startButton.innerHTML = "Start Bot";
-	if (window.localStorage.getItem("alphajongAutorun") == "true") {
+	if (AUTORUN && !startupError) {
 		startButton.innerHTML = "Stop Bot";
 	}
+	startButton.disabled = !startupFinished || Boolean(startupError);
 	startButton.style.marginRight = "15px";
 	startButton.onclick = function () {
 		toggleRun();
@@ -186,6 +1325,7 @@ function initGui() {
 
 	autorunCheckbox.type = "checkbox";
 	autorunCheckbox.id = "autorun";
+	autorunCheckbox.disabled = Boolean(startupError);
 	autorunCheckbox.onclick = function () {
 		autorunCheckboxClick();
 	};
@@ -206,17 +1346,13 @@ function initGui() {
 		roomChange();
 	};
 
-	if (window.localStorage.getItem("alphajongAutorun") != "true") {
-		roomCombobox.disabled = true;
-	}
 	guiSpan.appendChild(roomCombobox);
 
 	currentActionOutput.readOnly = "true";
 	currentActionOutput.size = "20";
 	currentActionOutput.style.marginRight = "15px";
-	showCrtActionMsg("Bot is not running.");
-	if (window.localStorage.getItem("alphajongAutorun") == "true") {
-		showCrtActionMsg("Bot started.");
+	if (!currentActionOutput.value) {
+		showCrtActionMsg("Waiting for Mahjong Soul.");
 	}
 	guiSpan.appendChild(currentActionOutput);
 
@@ -243,12 +1379,18 @@ function initGui() {
 	guiSpan.appendChild(hideButton);
 
 	guiDiv.appendChild(guiSpan);
+	startupNotice.setAttribute("role", "status");
+	startupNotice.style.cssText = "max-width: 640px; margin: 8px auto; padding: 10px; " +
+		"background: #30251b; color: #fff; border: 1px solid #d3a45e; border-radius: 5px; " +
+		"font: 14px/1.5 sans-serif; text-align: left; white-space: normal;";
+	startupNotice.hidden = !startupNotice.textContent;
+	guiDiv.appendChild(startupNotice);
 	document.body.appendChild(guiDiv);
 
 	// Build and attach the floating hint panel
 	initHintPanel();
 
-	toggleGui();
+	guiDiv.style.display = "block";
 }
 
 function toggleGui() {
@@ -288,7 +1430,6 @@ function hideButtonClick() {
 
 function autorunCheckboxClick() {
 	if (autorunCheckbox.checked) {
-		roomCombobox.disabled = false;
 		window.localStorage.setItem("alphajongAutorun", "true");
 		AUTORUN = true;
 	}
@@ -297,6 +1438,7 @@ function autorunCheckboxClick() {
 		window.localStorage.setItem("alphajongAutorun", "false");
 		AUTORUN = false;
 	}
+	refreshRoomSelection();
 }
 
 // Refresh the AI mode
@@ -314,7 +1456,13 @@ function refreshAIMode() {
 // Refresh the contents of the Room Selection Combobox with values appropiate for the rank
 function refreshRoomSelection() {
 	roomCombobox.innerHTML = ""; // Clear old entries
-	getRooms().forEach(function (room) {
+	var rooms = getRooms();
+	if (rooms == null || typeof rooms.forEach != 'function') {
+		roomCombobox.appendChild(new Option(typeof getUnityClient === "function" && getUnityClient() ? "Choose a match in game" : "Waiting for rooms...", ""));
+		roomCombobox.disabled = true;
+		return;
+	}
+	rooms.forEach(function (room) {
 		if (isInRank(room.id) && room.mode != 0) { // Rooms with mode = 0 are 1 Game only, not sure why they are in the code but not selectable in the UI...
 			var option = document.createElement("option");
 			option.text = getRoomName(room);
@@ -323,6 +1471,12 @@ function refreshRoomSelection() {
 		}
 	});
 	roomCombobox.value = ROOM;
+	roomCombobox.disabled = !AUTORUN || Boolean(startupError);
+}
+
+function showStartupNotice(message) {
+	startupNotice.textContent = message;
+	startupNotice.hidden = !message;
 }
 
 // Show msg to currentActionOutput
@@ -441,6 +1595,8 @@ function makeDraggable(element, handle) {
 //################################
 
 function getDesktopManagerInstance() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.state.getManager();
 	if (typeof view == 'undefined' || view == null || typeof view.DesktopMgr == 'undefined' || view.DesktopMgr == null) {
 		return null;
 	}
@@ -465,6 +1621,12 @@ function getDiscardContainerFallback() {
 
 function sendReq2MJ(method, payload) {
 	if (MODE !== AIMODE.AUTO || !isActionCurrent()) return false;
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		if (!unity.send(method, payload)) return false;
+		markActionSent();
+		return true;
+	}
 	if (typeof app == 'undefined' || app == null || typeof app.NetAgent == 'undefined' || app.NetAgent == null) {
 		return false;
 	}
@@ -501,16 +1663,19 @@ function triggerOperationAnimation() {
 
 
 function preventAFK() {
-	if (typeof GameMgr == 'undefined') {
+	if (typeof getUnityClient === "function" && getUnityClient()) return;
+	if (typeof GameMgr == 'undefined' || GameMgr == null || GameMgr.Inst == null) {
 		return;
 	}
-	if (GameMgr.Inst == null) {
-		return;
+	if (GameMgr.Inst._pre_mouse_point != null) {
+		GameMgr.Inst._pre_mouse_point.x = Math.floor(Math.random() * 100) + 1;
+		GameMgr.Inst._pre_mouse_point.y = Math.floor(Math.random() * 100) + 1;
 	}
-	GameMgr.Inst._pre_mouse_point.x = Math.floor(Math.random() * 100) + 1;
-	GameMgr.Inst._pre_mouse_point.y = Math.floor(Math.random() * 100) + 1;
-	GameMgr.Inst.clientHeatBeat(); // Prevent Client-side AFK
-	if (typeof app != 'undefined' && app != null && app.NetAgent != null) {
+	if (typeof GameMgr.Inst.clientHeatBeat == 'function') {
+		GameMgr.Inst.clientHeatBeat(); // Prevent Client-side AFK
+	}
+	if (typeof app != 'undefined' && app != null && app.NetAgent != null &&
+		typeof app.NetAgent.sendReq2Lobby == 'function') {
 		app.NetAgent.sendReq2Lobby('Lobby', 'heatbeat', { no_operation_counter: 0 }); //Prevent Server-side AFK
 	}
 
@@ -523,10 +1688,36 @@ function preventAFK() {
 }
 
 function hasFinishedMainLobbyLoading() {
-	if (typeof GameMgr == 'undefined') {
-		return false;
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.state.isLobbyReady() || unity.state.isInGame();
+	if (isInGame()) {
+		return true;
 	}
-	return GameMgr.Inst.login_loading_end || isInGame();
+	if (typeof GameMgr != 'undefined' && GameMgr != null && GameMgr.Inst != null &&
+		GameMgr.Inst.login_loading_end) {
+		return true;
+	}
+	// The lobby can be open even when the older loading flag is absent or stale.
+	// Inst alone is insufficient: the client also keeps closed UI instances around.
+	return typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Lobby != null &&
+		uiscript.UI_Lobby.Inst != null && uiscript.UI_Lobby.Inst.enabled === true;
+}
+
+function hasLegacyClient() {
+	return (typeof GameMgr != 'undefined' && GameMgr != null) ||
+		(typeof view != 'undefined' && view != null && view.DesktopMgr != null) ||
+		(typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Lobby != null);
+}
+
+function isUnsupportedUnityClient() {
+	// Check the actual client, not the hostname: regional sites can change engines.
+	return !hasLegacyClient() && document.getElementById("unity-canvas") != null &&
+		(typeof createUnityInstance == 'function' ||
+			document.querySelector('script[src*=".loader.js"]') != null);
+}
+
+function isUnityPage() {
+	return isUnsupportedUnityClient();
 }
 
 function searchForGame() {
@@ -550,6 +1741,7 @@ function getOperationList() {
 }
 
 function getOperations() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return AlphaJongUnityState.OPERATIONS;
 	if (typeof mjcore == 'undefined' || mjcore == null || typeof mjcore.E_PlayOperation == 'undefined') {
 		return {};
 	}
@@ -682,6 +1874,8 @@ function getRoundWind() {
 }
 
 function setAutoCallWin(win) {
+	// Unity decisions call wins through the same guarded action path as discards.
+	if (typeof getUnityClient === "function" && getUnityClient()) return;
 	if (!isInGame())
 		return;
 	var manager = getDesktopManagerInstance();
@@ -758,10 +1952,11 @@ function declineCall(operation) {
 function sendRiichiCall(tile, moqie) {
 	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
-		sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.liqi, tile: tile, moqie: moqie, timeuse: Math.random() * 2 + 1 }); //Moqie: Throwing last drawn tile (Riichi -> false)
+		return sendReq2MJ('inputOperation', { type: getOperations().liqi, tile: tile, moqie: moqie, timeuse: Math.random() * 2 + 1 }); //Moqie: Throwing last drawn tile (Riichi -> false)
 	} else {
 		let tileName = getTileEmojiByName(tile);
 		showCrtStrategyMsg(`Riichi: ${tileName};`);
+		return true;
 	}
 }
 
@@ -773,7 +1968,7 @@ function sendKitaCall() {
 			return;
 		}
 		var moqie = manager.mainrole.last_tile.val.toString() == "4z";
-		if (!sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.babei, moqie: moqie, timeuse: Math.random() * 2 + 1 })) {
+		if (!sendReq2MJ('inputOperation', { type: getOperations().babei, moqie: moqie, timeuse: Math.random() * 2 + 1 })) {
 			log("Failed to send Kita request.");
 			return;
 		}
@@ -786,7 +1981,7 @@ function sendKitaCall() {
 function sendAbortiveDrawCall() {
 	if (!isActionCurrent()) return false;
 	if (MODE === AIMODE.AUTO) {
-		if (!sendReq2MJ('inputOperation', { type: mjcore.E_PlayOperation.jiuzhongjiupai, index: 0, timeuse: Math.random() * 2 + 1 })) {
+		if (!sendReq2MJ('inputOperation', { type: getOperations().jiuzhongjiupai, index: 0, timeuse: Math.random() * 2 + 1 })) {
 			log("Failed to send abortive draw request.");
 			return;
 		}
@@ -802,6 +1997,10 @@ function callDiscard(tileNumber) {
 		try {
 			var player = getDesktopPlayer(0);
 			if (player != null && Array.isArray(player.hand) && player.hand[tileNumber] != null && player.hand[tileNumber].valid) {
+				if (typeof getUnityClient === "function" && getUnityClient()) {
+					return sendReq2MJ('inputOperation', { type: getOperations().dapai, tile: player.hand[tileNumber].val.toString(),
+						moqie: player.hand[tileNumber] === player.last_tile });
+				}
 				player._choose_pai = player.hand[tileNumber];
 				player.DoDiscardTile();
 				markActionSent();
@@ -819,7 +2018,7 @@ function callDiscard(tileNumber) {
 			` | ${helpHintContext.ukeire} improving unseen tiles (~${(helpHintContext.improvementChance * 100).toFixed(1)}% next draw)` : "";
 		let furitenStr = helpHintContext.furiten ? " | Furiten: self-draw only" : "";
 		showCrtStrategyMsg(`[${strategyStr} | ${shantenStr}] Discard: ${tileName}${drawStr}${furitenStr}`);
-		if (CHANGE_RECOMMEND_TILE_COLOR) {
+		if (CHANGE_RECOMMEND_TILE_COLOR && !(typeof getUnityClient === "function" && getUnityClient())) {
 			view.DesktopMgr.Inst.mainrole.hand.forEach(
 				tile => tile.val.toString() == tileID ?
 					tile._SetColor(new Laya.Vector4(0.5, 0.8, 0.9, 1))
@@ -829,6 +2028,11 @@ function callDiscard(tileNumber) {
 }
 
 function getPlayerLinkState(player) {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		var manager = unity.state.getManager();
+		return manager ? manager.player_link_state[localPosition2Seat(player)] : 1;
+	}
 	if (typeof view == 'undefined' || view == null || typeof view.DesktopMgr == 'undefined' || view.DesktopMgr == null || !Array.isArray(view.DesktopMgr.player_link_state)) {
 		return 1;
 	}
@@ -851,6 +2055,7 @@ function isEndscreenShown() {
 }
 
 function isDisconnect() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return false; // Unity owns reconnects.
 	return typeof uiscript != 'undefined' && uiscript != null && uiscript.UI_Hanguplogout != null &&
 		uiscript.UI_Hanguplogout.Inst != null && uiscript.UI_Hanguplogout.Inst._me != null &&
 		uiscript.UI_Hanguplogout.Inst._me.visible === true;
@@ -866,6 +2071,8 @@ function isPlayerRiichi(player) {
 }
 
 function isInGame() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.state.isInGame();
 	try {
 		return this != null && view != null && view.DesktopMgr != null &&
 			view.DesktopMgr.Inst != null && view.DesktopMgr.player_link_state != null &&
@@ -939,6 +2146,7 @@ function isInRank(room) {
 
 // Map of all Rooms
 function getRooms() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return null;
 	try {
 		return cfg.desktop.matchmode;
 	}
@@ -949,6 +2157,7 @@ function getRooms() {
 
 // Returns the room of the current game as a number: Bronze = 1, Silver = 2 etc.
 function getCurrentRoom() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return 0;
 	try {
 		var manager = getDesktopManagerInstance();
 		if (manager == null || manager.game_config == null || manager.game_config.meta == null) {
@@ -977,6 +2186,8 @@ function getRoomName(room) {
 
 //How much seconds left for a turn (base value, 20 at start)
 function getOverallTimeLeft() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) return unity.getTimeLeft();
 	try {
 		return uiscript.UI_DesktopInfo.Inst._timecd._add;
 	}
@@ -987,6 +2198,11 @@ function getOverallTimeLeft() {
 
 //How much time was left in the last turn?
 function getLastTurnTimeLeft() {
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		var manager = unity.state.getManager();
+		return manager ? manager.time_add + manager.time_fixed : 25;
+	}
 	try {
 		return uiscript.UI_DesktopInfo.Inst._timecd._pre_sec;
 	}
@@ -2984,7 +4200,8 @@ async function callTriple(combinations, operation) {
 	var newHandTriples;
 	var wouldFold = false;
 	await withSimulatedCallState(callTiles, async function () {
-		newHand = removeTilesFromTileArray(ownHand, callTiles); //Remove called tiles from hand
+		// Evaluate the future discard without changing the live hand's permissions.
+		newHand = removeTilesFromTileArray(ownHand, callTiles).map(tile => ({ ...tile, valid: true }));
 		tilePrios = await getTilePriorities(newHand);
 		if (tilePrios.length == 0 || (!isDebug() && !isDecisionCurrent())) return;
 		tilePrios = sortOutUnsafeTiles(tilePrios);
@@ -3226,8 +4443,7 @@ function callRiichi(tiles) {
 						moqie = true;
 					}
 					log("Discard: " + getTileName(tile.tile, false));
-					sendRiichiCall(comb, moqie);
-					return true;
+					return sendRiichiCall(comb, moqie) !== false;
 				}
 				else {
 					return false;
@@ -4757,13 +5973,118 @@ function isTileCloseToDora(tile) {
 }
 
 
+// Connect the protocol observer to AlphaJong's existing decision engine.
+var alphaJongUnityClient = null;
+
+function getUnityClient() {
+	return !hasLegacyClient() ? alphaJongUnityClient : null;
+}
+
+function initUnityClient() {
+	if (alphaJongUnityClient != null || hasLegacyClient() || typeof WebSocket !== "function") return;
+	var state = AlphaJongUnityState.create({
+		onChange: function (event) {
+			decisionEpoch++;
+			if (event.type === "auth" || event.action === "ActionNewRound" || event.type === "restore") {
+				tilesLeft = 0;
+				functionsExtended = false;
+			}
+			if (event.type === "invalidated" || event.type === "request" || event.type === "timeout") clearCrtStrategyMsg();
+		},
+		onDiscard: function (event) {
+			if (event.player === 0 || event.replaying) return;
+			var danger = -1;
+			try {
+				if (!threadIsRunning) {
+					setData(false);
+					visibleTiles.push(event.tile);
+					availableTiles = removeTilesFromTileArray(availableTiles, [event.tile]);
+					invalidateDefenseRuntimeCache();
+					danger = getTileDanger(event.tile, event.player);
+					if (event.tsumogiri && danger < 0.01) danger = 0.05;
+				}
+			} catch (_) { /* Keep the observation unknown if a decision owns the simulation. */ }
+			if (Array.isArray(playerDiscardSafetyList[event.player])) {
+				if (event.riichi) riichiTiles[event.player] = event.tile;
+				playerDiscardSafetyList[event.player].push(danger);
+			}
+		}
+	});
+	var transport = AlphaJongUnityTransport.install({
+		protocol: AlphaJongUnityProtocol,
+		onFrame: function (frame, direction, info) {
+			if (hasLegacyClient()) return;
+			if ((info.game && info.currentGame) || (frame.method.startsWith(".lq.Lobby.") && frame.kind === "response")) state.consume(frame, direction);
+		},
+		onActivity: function (reason, info) { if (!hasLegacyClient() && info.currentGame) decisionEpoch++; },
+		onInvalidate: function (reason, info) { if (!hasLegacyClient() && info.currentGame) state.invalidate(reason); },
+		canSend: function (method, payload) {
+			if (hasLegacyClient() || MODE !== AIMODE.AUTO || !isActionCurrent() || !state.isInGame()) return false;
+			var manager = state.getManager(), operations = manager.oplist;
+			if (method === ".lq.FastTest.inputChiPengGang") {
+				if (payload.cancel_operation === true) return operations.some(operation => [2, 3, 5, 9].includes(operation.type));
+				return [2, 3, 5, 9].includes(payload.type) && validOption(operations, payload);
+			}
+			if (method !== ".lq.FastTest.inputOperation") return false;
+			if (payload.type === 1) {
+				if (!operations.some(operation => operation.type === 1)) return false;
+				return manager.mainrole.hand.some(entry => entry.valid && entry.val.toString() === payload.tile &&
+					(payload.moqie !== true || entry === manager.mainrole.last_tile));
+			}
+			if (payload.type === 7) {
+				var riichi = operations.find(operation => operation.type === 7);
+				var inHand = manager.mainrole.hand.some(entry => entry.valid && entry.val.toString() === payload.tile &&
+					(payload.moqie !== true || entry === manager.mainrole.last_tile));
+				// A red five can represent both fives in the server's riichi options.
+				// Compare tile value, but send only an eligible tile actually in hand.
+				return inHand && riichi != null && riichi.combination.some(option =>
+					option.split("|")[0].replace(/^0/, "5") === payload.tile.replace(/^0/, "5"));
+			}
+			return [4, 6, 8, 10, 11].includes(payload.type) && validOption(operations, payload);
+		}
+	});
+	function validOption(operations, payload) {
+		var operation = operations.find(entry => entry.type === payload.type);
+		if (!operation) return false;
+		return !operation.combination.length || (Number.isInteger(payload.index) && payload.index >= 0 && payload.index < operation.combination.length);
+	}
+	alphaJongUnityClient = {
+		state: state, transport: transport,
+		send: function (method, payload) {
+			var manager = state.getManager();
+			if (!manager) return false;
+			var normalized = Object.assign({}, payload);
+			// Retain the game's existing inputOperation timeuse convention (seconds).
+			// Operation countdown fields use milliseconds; convert them explicitly.
+			var status = state.getStatus();
+			var remaining = Math.max(0, status.operationDeadline - Date.now());
+			var allotted = (manager.time_fixed + manager.time_add) * 1000;
+			normalized.timeuse = Math.max(0, Math.floor((allotted - remaining) / 1000));
+			if (method === "inputChiPengGang" && [4, 6, 8, 10, 11].includes(normalized.type)) method = "inputOperation";
+			return transport.send(method, normalized);
+		},
+		getTimeLeft: function () {
+			var status = state.getStatus();
+			return status.operationDeadline ? Math.max(0, (status.operationDeadline - Date.now()) / 1000) : 20;
+		}
+	};
+}
+
+
 //################################
 // MAIN
 // Main Class, starts the bot and sets up all necessary variables.
 //################################
 
+var startupStartedAt = Date.now();
+var startupFinished = false;
+var startupError = "";
+var lobbyLoadTimer = null;
+var afkTimer = null;
+
 //GUI can be re-opened by pressing + on the Numpad
 if (!isDebug()) {
+	if (typeof initUnityClient === "function") initUnityClient();
 	initGui();
 	window.onkeyup = function (e) {
 		var key = e.keyCode ? e.keyCode : e.which;
@@ -4776,7 +6097,6 @@ if (!isDebug()) {
 	if (AUTORUN) {
 		log("Autorun start");
 		run = true;
-		setInterval(preventAFK, 30000);
 	}
 
 	log(`crt mode ${AIMODE_NAME[MODE]}`);
@@ -4785,6 +6105,9 @@ if (!isDebug()) {
 }
 
 function toggleRun() {
+	if (startupError) {
+		return;
+	}
 	clearCrtStrategyMsg();
 	decisionEpoch++;
 	oldOps = "";
@@ -4804,30 +6127,104 @@ function toggleRun() {
 }
 
 function waitForMainLobbyLoad() {
-	if (isInGame()) { // In case game is already ongoing after reload
-		refreshRoomSelection();
+	clearTimeout(lobbyLoadTimer);
+	lobbyLoadTimer = null;
+	if (startupFinished || startupError) {
+		return;
+	}
+
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity && isUnityPage()) {
+		autorunCheckbox.disabled = true;
+		roomCombobox.disabled = true;
+		if (!unity.state.isLobbyReady()) {
+			var connected = unity.transport.getStatus().connected;
+			showCrtActionMsg(connected ? "Waiting for sign-in." : "Connecting to Mahjong Soul.");
+			if (Date.now() - startupStartedAt >= 30000) showStartupNotice("Sign in to Mahjong Soul, then enter a standard match. " +
+				"If already signed in, reload this page once so AlphaJong can observe the game connection.");
+			lobbyLoadTimer = setTimeout(waitForMainLobbyLoad, 1000);
+			return;
+		}
+		showStartupNotice("Unity integration is active. Choose a standard match in Mahjong Soul; Auto plays your turns and Help shows recommendations. " +
+			"Matchmaking and in-game tile highlighting are not available here.");
+	}
+	if (!unity && isUnsupportedUnityClient()) {
+		startupError = "This Mahjong Soul page uses Unity WebGL. This version of AlphaJong only supports " +
+			"the older JavaScript client and cannot read or play games on this client.";
+		run = false;
+		decisionEpoch++;
+		clearInterval(afkTimer);
+		afkTimer = null;
+		startButton.textContent = "Start Bot";
+		startButton.disabled = true;
+		autorunCheckbox.disabled = true;
+		roomCombobox.disabled = true;
+		showCrtActionMsg("Unsupported game client.");
+		showStartupNotice(startupError);
+		log(startupError);
+		return;
+	}
+
+	if (!hasFinishedMainLobbyLoading()) {
+		if (Date.now() - startupStartedAt >= 30000) {
+			if (hasLegacyClient()) {
+				showCrtActionMsg("Waiting for login or lobby.");
+				showStartupNotice("Mahjong Soul has not reported a ready lobby. Finish signing in. " +
+					"If the lobby is already visible, this client may need a compatibility update. Still checking.");
+			} else {
+				showCrtActionMsg("Cannot access the game.");
+				showStartupNotice("AlphaJong cannot access Mahjong Soul's game data. If the lobby is already open, " +
+					"update or reinstall AlphaJong and reload the page. Still checking for the game.");
+			}
+		} else {
+			showCrtActionMsg("Waiting for Mahjong Soul.");
+		}
+		lobbyLoadTimer = setTimeout(waitForMainLobbyLoad, 2000);
+		return;
+	}
+
+	startupFinished = true;
+	startButton.disabled = false;
+	if (!unity) showStartupNotice("");
+	refreshRoomSelection();
+	if (!unity && AUTORUN && run && afkTimer == null) {
+		afkTimer = setInterval(preventAFK, 30000);
+	}
+	if (isInGame()) { // In case a game is already ongoing after reload
 		main();
 		return;
 	}
 
-	if (!hasFinishedMainLobbyLoading()) { //Otherwise wait for Main Lobby to load and then search for game
-		log("Waiting for Main Lobby to load...");
-		showCrtActionMsg("Wait for Loading.");
-		setTimeout(waitForMainLobbyLoad, 2000);
-		return;
-	}
 	log("Main Lobby loaded!");
-	refreshRoomSelection();
 	startGame();
-	setTimeout(main, 10000);
-	log("Main Loop started.");
+	if (run) {
+		showCrtActionMsg("Waiting for Game to start.");
+		setTimeout(main, 10000);
+		log("Main Loop started.");
+	} else {
+		showCrtActionMsg("Bot is not running.");
+	}
 }
 
 //Main Loop
 function main() {
+	if (startupError) {
+		return;
+	}
 	if (!run) {
 		showCrtActionMsg("Bot is not running.");
 		return;
+	}
+	var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+	if (unity) {
+		var unityStatus = unity.state.getStatus();
+		if (!unity.state.isInGame()) {
+			showCrtActionMsg(unityStatus.phase === "lobby" ? "Enter a match in Mahjong Soul." : "Waiting for game state.");
+			showStartupNotice(unityStatus.phase === "paused" ? unityStatus.reason : "");
+			setTimeout(main, 1000);
+			return;
+		}
+		showStartupNotice("");
 	}
 	if (!isInGame()) {
 		checkForEnd();
@@ -5044,7 +6441,7 @@ function setData(mainUpdate = true) {
 		ownHand[ownHand.length - 1].valid = tile.valid; //Is valid discard
 	}
 
-	if (MARK_TSUMOGIRI) {
+	if (MARK_TSUMOGIRI && !(typeof getUnityClient === "function" && getUnityClient())) {
 		for (var j = 1; j < getNumberOfPlayers(); j++) {
 			if (getDiscardsOfPlayer(j).last_pai != null && getDiscardsOfPlayer(j).last_pai.val.tsumogiri) {
 				getDiscardsOfPlayer(j).last_pai.GetDefaultColor = function () { return new Laya.Vector4(0.85, 0.85, 0.85, 1); }
@@ -5088,6 +6485,14 @@ function setData(mainUpdate = true) {
 		initialDiscardedTilesSafety();
 		riichiTiles = [null, null, null, null];
 		playerDiscardSafetyList = [[], [], [], []];
+		var unity = typeof getUnityClient === "function" ? getUnityClient() : null;
+		if (unity) {
+			for (var event of unity.state.getDiscardEvents()) {
+				if (event.player === 0) continue;
+				playerDiscardSafetyList[event.player].push(-1);
+				if (event.riichi) riichiTiles[event.player] = event.tile;
+			}
+		}
 		extendMJSoulFunctions();
 	}
 
@@ -5103,6 +6508,10 @@ function setData(mainUpdate = true) {
 
 //Search for Game
 function startGame() {
+	if (typeof getUnityClient === "function" && getUnityClient()) {
+		if (run) showCrtActionMsg("Enter a match in Mahjong Soul.");
+		return;
+	}
 	if (!isInGame() && run && AUTORUN) {
 		log("Searching for Game in Room " + ROOM);
 		showCrtActionMsg("Searching for Game...");
@@ -5112,6 +6521,7 @@ function startGame() {
 
 //Check if End Screen is shown
 function checkForEnd() {
+	if (typeof getUnityClient === "function" && getUnityClient()) return;
 	if (isEndscreenShown() && AUTORUN) {
 		run = false;
 		setTimeout(goToLobby, 25000);
