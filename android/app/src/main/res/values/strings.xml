@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AlphaJong</string>
+    <string name="script_missing">Getting ready</string>
+    <string name="fetching_script">Downloading AlphaJong from GitHub…</string>
+    <string name="fetch_failed">Could not download the userscript. Check your connection and try again.</string>
+    <string name="loading_game">Opening Mahjong Soul…</string>
+    <string name="script_status">AlphaJong %1$s</string>
+    <string name="script_pending">AlphaJong %1$s · Update ready</string>
+    <string name="script_current">Already current (%1$s).</string>
+    <string name="update_ready">Version %1$s is ready for the next reload.</string>
+    <string name="using_saved">Using the saved script. %1$s</string>
+    <string name="refresh_script">Check for updates</string>
+    <string name="restore_controls">Show controls</string>
+    <string name="controls_not_ready">The game controls are not ready yet.</string>
+    <string name="reload_page">Reload game</string>
+    <string name="reload_title">Reload Mahjong Soul?</string>
+    <string name="reload_message">This reconnects the game and applies the downloaded script. Wait until your match has finished.</string>
+    <string name="retry">Try again</string>
+    <string name="update_webview">Update Android WebView</string>
+    <string name="webview_too_old">Update Android System WebView or Chrome, then reopen AlphaJong. This WebView cannot start the userscript before the game.</string>
+    <string name="unsupported_graphics">This WebView does not expose the WebAssembly and WebGL 2 features required by Mahjong Soul. Update WebView or try a supported device.</string>
+    <string name="renderer_gone">Android closed the game renderer. Close other apps if memory is low, then try again.</string>
+    <string name="script_failed">The downloaded script did not start. Check for a newer update and try again.</string>
+    <string name="cache_write_failed">Could not save the script state. Check the available device storage.</string>
+    <string name="script_failed_fallback">The update did not start. Version %1$s has been restored for your next retry.</string>
+    <string name="script_info">Script updates</string>
+    <string name="script_details">Running: %1$s\nDownloaded: %2$s\nLast checked: %3$s\n\nUpdates come from the public AlphaJong release on GitHub. Checks run every five minutes while the app is open. Updates take effect after you reload the game.</string>
+    <string name="never_checked">Not yet</string>
+    <string name="view_source">View public script</string>
+    <string name="external_link_unsupported">No supported app could open that link.</string>
+</resources>

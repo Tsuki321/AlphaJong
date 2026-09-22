@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="seed">#1B4D3E</color>
+    <color name="seed_dark">#102E26</color>
+    <color name="background">#101614</color>
+    <color name="on_background">#F2F6F4</color>
+    <color name="on_background_muted">#C5D1CB</color>
+    <color name="ic_launcher_background">#1B4D3E</color>
+</resources>
