@@ -12,6 +12,8 @@
     <string name="using_saved">Using the saved script. %1$s</string>
     <string name="refresh_script">Check for updates</string>
     <string name="restore_controls">Show controls</string>
+    <string name="fullscreen">Full screen</string>
+    <string name="fullscreen_back_hint">Use Back to show the toolbar again.</string>
     <string name="controls_not_ready">The game controls are not ready yet.</string>
     <string name="reload_page">Reload game</string>
     <string name="reload_title">Reload Mahjong Soul?</string>

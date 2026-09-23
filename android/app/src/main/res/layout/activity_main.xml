@@ -14,12 +14,19 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="36dp"
+            android:minHeight="0dp"
             android:background="?attr/colorPrimary"
+            android:theme="@style/ThemeOverlay.AlphaJong.CompactToolbar"
+            app:contentInsetStart="8dp"
+            app:contentInsetEnd="0dp"
+            app:contentInsetEndWithActions="0dp"
+            app:maxButtonHeight="36dp"
+            app:titleMarginStart="0dp"
+            app:titleMarginEnd="4dp"
+            app:titleTextAppearance="@style/TextAppearance.AlphaJong.CompactTitle"
             app:menu="@menu/main"
-            app:subtitleTextColor="@color/on_background_muted"
             app:titleTextColor="@color/on_background"
-            app:subtitle="@string/script_missing"
             app:title="@string/app_name" />
 
         <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">

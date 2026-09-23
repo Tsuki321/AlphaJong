@@ -28,7 +28,11 @@ let browser;
 
 try {
   browser = await chromium.launch({ headless: true, args: [`--log-file=${path.resolve('test-results/android-chromium.log')}`] });
-  for (const [name, viewport] of [['portrait', { width: 393, height: 851 }], ['landscape', { width: 851, height: 393 }]]) {
+  for (const [name, viewport] of [
+    ['narrow', { width: 320, height: 640 }],
+    ['portrait', { width: 393, height: 851 }],
+    ['landscape', { width: 851, height: 393 }]
+  ]) {
     const result = { name, checks: 0, errors: [] };
     report.scenarios.push(result);
     const check = (value, description) => { assert.ok(value, `${name}: ${description}`); result.checks++; };
@@ -53,6 +57,17 @@ try {
     check(!await page.evaluate(() => window.__nativeReports.some(message => message.type === 'error')), 'no startup failure was reported');
 
     const hide = page.getByRole('button', { name: 'Hide GUI', exact: true });
+    const compactRow = hide.locator('..');
+    result.controls = await compactRow.evaluate(row => {
+      const bounds = row.getBoundingClientRect();
+      const controls = [...row.querySelectorAll('button,select,input')]
+        .filter(element => element.getClientRects().length)
+        .map(element => { const rect = element.getBoundingClientRect(); return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right }; });
+      return { height: bounds.height, left: bounds.left, right: bounds.right, controls };
+    });
+    check(result.controls.left >= 0 && result.controls.right <= viewport.width, 'the compact controls fit the screen');
+    check(result.controls.controls.every(control => Math.abs(control.top - result.controls.controls[0].top) < 1), 'phone controls stay on a single row');
+    await page.screenshot({ path: `test-results/android-compact-${name}.png`, fullPage: true });
     await hide.tap();
     check(!await hide.isVisible(), 'hide controls still works');
     check(await page.evaluate(restore), 'the native toolbar command restores controls without a keyboard');
@@ -98,7 +113,7 @@ try {
     await context.close();
   }
   report.passed = true;
-  console.log(`Android shell browser checks passed: ${report.scenarios.reduce((total, item) => total + item.checks, 0)} checks across portrait and landscape.`);
+  console.log(`Android shell browser checks passed: ${report.scenarios.reduce((total, item) => total + item.checks, 0)} checks across narrow, portrait and landscape layouts.`);
 } catch (error) {
   report.error = error.stack || String(error);
   process.exitCode = 1;

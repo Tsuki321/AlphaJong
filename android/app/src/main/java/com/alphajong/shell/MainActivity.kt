@@ -58,12 +58,14 @@ class MainActivity : AppCompatActivity() {
     private var pageFailed = false
     private var pageReady = false
     private var navigation = 0
+    private var gameFullscreen = false
     private var fullScreenCallback: WebChromeClient.CustomViewCallback? = null
     private val template by lazy { assets.open("document-start.js").bufferedReader().use { it.readText() } }
     private val mobileControls by lazy { assets.open("mobile-controls.js").bufferedReader().use { it.readText() } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        gameFullscreen = savedInstanceState?.getBoolean(STATE_GAME_FULLSCREEN, false) == true
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_main)
@@ -87,6 +89,7 @@ class MainActivity : AppCompatActivity() {
             isAppearanceLightNavigationBars = false
         }
         ViewCompat.requestApplyInsets(root)
+        applyScreenMode()
         toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_refresh_script -> checkUpdates(force = true, announce = true)
@@ -95,6 +98,11 @@ class MainActivity : AppCompatActivity() {
                     if (it != "true") showMessage(getString(R.string.controls_not_ready))
                 }
                 R.id.action_script_info -> showScriptInfo()
+                R.id.action_fullscreen -> {
+                    gameFullscreen = true
+                    applyScreenMode()
+                    showMessage(getString(R.string.fullscreen_back_hint))
+                }
                 else -> return@setOnMenuItemClickListener false
             }
             true
@@ -113,6 +121,10 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (fullScreenCallback != null) exitFullscreen()
+                else if (gameFullscreen) {
+                    gameFullscreen = false
+                    applyScreenMode()
+                }
                 else if (webView?.canGoBack() == true) webView?.goBack()
                 else finish()
             }
@@ -233,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                 available = result.script
                 if (installed == null) loadScript(result.script)
                 else {
-                    updateSubtitle()
+                    updateToolbarTitle()
                     if (result.warning != null) showMessage(getString(R.string.using_saved, result.warning))
                     else if (installed?.sha256 != result.script.sha256) {
                         Snackbar.make(root, getString(R.string.update_ready, result.script.version), Snackbar.LENGTH_LONG)
@@ -260,7 +272,7 @@ class MainActivity : AppCompatActivity() {
         available = script
         pageReady = false
         pageFailed = false
-        updateSubtitle()
+        updateToolbarTitle()
         showBlocking(getString(R.string.loading_game), busy = true)
         if (reload && view.url?.let(GameClient::isGameUrl) == true) view.reload()
         else view.loadUrl(GameClient.GLOBAL_URL)
@@ -269,7 +281,7 @@ class MainActivity : AppCompatActivity() {
     private fun scriptReady(script: CachedScript) {
         pageReady = true
         blocking.visibility = View.GONE
-        updateSubtitle()
+        updateToolbarTitle()
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) { repository.confirmStarted(script) }
@@ -326,9 +338,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateSubtitle() {
+    private fun updateToolbarTitle() {
         val running = installed ?: return
-        toolbar.subtitle = getString(
+        toolbar.title = getString(
             if (available != null && available?.sha256 != running.sha256) R.string.script_pending else R.string.script_status,
             running.version
         )
@@ -361,12 +373,23 @@ class MainActivity : AppCompatActivity() {
         fullScreenCallback = null
         findViewById<FrameLayout>(R.id.fullscreen).apply { removeAllViews(); visibility = View.GONE }
         findViewById<View>(R.id.normal_content).visibility = View.VISIBLE
-        WindowInsetsControllerCompat(window, root).show(WindowInsetsCompat.Type.systemBars())
+        applyScreenMode()
         callback.onCustomViewHidden()
+    }
+
+    private fun applyScreenMode() {
+        toolbar.visibility = if (gameFullscreen) View.GONE else View.VISIBLE
+        WindowInsetsControllerCompat(window, root).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            if (gameFullscreen || fullScreenCallback != null) hide(WindowInsetsCompat.Type.systemBars())
+            else show(WindowInsetsCompat.Type.systemBars())
+        }
+        ViewCompat.requestApplyInsets(root)
     }
 
     override fun onResume() {
         super.onResume()
+        applyScreenMode()
         webView?.onResume()
         foregroundJob?.cancel()
         foregroundJob = lifecycleScope.launch {
@@ -383,6 +406,11 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(STATE_GAME_FULLSCREEN, gameFullscreen)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroy() {
         exitFullscreen()
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) handler?.remove()
@@ -390,5 +418,9 @@ class MainActivity : AppCompatActivity() {
         webView?.let { browserContainer.removeView(it); it.destroy() }
         webView = null
         super.onDestroy()
+    }
+
+    companion object {
+        private const val STATE_GAME_FULLSCREEN = "game_fullscreen"
     }
 }

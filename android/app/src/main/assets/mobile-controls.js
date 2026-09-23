@@ -1,10 +1,61 @@
 // Kept in the APK so public userscripts gain touch controls without a separate release feed.
-function installAndroidControls(gui, header, panel) {
+function installAndroidControls(gui, header, panel, options) {
     if (!gui || !header || !panel) return { restore: function () { return false; } };
+    options = options || {};
+    Object.assign(gui.style, {
+        position: 'fixed', left: '4px', right: '4px', top: '4px', width: 'auto',
+        font: '11px/1.2 sans-serif', pointerEvents: 'none'
+    });
+    var row = gui.firstElementChild;
+    if (row) {
+        Object.assign(row.style, {
+            display: 'inline-flex', flexWrap: options.hideMatchmaking ? 'nowrap' : 'wrap',
+            alignItems: 'center', justifyContent: 'center',
+            gap: '3px', padding: '2px', maxWidth: '100%', boxSizing: 'border-box',
+            borderRadius: '4px', pointerEvents: 'auto'
+        });
+        Array.from(row.children).forEach(function (control) { control.style.margin = '0'; });
+        row.querySelectorAll('button,select,input').forEach(function (control) {
+            Object.assign(control.style, {
+                font: '11px/1.2 sans-serif', minHeight: '26px', padding: '2px 5px',
+                boxSizing: 'border-box', borderRadius: '3px', maxWidth: '160px', flexShrink: '0'
+            });
+            if (control.type === 'checkbox') {
+                Object.assign(control.style, { width: '12px', height: '12px', minHeight: '0', padding: '0' });
+            } else if (control.readOnly) {
+                Object.assign(control.style, {
+                    flex: '1 1 80px', width: 'clamp(60px,24vw,120px)', minWidth: '0', maxWidth: '120px'
+                });
+                control.setAttribute('aria-label', 'Bot status');
+            }
+            if (control.tagName === 'BUTTON' && control.textContent === 'Hide GUI') {
+                control.setAttribute('aria-label', 'Hide GUI');
+                control.textContent = 'Hide';
+            }
+        });
+    }
+    if (options.hideMatchmaking) {
+        // Unity matchmaking is selected in the game; its disabled desktop controls waste a row.
+        if (options.autostart) {
+            options.autostart.style.display = 'none';
+            Array.from(options.autostart.labels || []).forEach(function (label) { label.style.display = 'none'; });
+        }
+        if (options.room) options.room.style.display = 'none';
+    }
+    Array.from(gui.children).slice(1).forEach(function (notice) {
+        Object.assign(notice.style, {
+            font: '11px/1.3 sans-serif', padding: '5px 8px', margin: '4px auto', maxWidth: '420px',
+            maxHeight: '72px', overflowY: 'auto', boxSizing: 'border-box', pointerEvents: 'auto'
+        });
+    });
     var drag = null;
+    Object.assign(header.style, { font: '11px/1.2 sans-serif', padding: '2px 6px' });
+    Array.from(panel.children).filter(function (child) { return child !== header; }).forEach(function (content) {
+        Object.assign(content.style, { fontSize: '12px', lineHeight: '1.3', padding: '6px 8px' });
+    });
     header.style.touchAction = 'none';
-    panel.style.maxHeight = 'calc(100dvh - 16px)';
-    panel.style.maxWidth = 'calc(100vw - 16px)';
+    panel.style.maxHeight = 'min(180px,42dvh)';
+    panel.style.maxWidth = 'min(320px,calc(100vw - 16px))';
     panel.style.overflowY = 'auto';
 
     function place(left, top) {
@@ -15,7 +66,7 @@ function installAndroidControls(gui, header, panel) {
         if (panel.style.top !== y + 'px') panel.style.top = y + 'px';
     }
     function fit() {
-        var minimum = Math.max(0, Math.min(230, window.innerWidth - 16)) + 'px';
+        var minimum = Math.max(0, Math.min(180, window.innerWidth - 16)) + 'px';
         if (panel.style.minWidth !== minimum) panel.style.minWidth = minimum;
         if (panel.getClientRects().length) place(parseFloat(panel.style.left) || 20, parseFloat(panel.style.top) || 60);
     }
@@ -52,6 +103,7 @@ function installAndroidControls(gui, header, panel) {
     var close = header.querySelector('button');
     var closeTouch = null;
     if (close) {
+        Object.assign(close.style, { width: '24px', height: '24px', padding: '0', fontSize: '16px', flex: '0 0 24px' });
         close.addEventListener('pointerdown', function (event) {
             if (event.isPrimary && event.pointerType !== 'mouse') {
                 closeTouch = { id: event.pointerId, x: event.clientX, y: event.clientY };

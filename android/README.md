@@ -39,10 +39,15 @@ The app does not rewrite HTML or remove CSP. Its scoped message object accepts
 startup status only; it exposes no file, token or other privileged operations.
 
 **Show controls** in the native toolbar restores a hidden userscript toolbar.
-The APK includes a touch adapter for the current public script, including hint
-dragging, close taps and viewport clamping. Android system bars, cutouts and the
-keyboard are inset correctly. Fullscreen requests and renderer-exit recovery
-are handled.
+The toolbar is a single 36 dp row with compact icon buttons. **Full screen**
+hides the toolbar and Android system bars; use the Android Back button/gesture
+to show the toolbar again without reloading the game.
+
+The APK includes compact phone controls and hints for the current public script,
+including hint dragging, close taps and viewport clamping. Unavailable Unity
+matchmaking controls are hidden. Android system bars, cutouts and the keyboard
+are inset correctly. Game fullscreen requests and renderer-exit recovery are
+handled.
 
 Sign in through the game and choose a standard match. The current Unity adapter
 does not automate matchmaking or highlight recommendations inside the game

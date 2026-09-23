@@ -25,7 +25,11 @@
                 if (!hooked && !legacy) throw new Error('Missing game connection hook');
                 var controls = installAndroidControls(guiDiv,
                     typeof hintPanelHeader === 'undefined' ? null : hintPanelHeader,
-                    typeof hintPanelDiv === 'undefined' ? null : hintPanelDiv);
+                    typeof hintPanelDiv === 'undefined' ? null : hintPanelDiv, {
+                        hideMatchmaking: Boolean(hooked && !legacy),
+                        autostart: typeof autorunCheckbox === 'undefined' ? null : autorunCheckbox,
+                        room: typeof roomCombobox === 'undefined' ? null : roomCombobox
+                    });
                 window.__alphaJongAndroidShell = { sha256: shellHash, ready: true, restoreControls: controls.restore };
                 notify('ready');
             } catch (_) { notify('error'); }

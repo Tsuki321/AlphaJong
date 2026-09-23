@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item android:id="@+id/action_restore_controls" android:title="@string/restore_controls" app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_restore_controls" android:title="@string/restore_controls"
+        android:icon="@drawable/ic_controls" app:showAsAction="always" />
+    <item android:id="@+id/action_fullscreen" android:title="@string/fullscreen"
+        android:icon="@drawable/ic_fullscreen" app:showAsAction="always" />
     <item android:id="@+id/action_refresh_script" android:title="@string/refresh_script" app:showAsAction="never" />
     <item android:id="@+id/action_reload" android:title="@string/reload_page" app:showAsAction="never" />
     <item android:id="@+id/action_script_info" android:title="@string/script_info" app:showAsAction="never" />
