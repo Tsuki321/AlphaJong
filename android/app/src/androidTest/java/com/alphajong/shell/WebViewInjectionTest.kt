@@ -79,13 +79,14 @@ class WebViewInjectionTest {
 
     @Test fun redirectDestinationIsInjectedBeforeGameScriptsWithoutRemovingCsp() {
         val server = server()
+        val origin = "http://127.0.0.1:${server.port}"
         val started = CountDownLatch(1)
         val finished = CountDownLatch(1)
         val state = AtomicReference<String>()
         try {
             ActivityScenario.launch(WebViewTestActivity::class.java).use { scenario ->
                 scenario.onActivity { activity ->
-                    install(activity, setOf(server.url("/").toString().removeSuffix("/")), started)
+                    install(activity, setOf(origin), started)
                     activity.browser.webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView, url: String) {
                             if (url.endsWith("/game")) view.evaluateJavascript(
@@ -93,7 +94,7 @@ class WebViewInjectionTest {
                             ) { state.set(it); finished.countDown() }
                         }
                     }
-                    activity.browser.loadUrl(server.url("/redirect").toString())
+                    activity.browser.loadUrl("$origin/redirect")
                 }
                 assertTrue("No startup acknowledgment after redirect", started.await(20, TimeUnit.SECONDS))
                 assertTrue("Redirect destination did not finish", finished.await(20, TimeUnit.SECONDS))
@@ -104,6 +105,7 @@ class WebViewInjectionTest {
 
     @Test fun unrelatedOriginReceivesNeitherUserscriptNorNativeMessageObject() {
         val server = server()
+        val origin = "http://127.0.0.1:${server.port}"
         val finished = CountDownLatch(1)
         val state = AtomicReference<String>()
         try {
@@ -117,7 +119,7 @@ class WebViewInjectionTest {
                             }
                         }
                     }
-                    activity.browser.loadUrl(server.url("/outside").toString())
+                    activity.browser.loadUrl("$origin/outside")
                 }
                 assertTrue(finished.await(20, TimeUnit.SECONDS))
                 assertEquals("true", state.get())
@@ -127,6 +129,7 @@ class WebViewInjectionTest {
 
     @Test fun removingScriptDoesNotChangeTheRunningPageAndAppliesAtNextNavigation() {
         val server = server()
+        val origin = "http://127.0.0.1:${server.port}"
         val started = CountDownLatch(1)
         val currentChecked = CountDownLatch(1)
         val nextChecked = CountDownLatch(1)
@@ -136,9 +139,9 @@ class WebViewInjectionTest {
         try {
             ActivityScenario.launch(WebViewTestActivity::class.java).use { scenario ->
                 scenario.onActivity { activity ->
-                    handler = install(activity, setOf(server.url("/").toString().removeSuffix("/")), started)
+                    handler = install(activity, setOf(origin), started)
                     activity.browser.webViewClient = object : WebViewClient() {}
-                    activity.browser.loadUrl(server.url("/game").toString())
+                    activity.browser.loadUrl("$origin/game")
                 }
                 assertTrue(started.await(20, TimeUnit.SECONDS))
                 scenario.onActivity { activity ->
@@ -157,7 +160,7 @@ class WebViewInjectionTest {
                             }
                         }
                     }
-                    activity.browser.loadUrl(server.url("/second").toString())
+                    activity.browser.loadUrl("$origin/second")
                 }
                 assertTrue(nextChecked.await(20, TimeUnit.SECONDS))
                 assertEquals("true", nextState.get())
