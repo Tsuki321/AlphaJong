@@ -159,21 +159,23 @@ class MainActivity : AppCompatActivity() {
             allowContentAccess = false
             setSupportZoom(false)
         }
-        WebViewCompat.addWebMessageListener(view, "AlphaJongAndroidStatus", GameClient.origins) { sender, message, origin, mainFrame, _ ->
-            if (sender !== webView || !mainFrame || !GameClient.isGameUrl(origin.toString()) ||
-                message.type != WebMessageCompat.TYPE_STRING
-            ) return@addWebMessageListener
-            val text = message.data ?: return@addWebMessageListener
-            if (text.length > 512) return@addWebMessageListener
-            val data = runCatching { JSONObject(text) }.getOrNull() ?: return@addWebMessageListener
-            val script = installed ?: return@addWebMessageListener
-            if (data.optString("sha256") != script.sha256 || pageFailed) return@addWebMessageListener
-            when (data.optString("type")) {
-                "ready" -> scriptReady(script)
-                "error" -> scriptFailed(script)
-                "unsupported" -> {
-                    pageFailed = true
-                    showBlocking(getString(R.string.unsupported_graphics), busy = false, updateWebView = true)
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            WebViewCompat.addWebMessageListener(view, "AlphaJongAndroidStatus", GameClient.origins) { sender, message, origin, mainFrame, _ ->
+                if (sender !== webView || !mainFrame || !GameClient.isGameUrl(origin.toString()) ||
+                    message.type != WebMessageCompat.TYPE_STRING
+                ) return@addWebMessageListener
+                val text = message.data ?: return@addWebMessageListener
+                if (text.length > 512) return@addWebMessageListener
+                val data = runCatching { JSONObject(text) }.getOrNull() ?: return@addWebMessageListener
+                val script = installed ?: return@addWebMessageListener
+                if (data.optString("sha256") != script.sha256 || pageFailed) return@addWebMessageListener
+                when (data.optString("type")) {
+                    "ready" -> scriptReady(script)
+                    "error" -> scriptFailed(script)
+                    "unsupported" -> {
+                        pageFailed = true
+                        showBlocking(getString(R.string.unsupported_graphics), busy = false, updateWebView = true)
+                    }
                 }
             }
         }

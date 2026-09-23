@@ -3,6 +3,6 @@
     <base-config cleartextTrafficPermitted="false" />
     <!-- Instrumentation fixtures only. The game and update endpoints remain HTTPS. -->
     <domain-config cleartextTrafficPermitted="true">
-        <domain>127.0.0.1</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
     </domain-config>
 </network-security-config>
