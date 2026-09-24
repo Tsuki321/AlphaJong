@@ -1,0 +1,34 @@
+
+> test:engine
+> node --test test/hand_analysis_optimization.test.mjs test/engine_utils.test.mjs test/defense_quality.test.mjs test/decision_quality.test.mjs test/benchmark/harness.test.mjs test/benchmark/rollout.test.mjs
+
+✔ benchmark reports nearest-rank percentiles and excludes empty samples (3.5633ms)
+✔ seeded corpus is reproducible, differs across seeds, and respects physical copy limits (198.8121ms)
+✔ CLI separates warmups, saves all measured outputs and compares matching reports (2279.0616ms)
+✔ rollout walls contain distinct physical tiles and keep initial hand, indicator and draws disjoint (23.8935ms)
+✔ independent rollout oracle respects complete hands, copy-limited waits and distinct special hands (178.3323ms)
+✔ reference zero shanten agrees with a separate win recognizer on constructed and wall-drawn hands (109.9915ms)
+✔ kuikae restrictions match an independent sequence replacement oracle (91.2562ms)
+✔ sanankou distinguishes ron, self draw, ambiguous winning groups, and kans (86.9693ms)
+✔ call simulation evaluates permitted discards and preserves live state (137.2084ms)
+✔ sanankou-only shanpon keeps self-draw potential without fake ron waits in every mode (686.7024ms)
+✔ defense perspective, called-discard safety and board immutability regressions (573.0483ms)
+✔ visible counts follow board replacement and append/remove observer events (2.7498ms)
+✔ visible count optimization agrees with independent full scans over 300 changing boards (28.7263ms)
+✔ board refresh includes kita, indicators and newly changed tile identities (1.7616ms)
+✔ cached group arrays retain current input tile metadata and physical variants (5.6566ms)
+✔ count-only doubles match an independent neighbor scan for every nine-rank count pattern (1379.9773ms)
+✔ suit costs match independent complete-shape enumeration with copy limits (211.3484ms)
+✔ complete and random closed/open/kan hands match independent target enumeration (752.1585ms)
+✔ kan grouping preserves ambiguous triplet/sequence boundaries (0.5334ms)
+✔ draw analysis reuses counts while preserving dead waits, furiten and input tiles (1.6481ms)
+✔ call mutations and player counts cannot reuse an incompatible shanten cache (13.2133ms)
+✔ special-hand draw analysis requires distinct pairs and excludes fixed melds (0.8632ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3007.3016

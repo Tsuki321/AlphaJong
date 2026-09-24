@@ -6,7 +6,7 @@
 //Print string to HTML or console
 function log(t) {
 	if (isDebug()) {
-		document.body.innerHTML += t + "<br>";
+		document.body.insertAdjacentHTML("beforeend", t + "<br>");
 	}
 	else {
 		console.log(t);

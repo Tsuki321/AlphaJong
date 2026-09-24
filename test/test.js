@@ -95,6 +95,8 @@ async function runRegressionTests() {
 	run3PlayerPredictionTests();
 	await runCallTripleStateRestoreTest();
 	await runAccuracyRegressionTests();
+	runDefenseQualityRegressionTests();
+	await runDecisionQualityRegressionTests();
 }
 
 // -- Prediction unit tests -------------------------------------------------
@@ -177,12 +179,13 @@ function runPredictionUnitTests() {
 	assertEqual(yToiClosed.open, 5, "Toitoi(2)+yakuhai(1)+sanankou(2) open han, closed hand");
 	assertEqual(yToiClosed.closed, 5, "Toitoi(2)+yakuhai(1)+sanankou(2) closed han, closed hand");
 
-	// Same hand but while a call is being considered => sanankou suppressed, isolating toitoi+yakuhai.
+	// Considering a call does not itself open any triplet. Only fixed open
+	// melds and the group completed by ron reduce the concealed-triplet count.
 	baselinePredictionState();
 	isConsideringCall = true;
 	var yToiOpen = getYaku(getTilesFromString("555z999m444p333s11z"));
-	assertEqual(yToiOpen.open, 3, "Toitoi(2)+yakuhai(1) once sanankou suppressed (open han)");
-	assertEqual(yToiOpen.closed, 3, "Toitoi(2)+yakuhai(1) closed han once sanankou suppressed");
+	assertEqual(yToiOpen.open, 5, "Considering a call preserves existing sanankou (open han)");
+	assertEqual(yToiOpen.closed, 5, "Considering a call preserves existing sanankou (closed han)");
 
 	baselinePredictionState();
 	assertGreaterThan(getYaku(getTilesFromString("11122233344455z")).closed, 12, "Tsuuiisou is yakuman");
@@ -501,8 +504,10 @@ function showEndResult() {
 		done: true,
 		failed: failedTests,
 		total: totalTests,
+		predictionAssertions: predictionAssertionsRun,
 		avgMsPerTest: avgMsPerTest,
-		timeMs: time
+		timeMs: time,
+		cases: TEST_CASES.map((name, index) => ({ name: name, passed: passes[index], total: overall[index] }))
 	});
 }
 

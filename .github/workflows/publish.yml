@@ -28,6 +28,15 @@ jobs:
           python -m pip install mahjong==1.4.0
           python test/generate_shanten_reference.py test/shanten-reference.json
 
+      - name: Run engine oracles and decision regressions
+        run: npm run test:engine
+
+      - name: Benchmark decisions, exact analysis and cache consistency
+        run: npm run benchmark -- --iterations 3 --warmup 1 --random-cases 12 --modes 0,3,4 --timers real --output test-results/benchmark-engine.json
+
+      - name: Check multi-turn closed-hand decisions against an independent oracle
+        run: npm run benchmark:rollout -- --seeds 6 --draws 18 --players 3,4 --modes 0,3 --output test-results/benchmark-rollout.json
+
       - name: Run headless regression tests
         env:
           # The regression suite runs the full discard loop (real AI simulation), which measures

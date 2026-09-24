@@ -1,0 +1,83 @@
+{
+  "browser": "chromium",
+  "total": 15,
+  "passed": 15,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "document-start interception preserves native constructor, events, and subprotocol",
+      "passed": true,
+      "durationMs": 793
+    },
+    {
+      "name": "invalid constructor errors match the unwrapped native WebSocket",
+      "passed": true,
+      "durationMs": 4749
+    },
+    {
+      "name": "failed native sends are not recorded as successful protocol activity",
+      "passed": true,
+      "durationMs": 1195
+    },
+    {
+      "name": "Unity heap slices are copied before reuse and sent without prefix or suffix",
+      "passed": true,
+      "durationMs": 329
+    },
+    {
+      "name": "unrelated text and binary traffic reaches native listeners unchanged",
+      "passed": true,
+      "durationMs": 261
+    },
+    {
+      "name": "HELP and stale decisions cannot originate requests",
+      "passed": true,
+      "durationMs": 389
+    },
+    {
+      "name": "bridge responses and duplicates stay private while colliding Unity IDs are restored",
+      "passed": true,
+      "durationMs": 360
+    },
+    {
+      "name": "Blob decoding cannot reorder a later ArrayBuffer and never changes binaryType",
+      "passed": true,
+      "durationMs": 230
+    },
+    {
+      "name": "incoming activity invalidates a decision before Unity's message handler runs",
+      "passed": true,
+      "durationMs": 159
+    },
+    {
+      "name": "private replies remain hidden behind a slow Blob after binary mode changes",
+      "passed": true,
+      "durationMs": 278
+    },
+    {
+      "name": "actual Blob replies isolate private IDs and restore colliding client IDs",
+      "passed": true,
+      "durationMs": 266
+    },
+    {
+      "name": "disconnect blocks actions and replacement sockets must identify themselves",
+      "passed": true,
+      "durationMs": 641
+    },
+    {
+      "name": "queued Blob data from a closed socket cannot revive an obsolete game",
+      "passed": true,
+      "durationMs": 183
+    },
+    {
+      "name": "observer exceptions cannot interrupt Unity's native send or message delivery",
+      "passed": true,
+      "durationMs": 122
+    },
+    {
+      "name": "disposing the transport restores construction and stops observation",
+      "passed": true,
+      "durationMs": 144
+    }
+  ]
+}

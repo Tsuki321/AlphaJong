@@ -105,7 +105,18 @@ The bot is able to reach Master rank.
 
 ## Tests
 
-The project contains a testclass with simple "Nani Kiru?" testcases.
+Run `npm run test:engine` for independent hand-shape oracles, scoring and call
+regressions, cache checks, and benchmark validation. `npm run test:headless`
+runs the browser decision suite; `npm run test:api` exercises the client adapter.
+
+`npm run benchmark -- --output test-results/benchmark.json` measures exact
+analysis and complete discard decisions with reproducible positions, cold and
+warm caches, and performance modes 0, 3, and 4. `npm run benchmark:rollout --
+--output test-results/rollout.json` checks multi-turn decisions against an
+independent efficiency oracle. These isolated experiments do not measure match
+win rate. See [testing and benchmark instructions](doc/Testing-and-Benchmarks.md)
+for baseline comparisons and interpretation. GitHub Actions assembles and
+validates the userscript after source checks pass.
 
 ## Known Problems
 

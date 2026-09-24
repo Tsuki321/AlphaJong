@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:engine": "node --test test/hand_analysis_optimization.test.mjs test/engine_utils.test.mjs test/defense_quality.test.mjs test/decision_quality.test.mjs test/benchmark/harness.test.mjs test/benchmark/rollout.test.mjs",
+    "benchmark": "node test/benchmark_engine.mjs",
+    "benchmark:rollout": "node test/benchmark/rollout_engine.mjs",
     "test:headless": "node test/run_headless_tests.mjs test/run_tests.html",
     "test:api": "node test/run_headless_tests.mjs test/run_api_tests.html",
     "test:bundle": "node test/run_headless_tests.mjs test/run_bundle_tests.html",
