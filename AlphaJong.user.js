@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AlphaJong
 // @namespace    alphajong
-// @version      1.3.13
+// @version      1.3.14
 // @description  A Mahjong Soul Bot.
 // @author       Jimboom7
 // @grant        none
@@ -2279,10 +2279,11 @@ function trackDiscardTiles() {
 
 var doublesCache = {};
 var triplesAndPairsCache = {};
+var visibleTileCountsCache = { tiles: null, length: -1, counts: [] };
 
 function getTileCacheKey(tiles, sorted = false) {
 	var cacheTiles = sorted ? tiles : sortTiles(tiles);
-	return cacheTiles.map(tile => tile.type + "-" + tile.index + "-" + (tile.dora ? 1 : 0)).join("|");
+	return cacheTiles.map(tile => tile.type + "-" + tile.index + "-" + (tile.dora ? 1 : 0) + "-" + (tile.doraValue || 0)).join("|");
 }
 
 function clearHandAnalysisCache() {
@@ -2403,7 +2404,7 @@ function getDoubles(tiles) {
 	tiles = sortTiles(tiles);
 	var cacheKey = getTileCacheKey(tiles, true);
 	if (typeof doublesCache[cacheKey] !== 'undefined') {
-		return [...doublesCache[cacheKey]];
+		return doublesCache[cacheKey].map(index => tiles[index]);
 	}
 	var doubles = [];
 	for (let i = 0; i < tiles.length - 1; i++) {
@@ -2411,28 +2412,62 @@ function getDoubles(tiles) {
 			tiles[i].index == tiles[i + 1].index ||
 			(tiles[i].type != 3 &&
 				tiles[i].index + 2 >= tiles[i + 1].index))) {
-			doubles.push(tiles[i]);
-			doubles.push(tiles[i + 1]);
+			doubles.push(i);
+			doubles.push(i + 1);
 			i++;
 		}
 	}
 	doublesCache[cacheKey] = doubles;
-	return [...doubles];
+	return doubles.map(index => tiles[index]);
+}
+
+// The recursive search only needs the number of greedy doubles, not their
+// physical tiles. Counts visit the same sorted neighbors without sorting,
+// allocating pair arrays, or constructing a cache key at every search node.
+function getDoubleCount(tiles) {
+	var counts = getTileCounts(tiles);
+	var doubles = 0;
+	for (var type = 0; type <= 3; type++) {
+		var previous = -1;
+		for (var rank = 0; rank < (type == 3 ? 7 : 9); rank++) {
+			var count = counts[type * 9 + rank];
+			if (count == 0) continue;
+			if (previous >= 0 && type != 3 && rank - previous <= 2) {
+				doubles++;
+				count--;
+			}
+			doubles += Math.floor(count / 2);
+			previous = count % 2 ? rank : -1;
+		}
+	}
+	return doubles;
 }
 
 //Return all triplets/3-sequences and pairs as a tile array
 function getTriplesAndPairs(tiles) {
-	var cacheKey = getTileCacheKey(tiles) + "|" + (PERFORMANCE_MODE - timeSave) + "|" + strategy;
+	tiles = sortTiles(tiles);
+	var cacheKey = getTileCacheKey(tiles, true) + "|" + (PERFORMANCE_MODE - timeSave) + "|" + strategy;
 	if (typeof triplesAndPairsCache[cacheKey] !== 'undefined') {
 		var cached = triplesAndPairsCache[cacheKey];
-		return { triples: [...cached.triples], pairs: [...cached.pairs], shanten: cached.shanten };
+		return { triples: cached.triples.map(index => tiles[index]), pairs: cached.pairs.map(index => tiles[index]), shanten: cached.shanten };
 	}
 	var sequences = getSequences(tiles);
 	var triplets = getTriplets(tiles);
 	var pairs = getPairs(tiles);
 	var bestCombination = getBestCombinationOfTiles(tiles, sequences.concat(triplets).concat(pairs), { triples: [], pairs: [], shanten: 8 });
-	triplesAndPairsCache[cacheKey] = bestCombination;
-	return { triples: [...bestCombination.triples], pairs: [...bestCombination.pairs], shanten: bestCombination.shanten };
+	// Cache selections, not live tile objects. Equivalent hands can carry new
+	// validity, provenance or dora metadata after a draw or a simulated call.
+	var used = new Set();
+	function indices(selected) {
+		return selected.map(tile => {
+			var index = tiles.findIndex((candidate, index) => !used.has(index) && isSameTile(candidate, tile, true));
+			used.add(index);
+			return index;
+		});
+	}
+	var cached = { triples: indices(bestCombination.triples), pairs: indices(bestCombination.pairs), shanten: bestCombination.shanten };
+	triplesAndPairsCache[cacheKey] = cached;
+	return { triples: cached.triples.map(index => tiles[index]), pairs: cached.pairs.map(index => tiles[index]), shanten: cached.shanten };
 }
 
 //Return all triplets/3-tile-sequences as a tile array
@@ -2512,33 +2547,29 @@ function isBetterCombination(candidate, currentBest, checkShanten = false) {
 function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombinations, startIndex = 0) {
 	var originalC = { triples: [...chosenCombinations.triples], pairs: [...chosenCombinations.pairs], shanten: chosenCombinations.shanten };
 	for (var i = startIndex; i < possibleCombinations.length; i++) {
-		var cs = { triples: [...originalC.triples], pairs: [...originalC.pairs], shanten: originalC.shanten };
 		var tiles = possibleCombinations[i];
-		var hand = [...inputTiles];
 		if (!("tile3" in tiles)) { // Pairs
-			if (tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(hand, tiles.tile1.index, tiles.tile1.type) < 2) {
+			if (tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(inputTiles, tiles.tile1.index, tiles.tile1.type) < 2) {
 				continue;
 			}
 		}
-		else if (getNumberOfTilesInTileArray(hand, tiles.tile1.index, tiles.tile1.type) == 0 ||
-			getNumberOfTilesInTileArray(hand, tiles.tile2.index, tiles.tile2.type) == 0 ||
-			getNumberOfTilesInTileArray(hand, tiles.tile3.index, tiles.tile3.type) == 0 ||
-			(tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(hand, tiles.tile1.index, tiles.tile1.type) < 3)) {
+		else if (getNumberOfTilesInTileArray(inputTiles, tiles.tile1.index, tiles.tile1.type) == 0 ||
+			getNumberOfTilesInTileArray(inputTiles, tiles.tile2.index, tiles.tile2.type) == 0 ||
+			getNumberOfTilesInTileArray(inputTiles, tiles.tile3.index, tiles.tile3.type) == 0 ||
+			(tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(inputTiles, tiles.tile1.index, tiles.tile1.type) < 3)) {
 			continue;
 		}
-		if ("tile3" in tiles) {
-			var tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.triples, tiles.tile1);
-			hand = removeTilesFromTileArray(hand, [tt]);
-			tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.triples, tiles.tile2);
-			hand = removeTilesFromTileArray(hand, [tt]);
-			tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.triples, tiles.tile3);
-			hand = removeTilesFromTileArray(hand, [tt]);
-		}
-		else {
-			var tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.pairs, tiles.tile1);
-			hand = removeTilesFromTileArray(hand, [tt]);
-			tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.pairs, tiles.tile2);
-			hand = removeTilesFromTileArray(hand, [tt]);
+		var cs = { triples: [...originalC.triples], pairs: [...originalC.pairs], shanten: originalC.shanten };
+		var hand = [...inputTiles];
+		var group = "tile3" in tiles ? [tiles.tile1, tiles.tile2, tiles.tile3] : [tiles.tile1, tiles.tile2];
+		var selected = "tile3" in tiles ? cs.triples : cs.pairs;
+		for (let tile of group) {
+			// Consume an actual remaining tile, preferring the requested red or
+			// normal variant. A branch owns this array, so remove in place once.
+			var index = hand.findIndex(candidate => isSameTile(tile, candidate, true));
+			if (index < 0) index = hand.findIndex(candidate => isSameTile(tile, candidate));
+			selected.push(hand[index]);
+			hand.splice(index, 1);
 		}
 
 		if (PERFORMANCE_MODE - timeSave <= 3) {
@@ -2549,8 +2580,7 @@ function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombi
 		}
 		else {
 			if (cs.triples.length >= chosenCombinations.triples.length) {
-				var doubles = getDoubles(hand); //This is costly, so only do it when performance mode is at maximum
-				cs.shanten = calculateShanten(parseInt(cs.triples.length / 3), parseInt(cs.pairs.length / 2), parseInt(doubles.length / 2));
+				cs.shanten = calculateShanten(parseInt(cs.triples.length / 3), parseInt(cs.pairs.length / 2), getDoubleCount(hand));
 			}
 			else {
 				cs.shanten = 8;
@@ -2619,7 +2649,13 @@ function getNumberOfTilesAvailable(index, type) {
 		return 0;
 	}
 
-	return Math.max(0, 4 - visibleTiles.filter(tile => tile.index == index && tile.type == type).length);
+	// Board refreshes replace this array; discard observers append to it. Reuse
+	// one histogram throughout a decision instead of scanning every visible
+	// tile for each branch of the two-draw search.
+	if (visibleTileCountsCache.tiles !== visibleTiles || visibleTileCountsCache.length !== visibleTiles.length) {
+		visibleTileCountsCache = { tiles: visibleTiles, length: visibleTiles.length, counts: getTileCounts(visibleTiles) };
+	}
+	return Math.max(0, 4 - visibleTileCountsCache.counts[type * 9 + index - 1]);
 }
 
 //Return if a tile is furiten
@@ -2642,7 +2678,9 @@ function getNumberOfNonFuritenTilesAvailable(index, type) {
 
 //Return number of specific tile in tile array
 function getNumberOfTilesInTileArray(tileArray, index, type) {
-	return getTilesInTileArray(tileArray, index, type).length;
+	var count = 0;
+	for (let tile of tileArray) if (tile.index == index && tile.type == type) count++;
+	return count;
 }
 
 //Return specific tiles in tile array
@@ -3222,6 +3260,32 @@ function getTileEmojiByName(name) {
 var suitCompletionCache = new Map();
 var exactShantenCache = new Map();
 
+// A suit state records melds, a head, and sequence tiles carried into the next
+// two ranks. Legal transitions depend only on that state, not on the hand.
+var suitCompletionTransitions = [false, true].map(sequencesAllowed => {
+	var transitions = Array.from({ length: 250 }, () => []);
+	for (var melds = 0; melds <= 4; melds++) {
+		for (var pair = 0; pair <= 1; pair++) {
+			for (var next = 0; next <= 4; next++) {
+				for (var later = 0; later <= next; later++) {
+					var entries = transitions[(melds * 2 + pair) * 25 + next * 5 + later];
+					for (var sequence = 0; sequence <= (sequencesAllowed ? 4 - melds : 0); sequence++) {
+						for (var triplet = 0; triplet <= 1 && melds + sequence + triplet <= 4; triplet++) {
+							for (var head = 0; head <= 1 - pair; head++) {
+								var needed = next + sequence + triplet * 3 + head * 2;
+								if (needed > 4 || later + sequence > 4) continue;
+								entries.push(needed, ((melds + sequence + triplet) * 2 + pair + head) * 25 +
+									(later + sequence) * 5 + sequence);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return transitions;
+});
+
 function clearExactHandAnalysisCache() {
 	suitCompletionCache.clear();
 	exactShantenCache.clear();
@@ -3287,96 +3351,156 @@ function isConcealedKan(meld) {
 // sequence tiles are carried to the next two ranks; no target may need a
 // fifth copy, including copies already committed to an exposed meld.
 function getSuitCompletionCosts(counts, limits, sequencesAllowed) {
-	var key = counts.join("") + "|" + limits.join("") + "|" + sequencesAllowed;
-	if (suitCompletionCache.has(key)) {
-		return suitCompletionCache.get(key);
-	}
-	function stateIndex(melds, pair, next, later) {
-		return ((melds * 2 + pair) * 5 + next) * 5 + later;
-	}
-	var states = Array(250).fill(Infinity);
-	states[0] = 0;
-	for (var rank = 0; rank < counts.length; rank++) {
-		var nextStates = Array(250).fill(Infinity);
-		for (var melds = 0; melds <= 4; melds++) {
-			for (var pair = 0; pair <= 1; pair++) {
-				for (var next = 0; next <= 4; next++) {
-					for (var later = 0; later <= next; later++) {
-						var cost = states[stateIndex(melds, pair, next, later)];
-						if (!Number.isFinite(cost)) continue;
-						var maxSequences = sequencesAllowed && rank < 7 ? 4 - melds : 0;
-						for (var sequence = 0; sequence <= maxSequences; sequence++) {
-							for (var triplet = 0; triplet <= 1 && melds + sequence + triplet <= 4; triplet++) {
-								for (var head = 0; head <= 1 - pair; head++) {
-									var needed = next + sequence + triplet * 3 + head * 2;
-									if (needed > limits[rank] || later + sequence > 4) continue;
-									var index = stateIndex(melds + sequence + triplet, pair + head, later + sequence, sequence);
-									var candidate = cost + Math.max(0, needed - counts[rank]);
-									if (candidate < nextStates[index]) nextStates[index] = candidate;
-								}
-							}
-						}
-					}
+	// Counts and limits are base-five digits. Even nine ranks fit exactly in a
+	// JavaScript integer, avoiding two string arrays on every cache lookup.
+	var key = counts.length;
+	for (var rank = 0; rank < counts.length; rank++) key = key * 25 + counts[rank] * 5 + limits[rank];
+	key = key * 2 + (sequencesAllowed ? 1 : 0);
+	var cached = suitCompletionCache.get(key);
+	if (cached !== undefined) return cached;
+	// Four melds and a head need at most fourteen tiles; 255 denotes an
+	// unreachable state without storing floating-point Infinity in each cell.
+	var costs = new Uint8Array(10).fill(255);
+	costs[0] = 0;
+	if (!sequencesAllowed) {
+		// Honors (and sanma manzu) have no sequence carries. Descending updates
+		// use each rank once, so a triplet and a head cannot require five copies.
+		for (var rank = 0; rank < counts.length; rank++) {
+			var pairCost = Math.max(0, 2 - counts[rank]);
+			var tripletCost = Math.max(0, 3 - counts[rank]);
+			for (var state = 9; state >= 0; state--) {
+				var cost = costs[state];
+				if (cost == 255) continue;
+				if (limits[rank] >= 3 && state < 8 && cost + tripletCost < costs[state + 2]) {
+					costs[state + 2] = cost + tripletCost;
+				}
+				if (limits[rank] >= 2 && state % 2 == 0 && cost + pairCost < costs[state + 1]) {
+					costs[state + 1] = cost + pairCost;
 				}
 			}
 		}
-		states = nextStates;
+	}
+	else {
+		var states = new Uint8Array(250).fill(255);
+		var nextStates = new Uint8Array(250);
+		var active = new Uint8Array(250);
+		var nextActive = new Uint8Array(250);
+		var activeCount = 1;
+		states[0] = 0;
+		for (var rank = 0; rank < counts.length; rank++) {
+			nextStates.fill(255);
+			var nextCount = 0;
+			var transitions = suitCompletionTransitions[rank < 7 ? 1 : 0];
+			for (var current = 0; current < activeCount; current++) {
+				var state = active[current];
+				var cost = states[state];
+				var entries = transitions[state];
+				for (var entry = 0; entry < entries.length; entry += 2) {
+					var needed = entries[entry];
+					if (needed > limits[rank]) continue;
+					var index = entries[entry + 1];
+					var candidate = cost + (needed > counts[rank] ? needed - counts[rank] : 0);
+					if (candidate >= nextStates[index]) continue;
+					if (nextStates[index] == 255) nextActive[nextCount++] = index;
+					nextStates[index] = candidate;
+				}
+			}
+			var swap = states;
+			states = nextStates;
+			nextStates = swap;
+			swap = active;
+			active = nextActive;
+			nextActive = swap;
+			activeCount = nextCount;
+		}
+		for (var state = 0; state < 10; state++) costs[state] = states[state * 25];
 	}
 	var result = Array.from({ length: 5 }, (_, melds) => [
-		states[stateIndex(melds, 0, 0, 0)], states[stateIndex(melds, 1, 0, 0)]
+		costs[melds * 2] == 255 ? Infinity : costs[melds * 2],
+		costs[melds * 2 + 1] == 255 ? Infinity : costs[melds * 2 + 1]
 	]);
 	suitCompletionCache.set(key, result);
 	return result;
 }
 
-function getStandardShanten(hand, meldTiles = calls[0] || []) {
-	var counts = getTileCounts(hand);
+function getHandAnalysisContext(meldTiles) {
 	var committed = getTileCounts(meldTiles);
 	var meldsNeeded = 4 - getMeldCount(meldTiles);
 	var threePlayer = getNumberOfPlayers() == 3;
-	var key = counts.join("") + "|" + committed.join("") + "|" + meldsNeeded + "|" + threePlayer;
-	if (exactShantenCache.has(key)) return exactShantenCache.get(key);
+	return { committed: committed, meldsNeeded: meldsNeeded, threePlayer: threePlayer,
+		hasCalls: meldTiles.length > 0,
+		cacheKey: committed.join("") + "|" + meldsNeeded + "|" + threePlayer };
+}
+
+function getStandardShantenFromCounts(counts, context) {
+	var committed = context.committed;
+	var meldsNeeded = context.meldsNeeded;
+	var key = counts.join("") + "|" + context.cacheKey;
+	var cached = exactShantenCache.get(key);
+	if (cached !== undefined) return cached;
 	if (meldsNeeded < 0 || counts.some((count, i) => count + committed[i] > 4)) return Infinity;
-	var best = Array.from({ length: 5 }, () => [Infinity, Infinity]);
-	best[0][0] = 0;
+	var best = Array(10).fill(Infinity);
+	var combined = Array(10).fill(Infinity);
+	best[0] = 0;
 	for (var type = 0; type <= 3; type++) {
 		var length = type == 3 ? 7 : 9;
 		var suit = counts.slice(type * 9, type * 9 + length);
 		var limits = committed.slice(type * 9, type * 9 + length).map((count, rank) =>
-			threePlayer && type == 1 && rank > 0 && rank < 8 ? 0 : 4 - count);
-		var costs = getSuitCompletionCosts(suit, limits, type != 3);
-		var combined = Array.from({ length: 5 }, () => [Infinity, Infinity]);
+			context.threePlayer && type == 1 && rank > 0 && rank < 8 ? 0 : 4 - count);
+		var costs = getSuitCompletionCosts(suit, limits, type != 3 && !(context.threePlayer && type == 1));
+		combined.fill(Infinity);
 		for (var melds = 0; melds <= meldsNeeded; melds++) {
-			for (var head = 0; head <= 1; head++) {
-				for (var add = 0; add + melds <= meldsNeeded; add++) {
-					for (var pair = 0; pair + head <= 1; pair++) {
-						combined[melds + add][head + pair] = Math.min(combined[melds + add][head + pair],
-							best[melds][head] + costs[add][pair]);
-					}
-				}
+			var withoutHead = best[melds * 2];
+			var withHead = best[melds * 2 + 1];
+			if (withoutHead == Infinity && withHead == Infinity) continue;
+			for (var add = 0; add + melds <= meldsNeeded; add++) {
+				var index = (melds + add) * 2;
+				combined[index] = Math.min(combined[index], withoutHead + costs[add][0]);
+				combined[index + 1] = Math.min(combined[index + 1], withoutHead + costs[add][1], withHead + costs[add][0]);
 			}
 		}
+		var swap = best;
 		best = combined;
+		combined = swap;
 	}
-	var shanten = best[meldsNeeded][1] - 1;
+	var shanten = best[meldsNeeded * 2 + 1] - 1;
 	exactShantenCache.set(key, shanten);
 	return shanten;
 }
 
+function getStandardShanten(hand, meldTiles = calls[0] || []) {
+	return getStandardShantenFromCounts(getTileCounts(hand), getHandAnalysisContext(meldTiles));
+}
+
+function getSevenPairsShantenFromCounts(counts) {
+	var pairs = 0;
+	var kinds = 0;
+	for (var i = 0; i < counts.length; i++) {
+		if (counts[i] >= 2) pairs++;
+		if (counts[i] > 0) kinds++;
+	}
+	return 6 - pairs + Math.max(0, 7 - kinds);
+}
+
 function getSevenPairsShanten(hand, meldTiles = calls[0] || []) {
 	if (meldTiles.length > 0) return Infinity;
-	var counts = getTileCounts(hand);
-	var pairs = counts.filter(count => count >= 2).length;
-	var kinds = counts.filter(count => count > 0).length;
-	return 6 - pairs + Math.max(0, 7 - kinds);
+	return getSevenPairsShantenFromCounts(getTileCounts(hand));
+}
+
+function getThirteenOrphansShantenFromCounts(counts) {
+	var orphans = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33];
+	var kinds = 0;
+	var pair = 0;
+	for (var i = 0; i < orphans.length; i++) {
+		if (counts[orphans[i]] > 0) kinds++;
+		if (counts[orphans[i]] >= 2) pair = 1;
+	}
+	return 13 - kinds - pair;
 }
 
 function getThirteenOrphansShanten(hand, meldTiles = calls[0] || []) {
 	if (meldTiles.length > 0) return Infinity;
-	var counts = getTileCounts(hand);
-	var orphans = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33];
-	return 13 - orphans.filter(index => counts[index] > 0).length -
-		(orphans.some(index => counts[index] >= 2) ? 1 : 0);
+	return getThirteenOrphansShantenFromCounts(getTileCounts(hand));
 }
 
 function getShantenForStrategy(hand, handStrategy = strategy, meldTiles = calls[0] || []) {
@@ -3399,20 +3523,30 @@ function getDrawHitProbability(unseen, useful, draws = 1) {
 }
 
 function getImprovingTileAnalysis(hand, discardedTile, handStrategy = strategy) {
-	var shanten = getShantenForStrategy(hand, handStrategy);
+	var context = getHandAnalysisContext(calls[0] || []);
+	var counts = getTileCounts(hand);
+	function shantenFromCounts() {
+		if (handStrategy == STRATEGIES.CHIITOITSU) return context.hasCalls ? Infinity : getSevenPairsShantenFromCounts(counts);
+		if (handStrategy == STRATEGIES.THIRTEEN_ORPHANS) return context.hasCalls ? Infinity : getThirteenOrphansShantenFromCounts(counts);
+		return getStandardShantenFromCounts(counts, context);
+	}
+	var shanten = shantenFromCounts();
 	var improvingTiles = [];
 	var structuralWaits = [];
 	var ukeire = 0;
-	var counts = getTileCounts(hand.concat(calls[0] || []));
 	for (var type = 0; type <= 3; type++) {
 		for (var index = 1; index <= (type == 3 ? 7 : 9); index++) {
-			if (getNumberOfPlayers() == 3 && type == 1 && index > 1 && index < 9) continue;
-			if (counts[type * 9 + index - 1] >= 4) continue;
+			if (context.threePlayer && type == 1 && index > 1 && index < 9) continue;
+			var countIndex = type * 9 + index - 1;
+			if (counts[countIndex] + context.committed[countIndex] >= 4) continue;
 			var available = getNumberOfTilesAvailable(index, type);
 			// Dead waits still matter for furiten, even though they add no ukeire.
 			if (available == 0 && shanten != 0) continue;
+			counts[countIndex]++;
+			var improvedShanten = shantenFromCounts();
+			counts[countIndex]--;
+			if (improvedShanten >= shanten) continue;
 			var tile = { index: index, type: type, dora: false };
-			if (getShantenForStrategy(hand.concat(tile), handStrategy) >= shanten) continue;
 			if (shanten == 0) structuralWaits.push(tile);
 			if (available > 0) {
 				improvingTiles.push({ tile: tile, count: available });
@@ -3438,7 +3572,7 @@ function getImprovingTileAnalysis(hand, discardedTile, handStrategy = strategy) 
 //Print string to HTML or console
 function log(t) {
 	if (isDebug()) {
-		document.body.innerHTML += t + "<br>";
+		document.body.insertAdjacentHTML("beforeend", t + "<br>");
 	}
 	else {
 		console.log(t);
@@ -3633,7 +3767,7 @@ function getDebugString() {
 //################################
 
 //Returns the closed and open yaku value of the hand
-function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
+function getYaku(inputHand, inputCalls = [], triplesAndPairs = null, winningTile = null, ron = true) {
 	var callMelds = getMelds(inputCalls);
 	var kanCount = callMelds.filter(meld => meld.length == 4).length;
 
@@ -3653,6 +3787,8 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 	// Two-draw simulations can contain a tile that will be discarded. Once a
 	// complete decomposition is chosen, only its tiles can contribute yaku.
 	var complete = concealedGroups.length + callMelds.length == 4 && triplesAndPairs.pairs.length == 2;
+	if (complete && winningTile && !triplesAndPairs.triples.some(tile => isSameTile(tile, winningTile)) &&
+		!triplesAndPairs.pairs.some(tile => isSameTile(tile, winningTile))) return { open: 0, closed: 0 };
 	var hand = (complete ? triplesAndPairs.triples.concat(triplesAndPairs.pairs) : inputHand).concat(filteredCalls);
 	if (hand.length == 0) return { open: 0, closed: 0 };
 	triplesAndPairs = {
@@ -3709,7 +3845,9 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 		//Open*
 		var concealedTriplets = concealedGroups.filter(meld => meld.every(tile => isSameTile(tile, meld[0])));
 		var concealedKans = callMelds.filter(isConcealedKan).map(meld => meld.slice(0, 3));
-		var sanankou = getSanankou(concealedTriplets.concat(concealedKans).flat());
+		var canCompleteNonTriplet = concealedGroups.some(meld => !isSameTile(meld[0], meld[1]) &&
+			meld.some(tile => isSameTile(tile, winningTile))) || isSameTile(triplesAndPairs.pairs[0], winningTile);
+		var sanankou = getSanankou(concealedTriplets.concat(concealedKans).flat(), winningTile, ron, canCompleteNonTriplet);
 		yakuOpen += sanankou.open;
 		yakuClosed += sanankou.closed;
 
@@ -3917,15 +4055,15 @@ function getSankantsu(kanCount) {
 }
 
 //Sanankou
-function getSanankou(hand) {
-	if (!isConsideringCall) {
-		var concealedTriples = getTripletsAsArray(hand);
-		if (parseInt(concealedTriples.length / 3) >= 3) {
-			return { open: 2, closed: 2 };
-		}
-	}
-
-	return { open: 0, closed: 0 };
+function getSanankou(hand, winningTile = null, ron = true, canCompleteNonTriplet = false) {
+	// Without a winning tile this remains a prospective estimate. For completed
+	// hands, ron opens the triplet it completes; tsumo leaves it concealed. An
+	// ambiguous winning tile may instead complete a sequence or the pair.
+	var concealedTriples = getTripletsAsArray(hand);
+	var count = concealedTriples.length / 3;
+	if (winningTile && ron && !canCompleteNonTriplet &&
+		concealedTriples.some(tile => isSameTile(tile, winningTile))) count--;
+	return count >= 3 ? { open: 2, closed: 2 } : { open: 0, closed: 0 };
 }
 
 //Toitoi
@@ -4150,6 +4288,18 @@ function determineStrategy() {
 	log("Strategy: " + strategy);
 }
 
+// Kuikae also forbids the opposite end of a called sequence. The two hand
+// tiles may be supplied in either order, and red fives share the restriction.
+function isKuikaeDiscard(tile, callTiles, calledTile) {
+	if (isSameTile(tile, calledTile)) return true;
+	if (!tile || !calledTile || calledTile.type == 3 || callTiles.length != 2 ||
+		callTiles.some(candidate => candidate.type != calledTile.type)) return false;
+	var indices = callTiles.map(candidate => candidate.index).sort((a, b) => a - b);
+	if (indices[1] != indices[0] + 1 || tile.type != calledTile.type) return false;
+	return (calledTile.index == indices[0] - 1 && tile.index == indices[1] + 1) ||
+		(calledTile.index == indices[1] + 1 && tile.index == indices[0] - 1);
+}
+
 //Call a Chi/Pon
 //combination example: Array ["6s|7s", "7s|9s"]
 async function callTriple(combinations, operation) {
@@ -4179,13 +4329,27 @@ async function callTriple(combinations, operation) {
 		callTiles = callTiles.map(t => getTileFromString(t));
 
 		var newHand = removeTilesFromTileArray(ownHand, callTiles);
-		var shanten = getStandardShanten(newHand, calls[0].concat(callTiles, getTileForCall()));
+		var newCalls = calls[0].concat(callTiles, getTileForCall());
+		// Rank only shapes reachable after a legal discard. An unrestricted
+		// 14-tile shanten can hide that its best discard is forbidden by kuikae.
+		var shanten = Infinity;
+		var checkedDiscards = new Set();
+		for (let tile of newHand) {
+			var identity = getTileIdentityKey(tile);
+			if (checkedDiscards.has(identity) || isKuikaeDiscard(tile, callTiles, getTileForCall())) continue;
+			checkedDiscards.add(identity);
+			shanten = Math.min(shanten, getStandardShanten(removeTilesFromTileArray(newHand, [tile]), newCalls));
+		}
 
 		if (shanten < bestCombShanten || (shanten == bestCombShanten && getNumberOfDoras(callTiles) > bestDora)) {
 			comb = i;
 			bestDora = getNumberOfDoras(callTiles);
 			bestCombShanten = shanten;
 		}
+	}
+	if (comb < 0) {
+		declineCall(operation);
+		return false;
 	}
 
 	log("Best Combination: " + combinations[comb]);
@@ -4201,7 +4365,9 @@ async function callTriple(combinations, operation) {
 	var wouldFold = false;
 	await withSimulatedCallState(callTiles, async function () {
 		// Evaluate the future discard without changing the live hand's permissions.
-		newHand = removeTilesFromTileArray(ownHand, callTiles).map(tile => ({ ...tile, valid: true }));
+		newHand = removeTilesFromTileArray(ownHand, callTiles).map(tile => ({
+			...tile, valid: !isKuikaeDiscard(tile, callTiles, getTileForCall())
+		}));
 		tilePrios = await getTilePriorities(newHand);
 		if (tilePrios.length == 0 || (!isDebug() && !isDecisionCurrent())) return;
 		tilePrios = sortOutUnsafeTiles(tilePrios);
@@ -4216,9 +4382,7 @@ async function callTriple(combinations, operation) {
 	var newHonorPairs = newHandTriples.pairs.filter(t => t.type == 3).length / 2;
 	var newPairs = newHandTriples.pairs.length / 2;
 
-	if (isSameTile(nextDiscard, getTileForCall()) ||
-		(callTiles[0].index == getTileForCall().index - 2 && isSameTile(nextDiscard, { index: callTiles[0].index - 1, type: callTiles[0].type })) ||
-		(callTiles[1].index == getTileForCall().index + 2 && isSameTile(nextDiscard, { index: callTiles[1].index + 1, type: callTiles[1].type }))) {
+	if (isKuikaeDiscard(nextDiscard, callTiles, getTileForCall())) {
 		declineCall(operation);
 		log("Next discard would be the same tile. Call declined!");
 		return false;
@@ -4566,11 +4730,12 @@ function getHandValues(hand, discardedTile) {
 	var shanten = 0; //Accumulate weighted changes from the current hand.
 	var yakuCache = {};
 
-	function getCachedYaku(currentHand, inputTriplesAndPairs) {
+	function getCachedYaku(currentHand, inputTriplesAndPairs, winningTile = null, ron = true) {
 		var cacheKey = getTileCacheKey(currentHand) + "|" + getTileCacheKey(calls[0]) + "|" +
-			inputTriplesAndPairs.triples.map(getTileIdentityKey).join(",") + "|" + getTileCacheKey(inputTriplesAndPairs.pairs);
+			inputTriplesAndPairs.triples.map(getTileIdentityKey).join(",") + "|" + getTileCacheKey(inputTriplesAndPairs.pairs) +
+			"|" + getTileIdentityKey(winningTile) + "|" + ron;
 		if (typeof yakuCache[cacheKey] == 'undefined') {
-			yakuCache[cacheKey] = getYaku(currentHand, calls[0], inputTriplesAndPairs);
+			yakuCache[cacheKey] = getYaku(currentHand, calls[0], inputTriplesAndPairs, winningTile, ron);
 		}
 		return { open: yakuCache[cacheKey].open, closed: yakuCache[cacheKey].closed };
 	}
@@ -4667,7 +4832,9 @@ function getHandValues(hand, discardedTile) {
 		}
 		var furiten = (winning && (isTileFuriten(tile1.index, tile1.type) || isSameTile(discardedTile, tile1)));
 		tileCombination.winning = winning;
-		tileCombination.canWin = winning && (isClosed || getCachedYaku(hand, triplesAndPairs2).open >= 1);
+		tileCombination.canWin = winning && (isClosed || getCachedYaku(hand, triplesAndPairs2, tile1).open >= 1);
+		tileCombination.tsumoOnly = winning && !tileCombination.canWin &&
+			getCachedYaku(hand, triplesAndPairs2, tile1, false).open >= 1;
 		tileCombination.furiten = furiten;
 		tileCombination.triplesAndPairs = triplesAndPairs2; //The triplesAndPairs function is really slow, so save this result for later
 
@@ -4685,7 +4852,9 @@ function getHandValues(hand, discardedTile) {
 
 			var triplesAndPairs3 = getTriplesAndPairs(hand);
 
-			var winning2 = isWinningHand(parseInt((triplesAndPairs3.triples.length / 3)) + callTriples, triplesAndPairs3.pairs.length / 2);
+			var winning2 = isWinningHand(parseInt((triplesAndPairs3.triples.length / 3)) + callTriples, triplesAndPairs3.pairs.length / 2) &&
+				(triplesAndPairs3.triples.some(tile => isSameTile(tile, tile2Data.tile2)) ||
+					triplesAndPairs3.pairs.some(tile => isSameTile(tile, tile2Data.tile2)));
 			var furiten2 = winning2 && (isTileFuriten(tile2Data.tile2.index, tile2Data.tile2.type) || isSameTile(discardedTile, tile2Data.tile2));
 			tile2Data.winning = winning2;
 			tile2Data.furiten = furiten2;
@@ -4744,16 +4913,18 @@ function getHandValues(hand, discardedTile) {
 
 		if (tileCombination.winning) { //For winning tiles: Add waits, fu and the Riichi value
 			var thisDora = getNumberOfDoras(triples2.concat(pairs2, calls[0]));
-			var thisYaku = getCachedYaku(hand, triplesAndPairs2);
+			var scoreAsRon = !tile1Furiten && !tileCombination.tsumoOnly;
+			var thisYaku = getCachedYaku(hand, triplesAndPairs2, tile1, scoreAsRon);
 			var thisWait = numberOfTiles1 * getWaitQuality(tile1);
-			var thisFu = calculateFu(triples2, calls[0], pairs2, removeTilesFromTileArray(hand, triples.concat(pairs).concat(tile1)), tile1);
+			var thisFu = calculateFu(triples2, calls[0], pairs2,
+				removeTilesFromTileArray(hand, triples.concat(pairs).concat(tile1)), tile1, scoreAsRon);
 			if (isClosed || thisYaku.open >= 1 || tilesLeft <= 4) {
-				if (tile1Furiten && tilesLeft > 4) {
+				if ((tile1Furiten || tileCombination.tsumoOnly) && tilesLeft > 4) {
 					thisWait = numberOfTiles1 / 6;
 				}
 				waits += thisWait;
 				fu += thisFu * thisWait * factor;
-				if (thisFu == 30 && isClosed) {
+				if (isClosed && thisFu == (scoreAsRon ? 30 : 20)) {
 					thisYaku.closed += 1;
 				}
 				doraValue += thisDora * factor;
@@ -4772,7 +4943,9 @@ function getHandValues(hand, discardedTile) {
 			}
 		}
 
-		var tile2Furiten = tileCombination.tiles2.some(t => t.furiten);
+		// Continuing after a furiten completed first draw cannot turn a second
+		// copy into a ron win: keeping tenpai requires discarding a winning tile.
+		var tile2Furiten = (tile1Furiten && tileCombination.winning) || tileCombination.tiles2.some(t => t.furiten);
 
 		for (let tile2Data of tileCombination.tiles2) {//Look at second tiles if not already winning
 			var tile2 = tile2Data.tile2;
@@ -4803,14 +4976,29 @@ function getHandValues(hand, discardedTile) {
 			var winning = isWinningHand(parseInt((triples3.length / 3)) + callTriples, pairs3.length / 2);
 
 			var thisDora = getNumberOfDoras(triples3.concat(pairs3, calls[0]));
-			var thisYaku = getCachedYaku(hand, triplesAndPairs3);
-			var closedYaku = thisYaku.closed;
+			// A 15-tile simulation may already contain a completed 14-tile hand.
+			// The omitted draw cannot complete that hand or add a new ron wait.
+			var usesTile2 = !winning || triples3.some(tile => isSameTile(tile, tile2)) || pairs3.some(tile => isSameTile(tile, tile2));
+			var usesTile1 = !winning || triples3.some(tile => isSameTile(tile, tile1)) || pairs3.some(tile => isSameTile(tile, tile1));
+			var yakuForTile2 = getCachedYaku(hand, triplesAndPairs3, winning ? tile2 : null, !tile2Furiten);
+			var yakuForTile1 = winning && tile2Data.duplicate ? getCachedYaku(hand, triplesAndPairs3, tile1, !tile2Furiten) : yakuForTile2;
+			var canRonTile2 = usesTile2 && !tile2Furiten && (isClosed || yakuForTile2.open >= 1);
+			var canRonTile1 = tile2Data.duplicate ? usesTile1 && !tile2Furiten && (isClosed || yakuForTile1.open >= 1) : canRonTile2;
+			var ronFraction = (Number(canRonTile2) + Number(canRonTile1)) / 2;
+			if (winning && !isClosed) {
+				// A shanpon completed by tsumo can supply sanankou even when ron
+				// has no yaku. Preserve that value, but not the ron progression.
+				if (yakuForTile2.open < 1) yakuForTile2 = getCachedYaku(hand, triplesAndPairs3, tile2, false);
+				if (yakuForTile1.open < 1) yakuForTile1 = tile2Data.duplicate ?
+					getCachedYaku(hand, triplesAndPairs3, tile1, false) : yakuForTile2;
+			}
+			var thisYaku = { open: (yakuForTile2.open + yakuForTile1.open) / 2, closed: (yakuForTile2.closed + yakuForTile1.closed) / 2 };
 			var newFu = 30, newFu2 = 30, pinfu = 0, pinfu2 = 0;
 			if (winning) {
-				newFu = calculateFu(triples3, calls[0], pairs3, [], tile2);
-				newFu2 = tile2Data.duplicate ? calculateFu(triples3, calls[0], pairs3, [], tile1) : newFu;
-				pinfu = isClosed && newFu == 30 ? 1 : 0;
-				pinfu2 = isClosed && newFu2 == 30 ? 1 : 0;
+				newFu = calculateFu(triples3, calls[0], pairs3, [], tile2, canRonTile2);
+				newFu2 = tile2Data.duplicate ? calculateFu(triples3, calls[0], pairs3, [], tile1, canRonTile1) : newFu;
+				pinfu = isClosed && usesTile2 && newFu == (canRonTile2 ? 30 : 20) ? 1 : 0;
+				pinfu2 = tile2Data.duplicate ? (isClosed && usesTile1 && newFu2 == (canRonTile1 ? 30 : 20) ? 1 : 0) : pinfu;
 				thisYaku.closed += (pinfu + pinfu2) / 2;
 			}
 
@@ -4819,18 +5007,18 @@ function getHandValues(hand, discardedTile) {
 				combFactor *= 2; //More value to possible triples when hand is open (can call pons from all players)
 			}
 
-			if (winning && !tile2Furiten && (isClosed || thisYaku.open >= 1)) { //A completed open shape also needs a yaku.
-				thisShanten = -1 - baseShanten;
+			if (winning && !tile2Furiten && ronFraction > 0) { //Each draw order needs its own legal ron yaku.
+				thisShanten = -ronFraction - baseShanten;
 				if (!waitTiles.some(t => isSameTile(t, tile2))) {
-					var newShape = numberOfTiles2 * getWaitQuality(tile2) * ((numberOfTiles1) / availableTiles.length);
+					var newShape = canRonTile2 ? numberOfTiles2 * getWaitQuality(tile2) * ((numberOfTiles1) / availableTiles.length) : 0;
 					if (tile2Data.duplicate) {
-						newShape += numberOfTiles1 * getWaitQuality(tile1) * ((numberOfTiles2) / availableTiles.length);
+						if (canRonTile1) newShape += numberOfTiles1 * getWaitQuality(tile1) * ((numberOfTiles2) / availableTiles.length);
 					}
 					shape += newShape;
 				}
 			}
 			else { //Not winning? Calculate shanten correctly
-				if (winning && (tile2Furiten || (!isClosed && thisYaku.open < 1))) { //Furiten/No Yaku: We are 0 shanten
+				if (winning && (tile2Furiten || ronFraction == 0)) { //Furiten/No Yaku: We are 0 shanten
 					thisShanten = 0 - baseShanten;
 				}
 				else {
@@ -4846,10 +5034,10 @@ function getHandValues(hand, discardedTile) {
 				doraValue += thisDora * combFactor;
 				yaku.open += thisYaku.open * combFactor;
 				yaku.closed += thisYaku.closed * combFactor;
-				expectedScore.open += (calculateScoreWithYaku(0, thisYaku.open, thisDora + kita, newFu) +
-					calculateScoreWithYaku(0, thisYaku.open, thisDora + kita, newFu2)) / 2 * combFactor;
-				expectedScore.closed += (calculateScoreWithYaku(0, closedYaku + pinfu, thisDora + kita, newFu) +
-					calculateScoreWithYaku(0, closedYaku + pinfu2, thisDora + kita, newFu2)) / 2 * combFactor;
+				expectedScore.open += (calculateScoreWithYaku(0, yakuForTile2.open, thisDora + kita, newFu) +
+					calculateScoreWithYaku(0, yakuForTile1.open, thisDora + kita, newFu2)) / 2 * combFactor;
+				expectedScore.closed += (calculateScoreWithYaku(0, yakuForTile2.closed + pinfu, thisDora + kita, newFu) +
+					calculateScoreWithYaku(0, yakuForTile1.closed + pinfu2, thisDora + kita, newFu2)) / 2 * combFactor;
 				numberOfTotalCombinations += combFactor;
 			}
 
@@ -5290,8 +5478,24 @@ function getDefenseRuntimeStateKey() {
 	var riichiState = [0, 1, 2, 3].map(p => isPlayerRiichi(p) ? 1 : 0).join(",");
 	//dora and availableTiles feed getExpectedDealInValue (via getExpectedHandValue/getUradoraChance),
 	//and both can change without any discard/call length changing - include them or the cache goes stale.
-	return tilesLeft + "|" + discardLengths + "|" + callLengths + "|" + riichiState +
+	return getNumberOfPlayers() + "|" + tilesLeft + "|" + discardLengths + "|" + callLengths + "|" + riichiState +
 		"|" + dora.length + "|" + availableTiles.length;
+}
+
+// These live observations can change between board snapshots. Keep their keys
+// local to the affected cache, instead of querying every seat for every wait.
+function getDefensePlayerWaitStateKey(player) {
+	return getNumberOfTilesInHand(player) + "|" + getSeatWind(player) + "|" + getRoundWind() +
+		"|" + roundWind + "|" + getDefenseTileKey(riichiTiles[player]);
+}
+
+function getDefensePlayerValueStateKey(player) {
+	var history = playerDiscardSafetyList[player];
+	var room = getCurrentRoom();
+	var roomModifier = typeof ROOM_TENPAI_MODIFIER == 'undefined' ? undefined : ROOM_TENPAI_MODIFIER[room];
+	return getNumberOfTilesInHand(player) + "|" + getNumberOfKitaOfPlayer(player) + "|" +
+		getSeatWind(player) + "|" + roundWind + "|" + room + "|" + roomModifier + "|" +
+		history.length + "|" + history[history.length - 1] + "|" + history[history.length - 2] + "|" + history[history.length - 3];
 }
 
 function ensureDefenseRuntimeCache() {
@@ -5333,17 +5537,19 @@ function getTileDanger(tile, playerPerspective = 0) {
 
 	var danger = dangerPerPlayer[0] + dangerPerPlayer[1] + dangerPerPlayer[2] + dangerPerPlayer[3];
 
-	if (getCurrentDangerLevel() < 2500) { //Scale it down for low danger levels
-		danger *= 1 - ((2500 - getCurrentDangerLevel()) / 2500);
+	var dangerLevel = getCurrentDangerLevel(playerPerspective);
+	if (dangerLevel < 2500) { //Scale it down for low danger levels
+		danger *= dangerLevel / 2500;
 	}
 
 	return danger;
 }
 
 //Return the Danger value for a specific tile and player
-function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
+function getTileDangerForPlayer(tile, player, playerPerspective = 0, playerStateKey) {
 	ensureDefenseRuntimeCache();
-	var dangerCacheKey = player + "|" + playerPerspective + "|" + getDefenseTileKey(tile);
+	if (typeof playerStateKey == 'undefined') playerStateKey = getDefensePlayerWaitStateKey(player);
+	var dangerCacheKey = player + "|" + playerPerspective + "|" + playerStateKey + "|" + getDefenseTileKey(tile);
 	if (typeof defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey] != 'undefined') {
 		return defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey];
 	}
@@ -5445,17 +5651,19 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 
 //Percentage to deal in with a tile
 function getDealInChanceForTileAndPlayer(player, tile, playerPerspective = 0) {
-	var total = getTotalPossibleWaits(player, playerPerspective);
+	var playerStateKey = getDefensePlayerWaitStateKey(player);
+	var total = getTotalPossibleWaits(player, playerPerspective, playerStateKey);
 	if (total <= 0) {
 		return 0;
 	}
-	return Math.min(1, Math.max(0, getTileDangerForPlayer(tile, player, playerPerspective) / total));
+	return Math.min(1, Math.max(0, getTileDangerForPlayer(tile, player, playerPerspective, playerStateKey) / total));
 }
 
 //Total amount of waits possible
-function getTotalPossibleWaits(player, playerPerspective = 0) {
+function getTotalPossibleWaits(player, playerPerspective = 0, playerStateKey) {
 	ensureDefenseRuntimeCache();
-	var waitCacheKey = player + "|" + playerPerspective;
+	if (typeof playerStateKey == 'undefined') playerStateKey = getDefensePlayerWaitStateKey(player);
+	var waitCacheKey = player + "|" + playerPerspective + "|" + playerStateKey;
 	if (typeof defenseRuntimeCache.totalPossibleWaits[waitCacheKey] != 'undefined') {
 		return defenseRuntimeCache.totalPossibleWaits[waitCacheKey];
 	}
@@ -5466,7 +5674,7 @@ function getTotalPossibleWaits(player, playerPerspective = 0) {
 			if (j == 3 && i >= 8) {
 				break;
 			}
-			total += getTileDangerForPlayer({ index: i, type: j }, player, playerPerspective);
+			total += getTileDangerForPlayer({ index: i, type: j }, player, playerPerspective, playerStateKey);
 		}
 	}
 	defenseRuntimeCache.totalPossibleWaits[waitCacheKey] = total;
@@ -5477,13 +5685,15 @@ function getTotalPossibleWaits(player, playerPerspective = 0) {
 //which is hot (called from getCurrentDangerLevel and from getTileDanger for the player-0 perspective).
 function getExpectedDealInValue(player) {
 	ensureDefenseRuntimeCache();
-	if (typeof defenseRuntimeCache.expectedDealInValue[player] != 'undefined') {
-		return defenseRuntimeCache.expectedDealInValue[player];
+	var playerStateKey = getDefensePlayerValueStateKey(player);
+	var cached = defenseRuntimeCache.expectedDealInValue[player];
+	if (cached && cached.stateKey == playerStateKey) {
+		return cached.value;
 	}
 
 	//DealInValue is probability of player being in tenpai multiplied by the value of the hand
 	var value = isPlayerTenpai(player) * getExpectedHandValue(player);
-	defenseRuntimeCache.expectedDealInValue[player] = value;
+	defenseRuntimeCache.expectedDealInValue[player] = { stateKey: playerStateKey, value: value };
 	return value;
 }
 
@@ -5536,22 +5746,16 @@ function getExpectedDoraInHand(player) {
 
 //Returns the current Danger level of the table
 function getCurrentDangerLevel(forPlayer = 0) { //Most Dangerous Player counts extra
-	var i = 1;
-	var j = 2;
-	var k = 3;
-	if (forPlayer == 1) {
-		i = 0;
+	var total = 0;
+	var maximum = 0;
+	var players = getNumberOfPlayers();
+	for (var player = 0; player < players; player++) {
+		if (player == forPlayer) continue;
+		var value = getExpectedDealInValue(player);
+		total += value;
+		maximum = Math.max(maximum, value);
 	}
-	if (forPlayer == 2) {
-		j = 0;
-	}
-	if (forPlayer == 3) {
-		k = 0;
-	}
-	if (getNumberOfPlayers() == 3) {
-		return ((getExpectedDealInValue(i) + getExpectedDealInValue(j) + Math.max(getExpectedDealInValue(i), getExpectedDealInValue(j))) / 3);
-	}
-	return ((getExpectedDealInValue(i) + getExpectedDealInValue(j) + getExpectedDealInValue(k) + Math.max(getExpectedDealInValue(i), getExpectedDealInValue(j), getExpectedDealInValue(k))) / 4);
+	return (total + maximum) / players;
 }
 
 //Returns the number of turns ago when the tile was most recently discarded
@@ -5591,8 +5795,12 @@ function wasTileCalledFromOtherPlayers(player, tile) {
 		}
 		for (let t of calls[i]) { //Look through all melds and check where the tile came from
 			if (t.from == localPosition2Seat(player) && isSameTile(tile, t)) {
-				t.numberOfPlayerHandChanges = [10, 10, 10, 10];
-				return t;
+				// Looking up a called discard must not overwrite the live meld's
+				// timing metadata. Called tiles are no longer aged with the ponds,
+				// so their old timing is uncertain. The discarder is still furiten.
+				return Object.assign({}, t, {
+					numberOfPlayerHandChanges: [10, 10, 10, 10]
+				});
 			}
 		}
 	}
@@ -5790,7 +5998,8 @@ function isDoingYakuhai(player) {
 //If "includeOthers" parameter is set to true it will also check if other players recently discarded relevant tiles
 function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeOfOwnHand = true) {
 	ensureDefenseRuntimeCache();
-	var waitCacheKey = player + "|" + includeOthers + "|" + useKnowledgeOfOwnHand + "|" + getDefenseTileKey(tile);
+	var handSize = getNumberOfTilesInHand(player);
+	var waitCacheKey = player + "|" + includeOthers + "|" + useKnowledgeOfOwnHand + "|" + handSize + "|" + getDefenseTileKey(tile);
 	if (typeof defenseRuntimeCache.waitScore[waitCacheKey] != 'undefined') {
 		return defenseRuntimeCache.waitScore[waitCacheKey];
 	}
@@ -5815,7 +6024,7 @@ function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeO
 	//Same tile
 	score += tile0 * tile0Public * furitenFactor * 2 * (2 - toitoiFactor);
 
-	if (getNumberOfTilesInHand(player) == 1 || tile.type == 3) {
+	if (handSize == 1 || tile.type == 3) {
 		defenseRuntimeCache.waitScore[waitCacheKey] = score;
 		return score;
 	}
