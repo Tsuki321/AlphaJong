@@ -4,7 +4,7 @@
 //################################
 
 //Returns the closed and open yaku value of the hand
-function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
+function getYaku(inputHand, inputCalls = [], triplesAndPairs = null, winningTile = null, ron = true) {
 	var callMelds = getMelds(inputCalls);
 	var kanCount = callMelds.filter(meld => meld.length == 4).length;
 
@@ -24,6 +24,8 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 	// Two-draw simulations can contain a tile that will be discarded. Once a
 	// complete decomposition is chosen, only its tiles can contribute yaku.
 	var complete = concealedGroups.length + callMelds.length == 4 && triplesAndPairs.pairs.length == 2;
+	if (complete && winningTile && !triplesAndPairs.triples.some(tile => isSameTile(tile, winningTile)) &&
+		!triplesAndPairs.pairs.some(tile => isSameTile(tile, winningTile))) return { open: 0, closed: 0 };
 	var hand = (complete ? triplesAndPairs.triples.concat(triplesAndPairs.pairs) : inputHand).concat(filteredCalls);
 	if (hand.length == 0) return { open: 0, closed: 0 };
 	triplesAndPairs = {
@@ -80,7 +82,9 @@ function getYaku(inputHand, inputCalls = [], triplesAndPairs = null) {
 		//Open*
 		var concealedTriplets = concealedGroups.filter(meld => meld.every(tile => isSameTile(tile, meld[0])));
 		var concealedKans = callMelds.filter(isConcealedKan).map(meld => meld.slice(0, 3));
-		var sanankou = getSanankou(concealedTriplets.concat(concealedKans).flat());
+		var canCompleteNonTriplet = concealedGroups.some(meld => !isSameTile(meld[0], meld[1]) &&
+			meld.some(tile => isSameTile(tile, winningTile))) || isSameTile(triplesAndPairs.pairs[0], winningTile);
+		var sanankou = getSanankou(concealedTriplets.concat(concealedKans).flat(), winningTile, ron, canCompleteNonTriplet);
 		yakuOpen += sanankou.open;
 		yakuClosed += sanankou.closed;
 
@@ -288,15 +292,15 @@ function getSankantsu(kanCount) {
 }
 
 //Sanankou
-function getSanankou(hand) {
-	if (!isConsideringCall) {
-		var concealedTriples = getTripletsAsArray(hand);
-		if (parseInt(concealedTriples.length / 3) >= 3) {
-			return { open: 2, closed: 2 };
-		}
-	}
-
-	return { open: 0, closed: 0 };
+function getSanankou(hand, winningTile = null, ron = true, canCompleteNonTriplet = false) {
+	// Without a winning tile this remains a prospective estimate. For completed
+	// hands, ron opens the triplet it completes; tsumo leaves it concealed. An
+	// ambiguous winning tile may instead complete a sequence or the pair.
+	var concealedTriples = getTripletsAsArray(hand);
+	var count = concealedTriples.length / 3;
+	if (winningTile && ron && !canCompleteNonTriplet &&
+		concealedTriples.some(tile => isSameTile(tile, winningTile))) count--;
+	return count >= 3 ? { open: 2, closed: 2 } : { open: 0, closed: 0 };
 }
 
 //Toitoi

@@ -29,6 +29,18 @@ function determineStrategy() {
 	log("Strategy: " + strategy);
 }
 
+// Kuikae also forbids the opposite end of a called sequence. The two hand
+// tiles may be supplied in either order, and red fives share the restriction.
+function isKuikaeDiscard(tile, callTiles, calledTile) {
+	if (isSameTile(tile, calledTile)) return true;
+	if (!tile || !calledTile || calledTile.type == 3 || callTiles.length != 2 ||
+		callTiles.some(candidate => candidate.type != calledTile.type)) return false;
+	var indices = callTiles.map(candidate => candidate.index).sort((a, b) => a - b);
+	if (indices[1] != indices[0] + 1 || tile.type != calledTile.type) return false;
+	return (calledTile.index == indices[0] - 1 && tile.index == indices[1] + 1) ||
+		(calledTile.index == indices[1] + 1 && tile.index == indices[0] - 1);
+}
+
 //Call a Chi/Pon
 //combination example: Array ["6s|7s", "7s|9s"]
 async function callTriple(combinations, operation) {
@@ -58,13 +70,27 @@ async function callTriple(combinations, operation) {
 		callTiles = callTiles.map(t => getTileFromString(t));
 
 		var newHand = removeTilesFromTileArray(ownHand, callTiles);
-		var shanten = getStandardShanten(newHand, calls[0].concat(callTiles, getTileForCall()));
+		var newCalls = calls[0].concat(callTiles, getTileForCall());
+		// Rank only shapes reachable after a legal discard. An unrestricted
+		// 14-tile shanten can hide that its best discard is forbidden by kuikae.
+		var shanten = Infinity;
+		var checkedDiscards = new Set();
+		for (let tile of newHand) {
+			var identity = getTileIdentityKey(tile);
+			if (checkedDiscards.has(identity) || isKuikaeDiscard(tile, callTiles, getTileForCall())) continue;
+			checkedDiscards.add(identity);
+			shanten = Math.min(shanten, getStandardShanten(removeTilesFromTileArray(newHand, [tile]), newCalls));
+		}
 
 		if (shanten < bestCombShanten || (shanten == bestCombShanten && getNumberOfDoras(callTiles) > bestDora)) {
 			comb = i;
 			bestDora = getNumberOfDoras(callTiles);
 			bestCombShanten = shanten;
 		}
+	}
+	if (comb < 0) {
+		declineCall(operation);
+		return false;
 	}
 
 	log("Best Combination: " + combinations[comb]);
@@ -80,7 +106,9 @@ async function callTriple(combinations, operation) {
 	var wouldFold = false;
 	await withSimulatedCallState(callTiles, async function () {
 		// Evaluate the future discard without changing the live hand's permissions.
-		newHand = removeTilesFromTileArray(ownHand, callTiles).map(tile => ({ ...tile, valid: true }));
+		newHand = removeTilesFromTileArray(ownHand, callTiles).map(tile => ({
+			...tile, valid: !isKuikaeDiscard(tile, callTiles, getTileForCall())
+		}));
 		tilePrios = await getTilePriorities(newHand);
 		if (tilePrios.length == 0 || (!isDebug() && !isDecisionCurrent())) return;
 		tilePrios = sortOutUnsafeTiles(tilePrios);
@@ -95,9 +123,7 @@ async function callTriple(combinations, operation) {
 	var newHonorPairs = newHandTriples.pairs.filter(t => t.type == 3).length / 2;
 	var newPairs = newHandTriples.pairs.length / 2;
 
-	if (isSameTile(nextDiscard, getTileForCall()) ||
-		(callTiles[0].index == getTileForCall().index - 2 && isSameTile(nextDiscard, { index: callTiles[0].index - 1, type: callTiles[0].type })) ||
-		(callTiles[1].index == getTileForCall().index + 2 && isSameTile(nextDiscard, { index: callTiles[1].index + 1, type: callTiles[1].type }))) {
+	if (isKuikaeDiscard(nextDiscard, callTiles, getTileForCall())) {
 		declineCall(operation);
 		log("Next discard would be the same tile. Call declined!");
 		return false;
@@ -445,11 +471,12 @@ function getHandValues(hand, discardedTile) {
 	var shanten = 0; //Accumulate weighted changes from the current hand.
 	var yakuCache = {};
 
-	function getCachedYaku(currentHand, inputTriplesAndPairs) {
+	function getCachedYaku(currentHand, inputTriplesAndPairs, winningTile = null, ron = true) {
 		var cacheKey = getTileCacheKey(currentHand) + "|" + getTileCacheKey(calls[0]) + "|" +
-			inputTriplesAndPairs.triples.map(getTileIdentityKey).join(",") + "|" + getTileCacheKey(inputTriplesAndPairs.pairs);
+			inputTriplesAndPairs.triples.map(getTileIdentityKey).join(",") + "|" + getTileCacheKey(inputTriplesAndPairs.pairs) +
+			"|" + getTileIdentityKey(winningTile) + "|" + ron;
 		if (typeof yakuCache[cacheKey] == 'undefined') {
-			yakuCache[cacheKey] = getYaku(currentHand, calls[0], inputTriplesAndPairs);
+			yakuCache[cacheKey] = getYaku(currentHand, calls[0], inputTriplesAndPairs, winningTile, ron);
 		}
 		return { open: yakuCache[cacheKey].open, closed: yakuCache[cacheKey].closed };
 	}
@@ -546,7 +573,9 @@ function getHandValues(hand, discardedTile) {
 		}
 		var furiten = (winning && (isTileFuriten(tile1.index, tile1.type) || isSameTile(discardedTile, tile1)));
 		tileCombination.winning = winning;
-		tileCombination.canWin = winning && (isClosed || getCachedYaku(hand, triplesAndPairs2).open >= 1);
+		tileCombination.canWin = winning && (isClosed || getCachedYaku(hand, triplesAndPairs2, tile1).open >= 1);
+		tileCombination.tsumoOnly = winning && !tileCombination.canWin &&
+			getCachedYaku(hand, triplesAndPairs2, tile1, false).open >= 1;
 		tileCombination.furiten = furiten;
 		tileCombination.triplesAndPairs = triplesAndPairs2; //The triplesAndPairs function is really slow, so save this result for later
 
@@ -564,7 +593,9 @@ function getHandValues(hand, discardedTile) {
 
 			var triplesAndPairs3 = getTriplesAndPairs(hand);
 
-			var winning2 = isWinningHand(parseInt((triplesAndPairs3.triples.length / 3)) + callTriples, triplesAndPairs3.pairs.length / 2);
+			var winning2 = isWinningHand(parseInt((triplesAndPairs3.triples.length / 3)) + callTriples, triplesAndPairs3.pairs.length / 2) &&
+				(triplesAndPairs3.triples.some(tile => isSameTile(tile, tile2Data.tile2)) ||
+					triplesAndPairs3.pairs.some(tile => isSameTile(tile, tile2Data.tile2)));
 			var furiten2 = winning2 && (isTileFuriten(tile2Data.tile2.index, tile2Data.tile2.type) || isSameTile(discardedTile, tile2Data.tile2));
 			tile2Data.winning = winning2;
 			tile2Data.furiten = furiten2;
@@ -623,16 +654,18 @@ function getHandValues(hand, discardedTile) {
 
 		if (tileCombination.winning) { //For winning tiles: Add waits, fu and the Riichi value
 			var thisDora = getNumberOfDoras(triples2.concat(pairs2, calls[0]));
-			var thisYaku = getCachedYaku(hand, triplesAndPairs2);
+			var scoreAsRon = !tile1Furiten && !tileCombination.tsumoOnly;
+			var thisYaku = getCachedYaku(hand, triplesAndPairs2, tile1, scoreAsRon);
 			var thisWait = numberOfTiles1 * getWaitQuality(tile1);
-			var thisFu = calculateFu(triples2, calls[0], pairs2, removeTilesFromTileArray(hand, triples.concat(pairs).concat(tile1)), tile1);
+			var thisFu = calculateFu(triples2, calls[0], pairs2,
+				removeTilesFromTileArray(hand, triples.concat(pairs).concat(tile1)), tile1, scoreAsRon);
 			if (isClosed || thisYaku.open >= 1 || tilesLeft <= 4) {
-				if (tile1Furiten && tilesLeft > 4) {
+				if ((tile1Furiten || tileCombination.tsumoOnly) && tilesLeft > 4) {
 					thisWait = numberOfTiles1 / 6;
 				}
 				waits += thisWait;
 				fu += thisFu * thisWait * factor;
-				if (thisFu == 30 && isClosed) {
+				if (isClosed && thisFu == (scoreAsRon ? 30 : 20)) {
 					thisYaku.closed += 1;
 				}
 				doraValue += thisDora * factor;
@@ -651,7 +684,9 @@ function getHandValues(hand, discardedTile) {
 			}
 		}
 
-		var tile2Furiten = tileCombination.tiles2.some(t => t.furiten);
+		// Continuing after a furiten completed first draw cannot turn a second
+		// copy into a ron win: keeping tenpai requires discarding a winning tile.
+		var tile2Furiten = (tile1Furiten && tileCombination.winning) || tileCombination.tiles2.some(t => t.furiten);
 
 		for (let tile2Data of tileCombination.tiles2) {//Look at second tiles if not already winning
 			var tile2 = tile2Data.tile2;
@@ -682,14 +717,29 @@ function getHandValues(hand, discardedTile) {
 			var winning = isWinningHand(parseInt((triples3.length / 3)) + callTriples, pairs3.length / 2);
 
 			var thisDora = getNumberOfDoras(triples3.concat(pairs3, calls[0]));
-			var thisYaku = getCachedYaku(hand, triplesAndPairs3);
-			var closedYaku = thisYaku.closed;
+			// A 15-tile simulation may already contain a completed 14-tile hand.
+			// The omitted draw cannot complete that hand or add a new ron wait.
+			var usesTile2 = !winning || triples3.some(tile => isSameTile(tile, tile2)) || pairs3.some(tile => isSameTile(tile, tile2));
+			var usesTile1 = !winning || triples3.some(tile => isSameTile(tile, tile1)) || pairs3.some(tile => isSameTile(tile, tile1));
+			var yakuForTile2 = getCachedYaku(hand, triplesAndPairs3, winning ? tile2 : null, !tile2Furiten);
+			var yakuForTile1 = winning && tile2Data.duplicate ? getCachedYaku(hand, triplesAndPairs3, tile1, !tile2Furiten) : yakuForTile2;
+			var canRonTile2 = usesTile2 && !tile2Furiten && (isClosed || yakuForTile2.open >= 1);
+			var canRonTile1 = tile2Data.duplicate ? usesTile1 && !tile2Furiten && (isClosed || yakuForTile1.open >= 1) : canRonTile2;
+			var ronFraction = (Number(canRonTile2) + Number(canRonTile1)) / 2;
+			if (winning && !isClosed) {
+				// A shanpon completed by tsumo can supply sanankou even when ron
+				// has no yaku. Preserve that value, but not the ron progression.
+				if (yakuForTile2.open < 1) yakuForTile2 = getCachedYaku(hand, triplesAndPairs3, tile2, false);
+				if (yakuForTile1.open < 1) yakuForTile1 = tile2Data.duplicate ?
+					getCachedYaku(hand, triplesAndPairs3, tile1, false) : yakuForTile2;
+			}
+			var thisYaku = { open: (yakuForTile2.open + yakuForTile1.open) / 2, closed: (yakuForTile2.closed + yakuForTile1.closed) / 2 };
 			var newFu = 30, newFu2 = 30, pinfu = 0, pinfu2 = 0;
 			if (winning) {
-				newFu = calculateFu(triples3, calls[0], pairs3, [], tile2);
-				newFu2 = tile2Data.duplicate ? calculateFu(triples3, calls[0], pairs3, [], tile1) : newFu;
-				pinfu = isClosed && newFu == 30 ? 1 : 0;
-				pinfu2 = isClosed && newFu2 == 30 ? 1 : 0;
+				newFu = calculateFu(triples3, calls[0], pairs3, [], tile2, canRonTile2);
+				newFu2 = tile2Data.duplicate ? calculateFu(triples3, calls[0], pairs3, [], tile1, canRonTile1) : newFu;
+				pinfu = isClosed && usesTile2 && newFu == (canRonTile2 ? 30 : 20) ? 1 : 0;
+				pinfu2 = tile2Data.duplicate ? (isClosed && usesTile1 && newFu2 == (canRonTile1 ? 30 : 20) ? 1 : 0) : pinfu;
 				thisYaku.closed += (pinfu + pinfu2) / 2;
 			}
 
@@ -698,18 +748,18 @@ function getHandValues(hand, discardedTile) {
 				combFactor *= 2; //More value to possible triples when hand is open (can call pons from all players)
 			}
 
-			if (winning && !tile2Furiten && (isClosed || thisYaku.open >= 1)) { //A completed open shape also needs a yaku.
-				thisShanten = -1 - baseShanten;
+			if (winning && !tile2Furiten && ronFraction > 0) { //Each draw order needs its own legal ron yaku.
+				thisShanten = -ronFraction - baseShanten;
 				if (!waitTiles.some(t => isSameTile(t, tile2))) {
-					var newShape = numberOfTiles2 * getWaitQuality(tile2) * ((numberOfTiles1) / availableTiles.length);
+					var newShape = canRonTile2 ? numberOfTiles2 * getWaitQuality(tile2) * ((numberOfTiles1) / availableTiles.length) : 0;
 					if (tile2Data.duplicate) {
-						newShape += numberOfTiles1 * getWaitQuality(tile1) * ((numberOfTiles2) / availableTiles.length);
+						if (canRonTile1) newShape += numberOfTiles1 * getWaitQuality(tile1) * ((numberOfTiles2) / availableTiles.length);
 					}
 					shape += newShape;
 				}
 			}
 			else { //Not winning? Calculate shanten correctly
-				if (winning && (tile2Furiten || (!isClosed && thisYaku.open < 1))) { //Furiten/No Yaku: We are 0 shanten
+				if (winning && (tile2Furiten || ronFraction == 0)) { //Furiten/No Yaku: We are 0 shanten
 					thisShanten = 0 - baseShanten;
 				}
 				else {
@@ -725,10 +775,10 @@ function getHandValues(hand, discardedTile) {
 				doraValue += thisDora * combFactor;
 				yaku.open += thisYaku.open * combFactor;
 				yaku.closed += thisYaku.closed * combFactor;
-				expectedScore.open += (calculateScoreWithYaku(0, thisYaku.open, thisDora + kita, newFu) +
-					calculateScoreWithYaku(0, thisYaku.open, thisDora + kita, newFu2)) / 2 * combFactor;
-				expectedScore.closed += (calculateScoreWithYaku(0, closedYaku + pinfu, thisDora + kita, newFu) +
-					calculateScoreWithYaku(0, closedYaku + pinfu2, thisDora + kita, newFu2)) / 2 * combFactor;
+				expectedScore.open += (calculateScoreWithYaku(0, yakuForTile2.open, thisDora + kita, newFu) +
+					calculateScoreWithYaku(0, yakuForTile1.open, thisDora + kita, newFu2)) / 2 * combFactor;
+				expectedScore.closed += (calculateScoreWithYaku(0, yakuForTile2.closed + pinfu, thisDora + kita, newFu) +
+					calculateScoreWithYaku(0, yakuForTile1.closed + pinfu2, thisDora + kita, newFu2)) / 2 * combFactor;
 				numberOfTotalCombinations += combFactor;
 			}
 
