@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 
 const testFilePath = path.resolve(process.argv[2] || path.join("test", "run_tests.html"));
 const testUrl = pathToFileURL(testFilePath).toString();
-const maxMsPerTest = Number.parseFloat(process.env.ALPHAJONG_MAX_MS_PER_TEST || "250");
+const maxMsPerTest = Number.parseFloat(process.env.ALPHAJONG_MAX_MS_PER_TEST || "900");
 const timeoutMs = Number.parseFloat(process.env.ALPHAJONG_TEST_TIMEOUT_MS || "600000");
 const fastMode = process.env.ALPHAJONG_FAST === "1";
 

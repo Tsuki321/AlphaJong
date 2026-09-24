@@ -1,0 +1,5869 @@
+{
+  "machine": {
+    "node": "v24.14.1",
+    "v8": "13.6.233.17-node.44",
+    "platform": "win32",
+    "arch": "x64",
+    "osRelease": "10.0.26200",
+    "cpuModel": "11th Gen Intel(R) Core(TM) i3-1115G4 @ 3.00GHz",
+    "logicalCPUs": 4,
+    "totalMemoryBytes": 3974598656
+  },
+  "config": {
+    "sourceRoot": "C:\\Users\\CIRILO\\Desktop\\Coding Shenanigans\\AlphaJong\\",
+    "iterations": 5,
+    "warmup": 1,
+    "randomCases": 12,
+    "seed": 20260923,
+    "modes": [
+      0,
+      3,
+      4
+    ],
+    "workloads": [
+      "exact-shanten",
+      "exact-draw",
+      "discard"
+    ],
+    "cacheStates": [
+      "cold",
+      "warm"
+    ],
+    "timers": "real",
+    "baseline": "test-results/optimization-2026-09-23/benchmark-baseline.json",
+    "output": "test-results/optimization-2026-09-23/benchmark-reviewed.json"
+  },
+  "corpus": {
+    "count": 27,
+    "sha256": "a438a7b6ee2d73b36882529ea4dc921752ec41539321085fd7c5cefa32b463b3",
+    "fixtures": [
+      {
+        "id": "closed-balanced",
+        "tags": [
+          "closed",
+          "kanchan"
+        ],
+        "hand": "234m456p345s77z68s9m"
+      },
+      {
+        "id": "closed-overlap",
+        "tags": [
+          "closed",
+          "overlapping-sequences"
+        ],
+        "hand": "1122334567889m7p"
+      },
+      {
+        "id": "red-five",
+        "tags": [
+          "closed",
+          "red-five"
+        ],
+        "hand": "234m340568p456s22z"
+      },
+      {
+        "id": "open-yakuhai",
+        "tags": [
+          "open",
+          "yaku"
+        ],
+        "hand": "234m456p67s22z9m",
+        "melds": [
+          [
+            "555z"
+          ]
+        ]
+      },
+      {
+        "id": "open-no-yaku",
+        "tags": [
+          "open",
+          "no-yaku"
+        ],
+        "hand": "234m456p89s22z9m",
+        "melds": [
+          [
+            "678m"
+          ]
+        ]
+      },
+      {
+        "id": "concealed-kan",
+        "tags": [
+          "kan",
+          "closed"
+        ],
+        "hand": "123p456s79p22z8s",
+        "melds": [
+          [
+            "1111m"
+          ]
+        ],
+        "concealedKans": true
+      },
+      {
+        "id": "three-kans",
+        "tags": [
+          "kan",
+          "open"
+        ],
+        "hand": "45s77z8p",
+        "melds": [
+          [
+            "1111m",
+            "2222p",
+            "3333z"
+          ]
+        ]
+      },
+      {
+        "id": "chiitoitsu",
+        "tags": [
+          "chiitoitsu",
+          "closed"
+        ],
+        "hand": "1122m3344p5566s7z9p",
+        "analysisStrategy": "Chiitoitsu"
+      },
+      {
+        "id": "kokushi",
+        "tags": [
+          "kokushi",
+          "closed"
+        ],
+        "hand": "19m19p19s1234567z5p",
+        "analysisStrategy": "Thirteen_Orphans"
+      },
+      {
+        "id": "sanma",
+        "tags": [
+          "sanma",
+          "closed"
+        ],
+        "hand": "19m234456p34789s5z",
+        "players": 3
+      },
+      {
+        "id": "sanma-kokushi",
+        "tags": [
+          "sanma",
+          "kokushi"
+        ],
+        "hand": "19m19p19s1234567z5p",
+        "players": 3,
+        "analysisStrategy": "Thirteen_Orphans"
+      },
+      {
+        "id": "dead-side-furiten",
+        "tags": [
+          "furiten",
+          "dead-wait"
+        ],
+        "hand": "123m456p123s77z45s9m",
+        "ponds": [
+          "333s"
+        ]
+      },
+      {
+        "id": "dead-single-wait",
+        "tags": [
+          "furiten",
+          "dead-wait"
+        ],
+        "hand": "123m456p789s111z2z9m",
+        "ponds": [
+          "2z",
+          "22z"
+        ]
+      },
+      {
+        "id": "two-riichi-defense",
+        "tags": [
+          "defense",
+          "riichi",
+          "genbutsu"
+        ],
+        "hand": "13579m2468p258s77z",
+        "indicators": "5p",
+        "tilesLeft": 12,
+        "ponds": [
+          "1z9p",
+          "9m1p1s2z3z7z",
+          "9m9s6z4z2p",
+          "9m6p8s7z"
+        ],
+        "riichi": [
+          0,
+          1,
+          1,
+          0
+        ],
+        "riichiTiles": [
+          null,
+          "7z",
+          "2p"
+        ]
+      },
+      {
+        "id": "restricted-discard",
+        "tags": [
+          "legality",
+          "closed"
+        ],
+        "hand": "123m456p789s77z12s9m",
+        "invalidTiles": [
+          "9m"
+        ]
+      },
+      {
+        "id": "seed-20260923-0",
+        "tags": [
+          "seeded",
+          "sanma",
+          "closed"
+        ],
+        "players": 3,
+        "hand": "6s1s1m1p3p7p5p1m7z1p3p2z6z9s",
+        "indicators": "2s",
+        "ponds": [
+          "9m5z",
+          "8s9m",
+          "4s2p",
+          ""
+        ],
+        "melds": [
+          []
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 48
+      },
+      {
+        "id": "seed-20260923-1",
+        "tags": [
+          "seeded",
+          "yonma",
+          "open"
+        ],
+        "players": 4,
+        "hand": "1z3p8m1p7z6m3m6z8s3p6s",
+        "indicators": "8m",
+        "ponds": [
+          "7p4z6m",
+          "2p2m5p",
+          "7p1p4m",
+          "9m3m4m"
+        ],
+        "melds": [
+          [
+            "7z7z7z"
+          ]
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 58
+      },
+      {
+        "id": "seed-20260923-2",
+        "tags": [
+          "seeded",
+          "yonma",
+          "open"
+        ],
+        "players": 4,
+        "hand": "5p6s3z8p3s2p2p5z3z7s3z",
+        "indicators": "8p",
+        "ponds": [
+          "3m5z4z9s",
+          "5s4p9m1m",
+          "5m2p8m7p",
+          "6p1s4s9p"
+        ],
+        "melds": [
+          [
+            "2z2z2z2z"
+          ]
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 54
+      },
+      {
+        "id": "seed-20260923-3",
+        "tags": [
+          "seeded",
+          "sanma",
+          "closed"
+        ],
+        "players": 3,
+        "hand": "1m8s6z7s3p4s6s7p4p4p6p1z4z9s",
+        "indicators": "7z",
+        "ponds": [
+          "9m5p7p3p1s",
+          "1s6z6s7p4p",
+          "9m8s9s1p3s",
+          ""
+        ],
+        "melds": [
+          []
+        ],
+        "riichi": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "tilesLeft": 39
+      },
+      {
+        "id": "seed-20260923-4",
+        "tags": [
+          "seeded",
+          "yonma",
+          "closed"
+        ],
+        "players": 4,
+        "hand": "3m2p3z5p8m3p8s1z7p6m2m5m1s6z",
+        "indicators": "4p",
+        "ponds": [
+          "2s3s1m7p9s0p",
+          "7s6m6m2p3z7s",
+          "2m1p0s9m1z2z",
+          "4m5z7z9p4s8p"
+        ],
+        "melds": [
+          []
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 46
+      },
+      {
+        "id": "seed-20260923-5",
+        "tags": [
+          "seeded",
+          "yonma",
+          "open"
+        ],
+        "players": 4,
+        "hand": "6z9s8m5s1s9m7s9m3z7p3m",
+        "indicators": "7m",
+        "ponds": [
+          "7s7m5z2m6m2p7p",
+          "0s4m6p1m6s1m8s",
+          "3s7m7z4p1m1s2s",
+          "4s0p9m4p2p5m7z"
+        ],
+        "melds": [
+          [
+            "2z2z2z"
+          ]
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 42
+      },
+      {
+        "id": "seed-20260923-6",
+        "tags": [
+          "seeded",
+          "sanma",
+          "open"
+        ],
+        "players": 3,
+        "hand": "7p6s4z1m6s1m4s3p7s9s7s",
+        "indicators": "5p",
+        "ponds": [
+          "1z1z7p8p3p1p2s0p",
+          "3z6p2z1m5s9s3s2p",
+          "9p7p6z6z4p5s1p3s",
+          ""
+        ],
+        "melds": [
+          [
+            "5z5z5z5z"
+          ]
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 30
+      },
+      {
+        "id": "seed-20260923-7",
+        "tags": [
+          "seeded",
+          "yonma",
+          "closed"
+        ],
+        "players": 4,
+        "hand": "6p8m1s0p2p8m6z6z5s3p1s5m7s6s",
+        "indicators": "4s",
+        "ponds": [
+          "2m2p",
+          "1z7z",
+          "1s4m",
+          "7m3p"
+        ],
+        "melds": [
+          []
+        ],
+        "riichi": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "tilesLeft": 62
+      },
+      {
+        "id": "seed-20260923-8",
+        "tags": [
+          "seeded",
+          "yonma",
+          "closed"
+        ],
+        "players": 4,
+        "hand": "1s4z5z3p3s2m7z7s8s1p7p8m4z2z",
+        "indicators": "2m",
+        "ponds": [
+          "9s7m7m",
+          "4z1m6m",
+          "6p9p9m",
+          "1m2s6z"
+        ],
+        "melds": [
+          []
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 58
+      },
+      {
+        "id": "seed-20260923-9",
+        "tags": [
+          "seeded",
+          "sanma",
+          "open"
+        ],
+        "players": 3,
+        "hand": "6p2s7s8p1m1z6s1s5z7p9m",
+        "indicators": "5s",
+        "ponds": [
+          "1s7p1p7s",
+          "7z5p3z4p",
+          "4s3z3s4p",
+          ""
+        ],
+        "melds": [
+          [
+            "4z4z4z"
+          ]
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 42
+      },
+      {
+        "id": "seed-20260923-10",
+        "tags": [
+          "seeded",
+          "yonma",
+          "open"
+        ],
+        "players": 4,
+        "hand": "1z9m7p9s7m4s2m3p4z5p9s",
+        "indicators": "7m",
+        "ponds": [
+          "1s3z7s7s9p",
+          "3m2p4z9p1m",
+          "5p3z9p4m3m",
+          "2z6s7m4m5z"
+        ],
+        "melds": [
+          [
+            "6z6z6z6z"
+          ]
+        ],
+        "riichi": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tilesLeft": 50
+      },
+      {
+        "id": "seed-20260923-11",
+        "tags": [
+          "seeded",
+          "yonma",
+          "closed"
+        ],
+        "players": 4,
+        "hand": "6m2m4s1p3z1z4m3s4s8s1z1p2z9m",
+        "indicators": "6p",
+        "ponds": [
+          "7m7m6p8s2s4p",
+          "1p2s4m6m8p3p",
+          "2s4m5p6m3m4z",
+          "7z2p1m2z7p9s"
+        ],
+        "melds": [
+          []
+        ],
+        "riichi": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "tilesLeft": 46
+      }
+    ]
+  },
+  "harness": {
+    "sha256": "b003eb66532dc347480d5ecbec1d71b7c4a8f6a196c3b21203cd73687e0eafef"
+  },
+  "baselineSource": {
+    "sourceRoot": "C:\\Users\\CIRILO\\Desktop\\Coding Shenanigans\\AlphaJong\\test-results\\optimization-2026-09-23\\baseline",
+    "sourceHash": "280466c36c6405d65ede6479dbfad8a9aab449061f1f00c83ec8f3573888429d",
+    "files": [
+      {
+        "path": "src/parameters.js",
+        "sha256": "fe77cbfb174d11d2c606ea04ff072eb1b54f9d682d98400a9503bc68621f5df1"
+      },
+      {
+        "path": "test/test_api.js",
+        "sha256": "eac9aae1903e3cf09fb65434f0f50d200af7e9558b2b19736f62c8c7e26d621a"
+      },
+      {
+        "path": "src/ai_offense.js",
+        "sha256": "e1a5c36bd340463d5f3147383121c5ec79ee7b461b55e5661d148527bf112e53"
+      },
+      {
+        "path": "src/ai_defense.js",
+        "sha256": "0de1afe77a54ddee47a2a4afda8fecc593eaaae4653559e7f59f4aabe9871a3f"
+      },
+      {
+        "path": "src/utils.js",
+        "sha256": "5b54d310ec31c281ccbe0bf2fd5b1868b869f3cbcb126cd116ee8846298bf32e"
+      },
+      {
+        "path": "src/hand_analysis.js",
+        "sha256": "674e04ffd2e1999d8b031e2a4e2145aa5ac3915499bbe69011bd4bda7883c6a4"
+      },
+      {
+        "path": "src/yaku.js",
+        "sha256": "ec6ba91e26fd675f73aa5784e666daa3cc4322093a4199e8ad654dfb8509e532"
+      },
+      {
+        "path": "src/logging.js",
+        "sha256": "5411fcf0cf28e0beca69ce5f69830fcf93622879229406b4775380bbc8ce0f37"
+      }
+    ]
+  },
+  "currentSource": {
+    "sourceRoot": "C:\\Users\\CIRILO\\Desktop\\Coding Shenanigans\\AlphaJong",
+    "sourceHash": "21b4c2f31f66f883169e6d5b0911e4e6374ee24d9ca9cf24505a577c0895e98f",
+    "files": [
+      {
+        "path": "src/parameters.js",
+        "sha256": "fe77cbfb174d11d2c606ea04ff072eb1b54f9d682d98400a9503bc68621f5df1"
+      },
+      {
+        "path": "test/test_api.js",
+        "sha256": "eac9aae1903e3cf09fb65434f0f50d200af7e9558b2b19736f62c8c7e26d621a"
+      },
+      {
+        "path": "src/ai_offense.js",
+        "sha256": "526c87cb47c6794de180e7c80718d2b1a304bc6a992b57791f0957a31a68386d"
+      },
+      {
+        "path": "src/ai_defense.js",
+        "sha256": "952df8b55adf1145eff8f5ef0bd1e2bd789949ed05ab785d734fe509c6f1035b"
+      },
+      {
+        "path": "src/utils.js",
+        "sha256": "08dd2b7a534870def92da8f57deed16efa187dcf019e3e56bfa4571bb13aeb47"
+      },
+      {
+        "path": "src/hand_analysis.js",
+        "sha256": "674e04ffd2e1999d8b031e2a4e2145aa5ac3915499bbe69011bd4bda7883c6a4"
+      },
+      {
+        "path": "src/yaku.js",
+        "sha256": "0f16ccb17dfd9a262c6cd8778fdb7c3fd2f41724ab6ca32e57e80984d930a2c9"
+      },
+      {
+        "path": "src/logging.js",
+        "sha256": "c8e20a38612b8e7729e2835a9bf33f18bfe96b285591523cbc45944dd8430bb5"
+      }
+    ]
+  },
+  "baselineChecks": {
+    "rows": 270,
+    "measuredSamples": 1350,
+    "failed": 108,
+    "description": "Physical fixture legality, finite metrics, draw probability bounds/count sums, immutable exact/ranking state, legal distinct candidates, exactly one discarded tile, other live state unchanged, deterministic repeated and cold/warm outputs."
+  },
+  "currentChecks": {
+    "rows": 270,
+    "measuredSamples": 1350,
+    "failed": 0,
+    "description": "Physical fixture legality, finite metrics, draw probability bounds/count sums, immutable exact/ranking state, legal distinct candidates, exactly one discarded tile, other live state unchanged, deterministic repeated and cold/warm outputs."
+  },
+  "comparison": {
+    "rows": [
+      {
+        "key": "closed-overlap/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "7p",
+        "currentTile": "7p",
+        "wallMeanRatio": 0.7294902950109813,
+        "computeMeanRatio": 0.6614972062224468
+      },
+      {
+        "key": "seed-20260923-6/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "3p",
+        "currentTile": "3p",
+        "wallMeanRatio": 1.1228992118604766,
+        "computeMeanRatio": 1.14581109189491
+      },
+      {
+        "key": "red-five/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 1.0419833119347222,
+        "computeMeanRatio": 1.052663431142658
+      },
+      {
+        "key": "sanma-kokushi/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 1.0150558687503812,
+        "computeMeanRatio": 1.0150558687503812
+      },
+      {
+        "key": "seed-20260923-10/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "4z",
+        "currentTile": "4z",
+        "wallMeanRatio": 1.0171306930335258,
+        "computeMeanRatio": 1.16155960168731
+      },
+      {
+        "key": "closed-overlap/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "7p",
+        "currentTile": "7p",
+        "wallMeanRatio": 1.1060045238791545,
+        "computeMeanRatio": 1.1150394078133303
+      },
+      {
+        "key": "closed-balanced/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5374205830405236,
+        "computeMeanRatio": 0.5374205830405236
+      },
+      {
+        "key": "seed-20260923-5/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 1.3568175536103588,
+        "computeMeanRatio": 1.7337200286538605
+      },
+      {
+        "key": "red-five/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.49819605099105746,
+        "computeMeanRatio": 0.49819605099105746
+      },
+      {
+        "key": "two-riichi-defense/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 1.2282079039022393,
+        "computeMeanRatio": 1.8235535895977542
+      },
+      {
+        "key": "concealed-kan/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 2.667860340210252,
+        "computeMeanRatio": 2.667860340210252
+      },
+      {
+        "key": "sanma/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 1.3169395552460283,
+        "computeMeanRatio": 2.113275081384053
+      },
+      {
+        "key": "concealed-kan/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "8s",
+        "currentTile": "8s",
+        "wallMeanRatio": 1.1885423997013942,
+        "computeMeanRatio": 1.5794597172148823
+      },
+      {
+        "key": "seed-20260923-10/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.216825672157408,
+        "computeMeanRatio": 1.216825672157408
+      },
+      {
+        "key": "seed-20260923-4/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 1.05823202503626,
+        "computeMeanRatio": 1.5775529034871743
+      },
+      {
+        "key": "open-yakuhai/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.678297546028487,
+        "computeMeanRatio": 1.678297546028487
+      },
+      {
+        "key": "chiitoitsu/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "9p",
+        "currentTile": "9p",
+        "wallMeanRatio": 0.9468705101719175,
+        "computeMeanRatio": 0.9468705101719175
+      },
+      {
+        "key": "closed-overlap/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "7p",
+        "currentTile": "7p",
+        "wallMeanRatio": 1.5585973285610901,
+        "computeMeanRatio": 2.704600796023902
+      },
+      {
+        "key": "concealed-kan/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "8s",
+        "currentTile": "8s",
+        "wallMeanRatio": 1.2230002774473614,
+        "computeMeanRatio": 1.5215085635497059
+      },
+      {
+        "key": "dead-side-furiten/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 1.0866912618312283,
+        "computeMeanRatio": 1.4739467351848212
+      },
+      {
+        "key": "sanma/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 1.1508323487320185,
+        "computeMeanRatio": 1.263969234996833
+      },
+      {
+        "key": "seed-20260923-1/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.106537529853851,
+        "computeMeanRatio": 1.106537529853851
+      },
+      {
+        "key": "closed-balanced/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 1.1054345246177713,
+        "computeMeanRatio": 1.501564606939938
+      },
+      {
+        "key": "seed-20260923-10/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "1z",
+        "currentTile": "1z",
+        "wallMeanRatio": 1.1278794811730957,
+        "computeMeanRatio": 1.36244476656872
+      },
+      {
+        "key": "sanma-kokushi/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 1.6252351540788195,
+        "computeMeanRatio": 1.6252351540788195
+      },
+      {
+        "key": "seed-20260923-9/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5473554735454061,
+        "computeMeanRatio": 0.5473554735454061
+      },
+      {
+        "key": "seed-20260923-6/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "3p",
+        "currentTile": "3p",
+        "wallMeanRatio": 1.1844815612577013,
+        "computeMeanRatio": 1.5094307165995566
+      },
+      {
+        "key": "dead-single-wait/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 1.2341513812241371,
+        "computeMeanRatio": 1.4320305351683846
+      },
+      {
+        "key": "dead-side-furiten/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.105733432625916,
+        "computeMeanRatio": 1.105733432625916
+      },
+      {
+        "key": "seed-20260923-7/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.2215340639343204,
+        "computeMeanRatio": 1.2215340639343204
+      },
+      {
+        "key": "red-five/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.0674305861569657,
+        "computeMeanRatio": 1.0674305861569657
+      },
+      {
+        "key": "concealed-kan/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9335347432107625,
+        "computeMeanRatio": 0.9335347432107625
+      },
+      {
+        "key": "seed-20260923-11/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.3488520407954483,
+        "computeMeanRatio": 1.3488520407954483
+      },
+      {
+        "key": "seed-20260923-3/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.9632567133435622,
+        "computeMeanRatio": 1.138546776748519
+      },
+      {
+        "key": "restricted-discard/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.8978186748422005,
+        "computeMeanRatio": 1.0070994685605104
+      },
+      {
+        "key": "restricted-discard/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 1.0652266152997563,
+        "computeMeanRatio": 1.1229502073451574
+      },
+      {
+        "key": "seed-20260923-0/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.9025193665592649,
+        "computeMeanRatio": 0.8277108343468212
+      },
+      {
+        "key": "seed-20260923-11/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "4m",
+        "currentTile": "4m",
+        "wallMeanRatio": 0.8347126865455524,
+        "computeMeanRatio": 0.7766734506070885
+      },
+      {
+        "key": "dead-side-furiten/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.8831157258028888,
+        "computeMeanRatio": 0.8096355517162321
+      },
+      {
+        "key": "seed-20260923-11/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5731382978729622,
+        "computeMeanRatio": 0.5731382978729622
+      },
+      {
+        "key": "three-kans/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.913369332298195,
+        "computeMeanRatio": 0.872743229187975
+      },
+      {
+        "key": "seed-20260923-2/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.7416878458671726,
+        "computeMeanRatio": 0.7158850629132107
+      },
+      {
+        "key": "kokushi/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.6775144835087941,
+        "computeMeanRatio": 0.6775144835087941
+      },
+      {
+        "key": "sanma-kokushi/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7736549166605733,
+        "computeMeanRatio": 0.7736549166605733
+      },
+      {
+        "key": "red-five/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.9886745228039587,
+        "computeMeanRatio": 0.9257386162698839
+      },
+      {
+        "key": "seed-20260923-0/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.1227056208385435,
+        "computeMeanRatio": 1.1227056208385435
+      },
+      {
+        "key": "three-kans/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.959546947103122,
+        "computeMeanRatio": 0.9566933420437275
+      },
+      {
+        "key": "seed-20260923-4/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.7226844149690197,
+        "computeMeanRatio": 1.7226844149690197
+      },
+      {
+        "key": "kokushi/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.8223258591511534,
+        "computeMeanRatio": 0.8223258591511534
+      },
+      {
+        "key": "seed-20260923-5/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.880771042945068,
+        "computeMeanRatio": 0.8018345932599266
+      },
+      {
+        "key": "open-yakuhai/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.8455259027186021,
+        "computeMeanRatio": 0.5995596231592922
+      },
+      {
+        "key": "three-kans/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.8259909890898717,
+        "computeMeanRatio": 0.6661194912371099
+      },
+      {
+        "key": "seed-20260923-11/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "4m",
+        "currentTile": "4m",
+        "wallMeanRatio": 0.6149519413168241,
+        "computeMeanRatio": 0.3965217868980494
+      },
+      {
+        "key": "two-riichi-defense/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9394550957811209,
+        "computeMeanRatio": 0.9394550957811209
+      },
+      {
+        "key": "seed-20260923-4/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7371345259655687,
+        "computeMeanRatio": 0.7371345259655687
+      },
+      {
+        "key": "sanma-kokushi/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.4118031571323405,
+        "computeMeanRatio": 0.4118031571323405
+      },
+      {
+        "key": "two-riichi-defense/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.9142124240446831,
+        "computeMeanRatio": 0.7470016869434355
+      },
+      {
+        "key": "seed-20260923-8/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.1544943819327205,
+        "computeMeanRatio": 1.1544943819327205
+      },
+      {
+        "key": "closed-overlap/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.0472560974803262,
+        "computeMeanRatio": 1.0472560974803262
+      },
+      {
+        "key": "sanma-kokushi/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7963340126388653,
+        "computeMeanRatio": 0.7963340126388653
+      },
+      {
+        "key": "open-no-yaku/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.8884723523473789,
+        "computeMeanRatio": 0.8884723523473789
+      },
+      {
+        "key": "seed-20260923-1/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 1.0223829359133414,
+        "computeMeanRatio": 0.7454264713945904
+      },
+      {
+        "key": "seed-20260923-1/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.1407580175045102,
+        "computeMeanRatio": 1.1407580175045102
+      },
+      {
+        "key": "seed-20260923-4/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.9294049122834966,
+        "computeMeanRatio": 0.8642387749856824
+      },
+      {
+        "key": "seed-20260923-1/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 0.8700421881241647,
+        "computeMeanRatio": 0.9024743857756896
+      },
+      {
+        "key": "seed-20260923-8/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.751075605635262,
+        "computeMeanRatio": 0.6308960420306325
+      },
+      {
+        "key": "closed-balanced/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.6061057078606529,
+        "computeMeanRatio": 0.4760877401370693
+      },
+      {
+        "key": "seed-20260923-5/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.9059998560957735,
+        "computeMeanRatio": 0.7394484657341216
+      },
+      {
+        "key": "closed-balanced/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 1.1850043961567642,
+        "computeMeanRatio": 1.0743636942844166
+      },
+      {
+        "key": "seed-20260923-9/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 1.1158802727634158,
+        "computeMeanRatio": 0.8251986581762933
+      },
+      {
+        "key": "seed-20260923-0/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5326673010007742,
+        "computeMeanRatio": 0.5326673010007742
+      },
+      {
+        "key": "sanma/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.0892401836624515,
+        "computeMeanRatio": 1.0892401836624515
+      },
+      {
+        "key": "dead-side-furiten/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.8751644912298764,
+        "computeMeanRatio": 0.8751644912298764
+      },
+      {
+        "key": "sanma/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 0.9136384411818597,
+        "computeMeanRatio": 0.9981261239871974
+      },
+      {
+        "key": "seed-20260923-2/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9825629670013232,
+        "computeMeanRatio": 0.9825629670013232
+      },
+      {
+        "key": "sanma-kokushi/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.577504782759345,
+        "computeMeanRatio": 0.577504782759345
+      },
+      {
+        "key": "seed-20260923-2/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.6946936409032599,
+        "computeMeanRatio": 0.524410863810835
+      },
+      {
+        "key": "dead-side-furiten/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5715405723407683,
+        "computeMeanRatio": 0.5715405723407683
+      },
+      {
+        "key": "kokushi/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6649659865612292,
+        "computeMeanRatio": 0.6649659865612292
+      },
+      {
+        "key": "closed-overlap/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "7p",
+        "currentTile": "7p",
+        "wallMeanRatio": 0.7736048439567021,
+        "computeMeanRatio": 0.6425904528484322
+      },
+      {
+        "key": "closed-overlap/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.4557394355182544,
+        "computeMeanRatio": 0.4557394355182544
+      },
+      {
+        "key": "seed-20260923-8/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.710495278809059,
+        "computeMeanRatio": 0.7389439312183063
+      },
+      {
+        "key": "seed-20260923-9/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 0.8906969168283904,
+        "computeMeanRatio": 0.8961872100250816
+      },
+      {
+        "key": "seed-20260923-7/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.3417085438490297,
+        "computeMeanRatio": 1.3417085438490297
+      },
+      {
+        "key": "chiitoitsu/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "9p",
+        "currentTile": "9p",
+        "wallMeanRatio": 0.5097582472921889,
+        "computeMeanRatio": 0.5097582472921889
+      },
+      {
+        "key": "seed-20260923-9/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 0.7535721686105566,
+        "computeMeanRatio": 0.775334140676632
+      },
+      {
+        "key": "restricted-discard/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.7838342043537503,
+        "computeMeanRatio": 0.45045350673641427
+      },
+      {
+        "key": "seed-20260923-4/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.1496062986020958,
+        "computeMeanRatio": 1.1496062986020958
+      },
+      {
+        "key": "kokushi/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.8792785388118476,
+        "computeMeanRatio": 0.8792785388118476
+      },
+      {
+        "key": "seed-20260923-10/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6521960910643071,
+        "computeMeanRatio": 0.6521960910643071
+      },
+      {
+        "key": "dead-single-wait/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.7972644920430273,
+        "computeMeanRatio": 0.7380167238634648
+      },
+      {
+        "key": "seed-20260923-0/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 0.7699357860802745,
+        "computeMeanRatio": 0.7649823956920742
+      },
+      {
+        "key": "seed-20260923-2/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.2713676311921582,
+        "computeMeanRatio": 1.2713676311921582
+      },
+      {
+        "key": "seed-20260923-3/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 2.59374999960468,
+        "computeMeanRatio": 2.59374999960468
+      },
+      {
+        "key": "open-no-yaku/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "9s",
+        "currentTile": "9s",
+        "wallMeanRatio": 0.9043683256864186,
+        "computeMeanRatio": 0.8769817942034581
+      },
+      {
+        "key": "seed-20260923-1/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 0.9469923565813342,
+        "computeMeanRatio": 0.9811124336725282
+      },
+      {
+        "key": "open-yakuhai/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 1.0029240617479227,
+        "computeMeanRatio": 0.9700472295146569
+      },
+      {
+        "key": "two-riichi-defense/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 1.241898891038456,
+        "computeMeanRatio": 2.0159952864352078
+      },
+      {
+        "key": "three-kans/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.4892841113037807,
+        "computeMeanRatio": 1.4892841113037807
+      },
+      {
+        "key": "dead-side-furiten/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.598997721135903,
+        "computeMeanRatio": 0.4722966190978676
+      },
+      {
+        "key": "seed-20260923-1/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 0.8465206829538975,
+        "computeMeanRatio": 0.8314092205758485
+      },
+      {
+        "key": "concealed-kan/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "8s",
+        "currentTile": "8s",
+        "wallMeanRatio": 0.904489810824308,
+        "computeMeanRatio": 0.9704444078893272
+      },
+      {
+        "key": "seed-20260923-3/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9285352721991703,
+        "computeMeanRatio": 0.9285352721991703
+      },
+      {
+        "key": "seed-20260923-3/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.3142389524257329,
+        "computeMeanRatio": 0.3142389524257329
+      },
+      {
+        "key": "three-kans/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7821253890810812,
+        "computeMeanRatio": 0.7821253890810812
+      },
+      {
+        "key": "seed-20260923-10/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "4z",
+        "currentTile": "4z",
+        "wallMeanRatio": 0.8856466221780022,
+        "computeMeanRatio": 0.9566275359661001
+      },
+      {
+        "key": "seed-20260923-5/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.4739952719186455,
+        "computeMeanRatio": 0.4739952719186455
+      },
+      {
+        "key": "concealed-kan/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "8s",
+        "currentTile": "8s",
+        "wallMeanRatio": 0.9962043138114157,
+        "computeMeanRatio": 0.7286434648404707
+      },
+      {
+        "key": "open-yakuhai/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.8736552489596595,
+        "computeMeanRatio": 0.9164804358051635
+      },
+      {
+        "key": "seed-20260923-7/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.8846676841959236,
+        "computeMeanRatio": 0.8064158753995622
+      },
+      {
+        "key": "seed-20260923-2/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.9937716415288446,
+        "computeMeanRatio": 0.8957227055639997
+      },
+      {
+        "key": "seed-20260923-11/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5870129877551862,
+        "computeMeanRatio": 0.5870129877551862
+      },
+      {
+        "key": "dead-side-furiten/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.7606465818162331,
+        "computeMeanRatio": 0.7837311042389519
+      },
+      {
+        "key": "seed-20260923-3/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.8350399126591519,
+        "computeMeanRatio": 0.7841524287440549
+      },
+      {
+        "key": "chiitoitsu/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.4455782314934204,
+        "computeMeanRatio": 0.4455782314934204
+      },
+      {
+        "key": "seed-20260923-2/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.9258388884938988,
+        "computeMeanRatio": 1.0374401284202566
+      },
+      {
+        "key": "restricted-discard/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.988012147603803,
+        "computeMeanRatio": 0.5836451562124213
+      },
+      {
+        "key": "concealed-kan/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6775269369211111,
+        "computeMeanRatio": 0.6775269369211111
+      },
+      {
+        "key": "sanma/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5456039441401508,
+        "computeMeanRatio": 0.5456039441401508
+      },
+      {
+        "key": "sanma-kokushi/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.7197402698386245,
+        "computeMeanRatio": 0.7197402698386245
+      },
+      {
+        "key": "seed-20260923-4/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.8174182645627575,
+        "computeMeanRatio": 0.7745254511942141
+      },
+      {
+        "key": "seed-20260923-9/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 0.7900621577380312,
+        "computeMeanRatio": 0.7125489347909614
+      },
+      {
+        "key": "open-yakuhai/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7160568203533507,
+        "computeMeanRatio": 0.7160568203533507
+      },
+      {
+        "key": "seed-20260923-8/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 1.0080490747737536,
+        "computeMeanRatio": 0.8992661185422677
+      },
+      {
+        "key": "seed-20260923-10/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5788525855035527,
+        "computeMeanRatio": 0.5788525855035527
+      },
+      {
+        "key": "seed-20260923-3/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.688478028156716,
+        "computeMeanRatio": 0.751792005379539
+      },
+      {
+        "key": "seed-20260923-4/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.2612509535611423,
+        "computeMeanRatio": 1.2612509535611423
+      },
+      {
+        "key": "seed-20260923-0/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.7120976886214432,
+        "computeMeanRatio": 0.761483948244922
+      },
+      {
+        "key": "sanma-kokushi/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.24884792688534116,
+        "computeMeanRatio": 0.24884792688534116
+      },
+      {
+        "key": "seed-20260923-6/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "3p",
+        "currentTile": "3p",
+        "wallMeanRatio": 0.7535397604624609,
+        "computeMeanRatio": 0.7787674570882626
+      },
+      {
+        "key": "dead-single-wait/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.9313901790022517,
+        "computeMeanRatio": 1.0068692175793723
+      },
+      {
+        "key": "seed-20260923-11/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "4m",
+        "currentTile": "4m",
+        "wallMeanRatio": 0.822876246897634,
+        "computeMeanRatio": 0.8481511875475961
+      },
+      {
+        "key": "two-riichi-defense/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.594952246948166,
+        "computeMeanRatio": 0.594952246948166
+      },
+      {
+        "key": "open-yakuhai/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.8622234546326508,
+        "computeMeanRatio": 0.8274492972670174
+      },
+      {
+        "key": "kokushi/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.7784516807457584,
+        "computeMeanRatio": 0.7784516807457584
+      },
+      {
+        "key": "restricted-discard/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.8748191681617201,
+        "computeMeanRatio": 0.8748191681617201
+      },
+      {
+        "key": "seed-20260923-1/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 0.8267798523830235,
+        "computeMeanRatio": 0.8049989924821368
+      },
+      {
+        "key": "seed-20260923-6/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6439597790615945,
+        "computeMeanRatio": 0.6439597790615945
+      },
+      {
+        "key": "kokushi/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 1.34314259057515,
+        "computeMeanRatio": 1.34314259057515
+      },
+      {
+        "key": "seed-20260923-0/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 1.0050185663731948,
+        "computeMeanRatio": 0.9921127360865105
+      },
+      {
+        "key": "restricted-discard/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.5971383222934519,
+        "computeMeanRatio": 0.4433726960440068
+      },
+      {
+        "key": "closed-overlap/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9790159188061068,
+        "computeMeanRatio": 0.9790159188061068
+      },
+      {
+        "key": "seed-20260923-0/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.7557358290065219,
+        "computeMeanRatio": 0.5050524383549048
+      },
+      {
+        "key": "seed-20260923-6/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "3p",
+        "currentTile": "3p",
+        "wallMeanRatio": 0.8140037095322101,
+        "computeMeanRatio": 0.8000939634545187
+      },
+      {
+        "key": "open-no-yaku/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "9s",
+        "currentTile": "9s",
+        "wallMeanRatio": 0.9886055126652891,
+        "computeMeanRatio": 0.8983558440994966
+      },
+      {
+        "key": "seed-20260923-8/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.9062295500646241,
+        "computeMeanRatio": 0.7141615489545018
+      },
+      {
+        "key": "red-five/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.9552309661252997,
+        "computeMeanRatio": 1.0921175466302637
+      },
+      {
+        "key": "chiitoitsu/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "9p",
+        "currentTile": "9p",
+        "wallMeanRatio": 0.6226763535975501,
+        "computeMeanRatio": 0.6226763535975501
+      },
+      {
+        "key": "two-riichi-defense/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 1.0807996203218546,
+        "computeMeanRatio": 0.9928184167290593
+      },
+      {
+        "key": "seed-20260923-6/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9736842118027996,
+        "computeMeanRatio": 0.9736842118027996
+      },
+      {
+        "key": "closed-balanced/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 1.0590706444257245,
+        "computeMeanRatio": 0.9526647669790559
+      },
+      {
+        "key": "sanma/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.0755555579758445,
+        "computeMeanRatio": 1.0755555579758445
+      },
+      {
+        "key": "open-yakuhai/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.23429951695405982,
+        "computeMeanRatio": 0.23429951695405982
+      },
+      {
+        "key": "red-five/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6396255843519064,
+        "computeMeanRatio": 0.6396255843519064
+      },
+      {
+        "key": "dead-side-furiten/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.3169642849486396,
+        "computeMeanRatio": 1.3169642849486396
+      },
+      {
+        "key": "sanma/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.9891383644328196,
+        "computeMeanRatio": 0.8968916464945975
+      },
+      {
+        "key": "seed-20260923-7/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.8257798808969432,
+        "computeMeanRatio": 0.7392624401888674
+      },
+      {
+        "key": "seed-20260923-1/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.2653390743772774,
+        "computeMeanRatio": 1.2653390743772774
+      },
+      {
+        "key": "seed-20260923-5/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.3531489109224422,
+        "computeMeanRatio": 1.3531489109224422
+      },
+      {
+        "key": "seed-20260923-9/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 0.9834093314697362,
+        "computeMeanRatio": 1.175678013273187
+      },
+      {
+        "key": "seed-20260923-7/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.6832543057413887,
+        "computeMeanRatio": 0.5902392100722006
+      },
+      {
+        "key": "seed-20260923-6/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "3p",
+        "currentTile": "3p",
+        "wallMeanRatio": 1.0154208416977928,
+        "computeMeanRatio": 1.0826287451296623
+      },
+      {
+        "key": "open-yakuhai/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9782125390361064,
+        "computeMeanRatio": 0.9782125390361064
+      },
+      {
+        "key": "seed-20260923-11/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "4m",
+        "currentTile": "4m",
+        "wallMeanRatio": 0.8555616385142158,
+        "computeMeanRatio": 0.9419262757916645
+      },
+      {
+        "key": "kokushi/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.8851352395175447,
+        "computeMeanRatio": 0.8851352395175447
+      },
+      {
+        "key": "restricted-discard/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.609907120486389,
+        "computeMeanRatio": 0.609907120486389
+      },
+      {
+        "key": "red-five/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.8661604175301544,
+        "computeMeanRatio": 0.8661604175301544
+      },
+      {
+        "key": "dead-single-wait/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.4734991887129001,
+        "computeMeanRatio": 0.4734991887129001
+      },
+      {
+        "key": "three-kans/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.9429699592689762,
+        "computeMeanRatio": 0.9804884013011566
+      },
+      {
+        "key": "seed-20260923-9/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.6554404147753783,
+        "computeMeanRatio": 1.6554404147753783
+      },
+      {
+        "key": "sanma-kokushi/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.4500000046081067,
+        "computeMeanRatio": 1.4500000046081067
+      },
+      {
+        "key": "seed-20260923-3/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.8068485822990302,
+        "computeMeanRatio": 0.8068485822990302
+      },
+      {
+        "key": "restricted-discard/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.9875141884869301,
+        "computeMeanRatio": 0.9875141884869301
+      },
+      {
+        "key": "concealed-kan/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "8s",
+        "currentTile": "8s",
+        "wallMeanRatio": 0.7764490598636373,
+        "computeMeanRatio": 0.7037636567767539
+      },
+      {
+        "key": "closed-balanced/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.4710072895447538,
+        "computeMeanRatio": 0.4710072895447538
+      },
+      {
+        "key": "seed-20260923-6/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "3p",
+        "currentTile": "3p",
+        "wallMeanRatio": 0.9583267730043448,
+        "computeMeanRatio": 1.1341337798185893
+      },
+      {
+        "key": "seed-20260923-8/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7515058737360071,
+        "computeMeanRatio": 0.7515058737360071
+      },
+      {
+        "key": "seed-20260923-8/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.044606768931087386,
+        "computeMeanRatio": 0.044606768931087386
+      },
+      {
+        "key": "seed-20260923-9/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.48701298702116824,
+        "computeMeanRatio": 0.48701298702116824
+      },
+      {
+        "key": "three-kans/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.9367100673041295,
+        "computeMeanRatio": 0.9531140306870778
+      },
+      {
+        "key": "dead-single-wait/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 3.5470852034148606,
+        "computeMeanRatio": 3.5470852034148606
+      },
+      {
+        "key": "seed-20260923-6/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6446552354388411,
+        "computeMeanRatio": 0.6446552354388411
+      },
+      {
+        "key": "open-no-yaku/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "9s",
+        "currentTile": "9s",
+        "wallMeanRatio": 0.9537783177228981,
+        "computeMeanRatio": 0.6570251806049661
+      },
+      {
+        "key": "seed-20260923-9/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 0.9979496373119884,
+        "computeMeanRatio": 0.843459412701583
+      },
+      {
+        "key": "seed-20260923-1/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "7z",
+        "currentTile": "7z",
+        "wallMeanRatio": 1.0073009106583337,
+        "computeMeanRatio": 0.78503025448166
+      },
+      {
+        "key": "seed-20260923-9/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6651563654176054,
+        "computeMeanRatio": 0.6651563654176054
+      },
+      {
+        "key": "seed-20260923-7/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.6213480363732005,
+        "computeMeanRatio": 0.49313539250628236
+      },
+      {
+        "key": "restricted-discard/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "1s",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.9046278812369646,
+        "computeMeanRatio": 0.9608581034625899
+      },
+      {
+        "key": "seed-20260923-0/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5792980898260328,
+        "computeMeanRatio": 0.5792980898260328
+      },
+      {
+        "key": "seed-20260923-7/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.9854582434827066,
+        "computeMeanRatio": 1.1314339840115524
+      },
+      {
+        "key": "concealed-kan/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "8s",
+        "currentTile": "8s",
+        "wallMeanRatio": 0.9184481062931026,
+        "computeMeanRatio": 0.6295367604200087
+      },
+      {
+        "key": "closed-balanced/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.3349735049616678,
+        "computeMeanRatio": 0.3349735049616678
+      },
+      {
+        "key": "seed-20260923-7/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.9264991695951942,
+        "computeMeanRatio": 0.5667311177680379
+      },
+      {
+        "key": "open-no-yaku/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.2337182450056798,
+        "computeMeanRatio": 1.2337182450056798
+      },
+      {
+        "key": "open-no-yaku/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "9s",
+        "currentTile": "9s",
+        "wallMeanRatio": 0.7863628443753177,
+        "computeMeanRatio": 0.4623416550882157
+      },
+      {
+        "key": "seed-20260923-8/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.42158273408047414,
+        "computeMeanRatio": 0.42158273408047414
+      },
+      {
+        "key": "seed-20260923-0/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.8807093089701772,
+        "computeMeanRatio": 0.5053187321290409
+      },
+      {
+        "key": "seed-20260923-5/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.9755814157391199,
+        "computeMeanRatio": 0.8033438020536681
+      },
+      {
+        "key": "red-five/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.9189868089793561,
+        "computeMeanRatio": 0.8486965546032355
+      },
+      {
+        "key": "seed-20260923-3/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.8199791526477143,
+        "computeMeanRatio": 0.727659084163685
+      },
+      {
+        "key": "two-riichi-defense/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5165957445711814,
+        "computeMeanRatio": 0.5165957445711814
+      },
+      {
+        "key": "kokushi/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.1873198844555117,
+        "computeMeanRatio": 0.1873198844555117
+      },
+      {
+        "key": "restricted-discard/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.07495168472335458,
+        "computeMeanRatio": 0.07495168472335458
+      },
+      {
+        "key": "seed-20260923-2/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.8952036891167876,
+        "computeMeanRatio": 0.5968856102003949
+      },
+      {
+        "key": "seed-20260923-11/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.81997583566615,
+        "computeMeanRatio": 0.81997583566615
+      },
+      {
+        "key": "three-kans/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 1.0216086027936526,
+        "computeMeanRatio": 1.3426057624824528
+      },
+      {
+        "key": "kokushi/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.8363636413666088,
+        "computeMeanRatio": 0.8363636413666088
+      },
+      {
+        "key": "sanma/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.8866614278936994,
+        "computeMeanRatio": 0.9125335464546434
+      },
+      {
+        "key": "closed-overlap/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.6560846606961643,
+        "computeMeanRatio": 1.6560846606961643
+      },
+      {
+        "key": "closed-overlap/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "7p",
+        "currentTile": "7p",
+        "wallMeanRatio": 0.9340507829857921,
+        "computeMeanRatio": 1.0086558356877666
+      },
+      {
+        "key": "chiitoitsu/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.7261904742518708,
+        "computeMeanRatio": 1.7261904742518708
+      },
+      {
+        "key": "three-kans/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.4682723481519355,
+        "computeMeanRatio": 1.4682723481519355
+      },
+      {
+        "key": "seed-20260923-11/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "4m",
+        "currentTile": "4m",
+        "wallMeanRatio": 0.9678693849856306,
+        "computeMeanRatio": 0.795841108677439
+      },
+      {
+        "key": "seed-20260923-3/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.9503619793277549,
+        "computeMeanRatio": 0.7408131417284233
+      },
+      {
+        "key": "seed-20260923-3/discard/cold/4",
+        "outputsEqual": true,
+        "baselineTile": "6z",
+        "currentTile": "6z",
+        "wallMeanRatio": 0.7418946327699265,
+        "computeMeanRatio": 0.4402969746335129
+      },
+      {
+        "key": "kokushi/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.28901032175193025,
+        "computeMeanRatio": 0.28901032175193025
+      },
+      {
+        "key": "dead-single-wait/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.734924077880429,
+        "computeMeanRatio": 0.734924077880429
+      },
+      {
+        "key": "seed-20260923-4/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 1.0423068021746082,
+        "computeMeanRatio": 1.1293450757763137
+      },
+      {
+        "key": "seed-20260923-10/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "1z",
+        "currentTile": "1z",
+        "wallMeanRatio": 1.0149605462273092,
+        "computeMeanRatio": 0.95335409897913
+      },
+      {
+        "key": "closed-overlap/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "7p",
+        "currentTile": "7p",
+        "wallMeanRatio": 0.7414138677121073,
+        "computeMeanRatio": 0.6371305665975905
+      },
+      {
+        "key": "closed-balanced/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.4471153862971426,
+        "computeMeanRatio": 1.4471153862971426
+      },
+      {
+        "key": "dead-single-wait/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.9404782003482366,
+        "computeMeanRatio": 0.9198410359959115
+      },
+      {
+        "key": "seed-20260923-7/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.6745817593425472,
+        "computeMeanRatio": 1.6745817593425472
+      },
+      {
+        "key": "seed-20260923-10/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "1z",
+        "currentTile": "1z",
+        "wallMeanRatio": 0.9680150881415681,
+        "computeMeanRatio": 0.7880984030510001
+      },
+      {
+        "key": "seed-20260923-5/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.085913795256935,
+        "computeMeanRatio": 1.085913795256935
+      },
+      {
+        "key": "seed-20260923-2/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5880952380834827,
+        "computeMeanRatio": 0.5880952380834827
+      },
+      {
+        "key": "seed-20260923-7/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.5393313667676682,
+        "computeMeanRatio": 0.5393313667676682
+      },
+      {
+        "key": "seed-20260923-10/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.852760736371584,
+        "computeMeanRatio": 0.852760736371584
+      },
+      {
+        "key": "sanma/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "1m",
+        "currentTile": "1m",
+        "wallMeanRatio": 0.7484181018724665,
+        "computeMeanRatio": 0.8061033954721126
+      },
+      {
+        "key": "three-kans/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.6757425720409727,
+        "computeMeanRatio": 1.6757425720409727
+      },
+      {
+        "key": "closed-balanced/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.9607137016057382,
+        "computeMeanRatio": 0.8432164824528287
+      },
+      {
+        "key": "two-riichi-defense/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.34545454531985004,
+        "computeMeanRatio": 0.34545454531985004
+      },
+      {
+        "key": "seed-20260923-8/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.6137268029265143,
+        "computeMeanRatio": 0.3998640355328948
+      },
+      {
+        "key": "seed-20260923-1/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.6656923638913209,
+        "computeMeanRatio": 0.6656923638913209
+      },
+      {
+        "key": "seed-20260923-8/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.824666109800375,
+        "computeMeanRatio": 0.6717924164047778
+      },
+      {
+        "key": "seed-20260923-0/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7125220463569055,
+        "computeMeanRatio": 0.7125220463569055
+      },
+      {
+        "key": "open-no-yaku/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "9s",
+        "currentTile": "9s",
+        "wallMeanRatio": 0.945618945281137,
+        "computeMeanRatio": 1.0329814943978277
+      },
+      {
+        "key": "seed-20260923-5/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.4817852835222919,
+        "computeMeanRatio": 0.4817852835222919
+      },
+      {
+        "key": "dead-single-wait/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 1.0308145764447292,
+        "computeMeanRatio": 1.0196980603957209
+      },
+      {
+        "key": "dead-side-furiten/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.8549565825822679,
+        "computeMeanRatio": 0.8401221598447981
+      },
+      {
+        "key": "seed-20260923-6/exact-shanten/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.321260139645167,
+        "computeMeanRatio": 0.321260139645167
+      },
+      {
+        "key": "open-no-yaku/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 4.040697674654709,
+        "computeMeanRatio": 4.040697674654709
+      },
+      {
+        "key": "chiitoitsu/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "9p",
+        "currentTile": "9p",
+        "wallMeanRatio": 0.7418289844748999,
+        "computeMeanRatio": 0.7418289844748999
+      },
+      {
+        "key": "open-yakuhai/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.9775935292211894,
+        "computeMeanRatio": 0.7639026616202258
+      },
+      {
+        "key": "closed-balanced/discard/cold/3",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.7007792230146608,
+        "computeMeanRatio": 0.6055214063685125
+      },
+      {
+        "key": "seed-20260923-10/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "1z",
+        "currentTile": "1z",
+        "wallMeanRatio": 0.9535423303521282,
+        "computeMeanRatio": 0.7808220416869197
+      },
+      {
+        "key": "chiitoitsu/exact-draw/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.4852320672186587,
+        "computeMeanRatio": 0.4852320672186587
+      },
+      {
+        "key": "seed-20260923-2/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.8929889310464616,
+        "computeMeanRatio": 0.8929889310464616
+      },
+      {
+        "key": "seed-20260923-4/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.7672328914980748,
+        "computeMeanRatio": 0.6107045868574048
+      },
+      {
+        "key": "sanma-kokushi/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "5p",
+        "currentTile": "5p",
+        "wallMeanRatio": 0.8992287698449027,
+        "computeMeanRatio": 0.8992287698449027
+      },
+      {
+        "key": "seed-20260923-5/discard/cold/0",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.8718906772331211,
+        "computeMeanRatio": 0.8853641263623279
+      },
+      {
+        "key": "dead-side-furiten/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.9621590390132155,
+        "computeMeanRatio": 1.0496498921072472
+      },
+      {
+        "key": "red-five/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.3319092578390294,
+        "computeMeanRatio": 0.2262688981802466
+      },
+      {
+        "key": "open-yakuhai/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.7700077547823334,
+        "computeMeanRatio": 0.4632789519534429
+      },
+      {
+        "key": "chiitoitsu/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.0870195792615031,
+        "computeMeanRatio": 0.0870195792615031
+      },
+      {
+        "key": "seed-20260923-4/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.6832594267297684,
+        "computeMeanRatio": 0.46967307124691593
+      },
+      {
+        "key": "dead-single-wait/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.5211819152683923,
+        "computeMeanRatio": 1.5211819152683923
+      },
+      {
+        "key": "two-riichi-defense/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.9732048344106319,
+        "computeMeanRatio": 0.8187607785058454
+      },
+      {
+        "key": "red-five/discard/cold/0",
+        "outputsEqual": true,
+        "baselineTile": "8p",
+        "currentTile": "8p",
+        "wallMeanRatio": 0.6245033967795874,
+        "computeMeanRatio": 0.4674002026267917
+      },
+      {
+        "key": "seed-20260923-2/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "5z",
+        "currentTile": "5z",
+        "wallMeanRatio": 0.6295996037016732,
+        "computeMeanRatio": 0.5686793019315766
+      },
+      {
+        "key": "chiitoitsu/discard/warm/3",
+        "outputsEqual": true,
+        "baselineTile": "9p",
+        "currentTile": "9p",
+        "wallMeanRatio": 0.7447163003078046,
+        "computeMeanRatio": 0.7447163003078046
+      },
+      {
+        "key": "seed-20260923-5/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "3z",
+        "currentTile": "3z",
+        "wallMeanRatio": 0.9208553800939601,
+        "computeMeanRatio": 0.9503521850345705
+      },
+      {
+        "key": "open-no-yaku/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "9s",
+        "currentTile": "9s",
+        "wallMeanRatio": 0.6353643158959674,
+        "computeMeanRatio": 0.3927897985163932
+      },
+      {
+        "key": "two-riichi-defense/discard/warm/4",
+        "outputsEqual": true,
+        "baselineTile": "9m",
+        "currentTile": "9m",
+        "wallMeanRatio": 0.9117895628631763,
+        "computeMeanRatio": 0.6504024669350532
+      },
+      {
+        "key": "sanma/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.7961518460636196,
+        "computeMeanRatio": 0.7961518460636196
+      },
+      {
+        "key": "chiitoitsu/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "9p",
+        "currentTile": "9p",
+        "wallMeanRatio": 0.5497097888383579,
+        "computeMeanRatio": 0.5497097888383579
+      },
+      {
+        "key": "open-no-yaku/exact-draw/cold/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 0.911520699644306,
+        "computeMeanRatio": 0.911520699644306
+      },
+      {
+        "key": "seed-20260923-11/discard/warm/0",
+        "outputsEqual": true,
+        "baselineTile": "4m",
+        "currentTile": "4m",
+        "wallMeanRatio": 0.9209491360321977,
+        "computeMeanRatio": 0.763875654479096
+      },
+      {
+        "key": "dead-single-wait/discard/warm/0",
+        "outputsEqual": false,
+        "baselineTile": "2z",
+        "currentTile": "2z",
+        "wallMeanRatio": 0.9016841281457935,
+        "computeMeanRatio": 0.9007328641674199
+      },
+      {
+        "key": "concealed-kan/exact-shanten/warm/independent",
+        "outputsEqual": true,
+        "wallMeanRatio": 1.4809523814407448,
+        "computeMeanRatio": 1.4809523814407448
+      }
+    ],
+    "summary": [
+      {
+        "key": "discard/cold/4",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 1.0464000000065425,
+          "mean": 455.77487851851913,
+          "p50": 457.43360000000393,
+          "p95": 913.827099999995,
+          "max": 1053.291299999999
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.8390999999974156,
+          "mean": 384.22167925925953,
+          "p50": 364.72100000000046,
+          "p95": 828.1934999999994,
+          "max": 1322.7213000000047
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 1.0464000000065425,
+          "mean": 289.2133592592572,
+          "p50": 259.04020000004675,
+          "p95": 696.9264999999978,
+          "max": 842.6038999999982
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.8390999999974156,
+          "mean": 207.63320888889072,
+          "p50": 160.04149999999208,
+          "p95": 632.5733999999993,
+          "max": 1103.7351000000272
+        },
+        "wallMeanRatio": 0.8430075841568082,
+        "computeMeanRatio": 0.7179239901665946
+      },
+      {
+        "key": "discard/cold/0",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 1.2232999999832828,
+          "mean": 219.39091481481464,
+          "p50": 222.08980000000156,
+          "p95": 366.2383999999729,
+          "max": 648.6262999999999
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 1.1300000000046566,
+          "mean": 191.37159851851914,
+          "p50": 189.11600000000908,
+          "p95": 384.32800000000134,
+          "max": 696.4761999999992
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 1.2232999999832828,
+          "mean": 62.30833259259183,
+          "p50": 55.35940000001574,
+          "p95": 166.27200000000084,
+          "max": 463.61669999999503
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 1.1300000000046566,
+          "mean": 57.62141777777671,
+          "p50": 47.27210000000923,
+          "p95": 172.11219999998139,
+          "max": 505.54659999999967
+        },
+        "wallMeanRatio": 0.8722858860406946,
+        "computeMeanRatio": 0.9247786833671044
+      },
+      {
+        "key": "discard/warm/0",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 1.1878999999898952,
+          "mean": 174.7352303703708,
+          "p50": 188.65380000000005,
+          "p95": 265.5486999999848,
+          "max": 334.4189999999944
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 1.1534000000101514,
+          "mean": 162.46462296296446,
+          "p50": 176.3109000000004,
+          "p95": 236.26680000001215,
+          "max": 265.3307999999961
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 1.1878999999898952,
+          "mean": 29.79803259259503,
+          "p50": 28.577699999994365,
+          "p95": 57.06649999995716,
+          "max": 156.40640000009444
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 1.1534000000101514,
+          "mean": 27.0865399999983,
+          "p50": 28.60650000005262,
+          "p95": 44.69189999999071,
+          "max": 79.13569999998435
+        },
+        "wallMeanRatio": 0.9297759966241643,
+        "computeMeanRatio": 0.9090043081142697
+      },
+      {
+        "key": "exact-draw/cold/independent",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 0.009399999980814755,
+          "mean": 0.4675222222217902,
+          "p50": 0.4057999999495223,
+          "p95": 0.9948000000003958,
+          "max": 2.89259999999922
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.004899999999906868,
+          "mean": 0.3946014814810311,
+          "p50": 0.3899000000092201,
+          "p95": 0.7229999999981374,
+          "max": 1.028600000019651
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 0.009399999980814755,
+          "mean": 0.4675222222217902,
+          "p50": 0.4057999999495223,
+          "p95": 0.9948000000003958,
+          "max": 2.89259999999922
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.004899999999906868,
+          "mean": 0.3946014814810311,
+          "p50": 0.3899000000092201,
+          "p95": 0.7229999999981374,
+          "max": 1.028600000019651
+        },
+        "wallMeanRatio": 0.8440272199378667,
+        "computeMeanRatio": 0.8440272199378667
+      },
+      {
+        "key": "exact-shanten/cold/independent",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 0.0009999999892897904,
+          "mean": 0.05579111111063092,
+          "p50": 0.03940000000875443,
+          "p95": 0.13830000000598375,
+          "max": 0.4300999999977648
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.0010000000183936208,
+          "mean": 0.057263703702860595,
+          "p50": 0.04439999999885913,
+          "p95": 0.11939999999958673,
+          "max": 1.057700000001205
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 0.0009999999892897904,
+          "mean": 0.05579111111063092,
+          "p50": 0.03940000000875443,
+          "p95": 0.13830000000598375,
+          "max": 0.4300999999977648
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.0010000000183936208,
+          "mean": 0.057263703702860595,
+          "p50": 0.04439999999885913,
+          "p95": 0.11939999999958673,
+          "max": 1.057700000001205
+        },
+        "wallMeanRatio": 1.0263947529080322,
+        "computeMeanRatio": 1.0263947529080322
+      },
+      {
+        "key": "discard/warm/3",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 0.9104999999981374,
+          "mean": 261.6320562962961,
+          "p50": 289.59679999999935,
+          "p95": 424.13870000001043,
+          "max": 496.09249999999884
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.9988999999986845,
+          "mean": 265.2609962962965,
+          "p50": 282.70809999999983,
+          "p95": 459.13179999999556,
+          "max": 597.2546000000002
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 0.9104999999981374,
+          "mean": 84.20354296296419,
+          "p50": 85.1297999999988,
+          "p95": 153.46949999997742,
+          "max": 314.5174999999872
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.9988999999986845,
+          "mean": 89.51501777777624,
+          "p50": 79.86389999996754,
+          "p95": 225.2832000000053,
+          "max": 345.1024999999936
+        },
+        "wallMeanRatio": 1.0138703951318973,
+        "computeMeanRatio": 1.0630789943975187
+      },
+      {
+        "key": "exact-shanten/warm/independent",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 0.001799999998183921,
+          "mean": 0.00951703703726202,
+          "p50": 0.0062000000034458935,
+          "p95": 0.021399999997811392,
+          "max": 0.14170000000740401
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.0008999999845400453,
+          "mean": 0.0072674074080876176,
+          "p50": 0.005499999999301508,
+          "p95": 0.015500000008614734,
+          "max": 0.05439999999362044
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 0.001799999998183921,
+          "mean": 0.00951703703726202,
+          "p50": 0.0062000000034458935,
+          "p95": 0.021399999997811392,
+          "max": 0.14170000000740401
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.0008999999845400453,
+          "mean": 0.0072674074080876176,
+          "p50": 0.005499999999301508,
+          "p95": 0.015500000008614734,
+          "max": 0.05439999999362044
+        },
+        "wallMeanRatio": 0.7636207970646288,
+        "computeMeanRatio": 0.7636207970646288
+      },
+      {
+        "key": "discard/cold/3",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 0.9878000000026077,
+          "mean": 403.2254333333346,
+          "p50": 361.8434999999881,
+          "p95": 844.8137999999744,
+          "max": 3218.894800000009
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.8381999999983236,
+          "mean": 328.36723185185076,
+          "p50": 346.83910000001197,
+          "p95": 539.9072999999917,
+          "max": 900.587099999997
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 0.9878000000026077,
+          "mean": 231.44950518518226,
+          "p50": 177.94700000007288,
+          "p95": 621.3039999999164,
+          "max": 2967.4124000000884
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.8381999999983236,
+          "mean": 146.7943355555575,
+          "p50": 134.1530999999959,
+          "p95": 317.7164000000339,
+          "max": 701.4832999999853
+        },
+        "wallMeanRatio": 0.8143514885391647,
+        "computeMeanRatio": 0.6342391418729008
+      },
+      {
+        "key": "exact-draw/warm/independent",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 0.007299999997485429,
+          "mean": 0.10572740740743164,
+          "p50": 0.053499999979976565,
+          "p95": 0.17779999997583218,
+          "max": 3.1314000000129454
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.004300000000512227,
+          "mean": 0.042748148149015223,
+          "p50": 0.0393999999796506,
+          "p95": 0.08500000002095476,
+          "max": 0.13899999999557622
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 0.007299999997485429,
+          "mean": 0.10572740740743164,
+          "p50": 0.053499999979976565,
+          "p95": 0.17779999997583218,
+          "max": 3.1314000000129454
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.004300000000512227,
+          "mean": 0.042748148149015223,
+          "p50": 0.0393999999796506,
+          "p95": 0.08500000002095476,
+          "max": 0.13899999999557622
+        },
+        "wallMeanRatio": 0.40432418799678643,
+        "computeMeanRatio": 0.40432418799678643
+      },
+      {
+        "key": "discard/warm/4",
+        "baselineWallMs": {
+          "count": 135,
+          "min": 0.8141000000177883,
+          "mean": 262.4772392592614,
+          "p50": 282.04159999999683,
+          "p95": 413.55119999998715,
+          "max": 597.5557999999874
+        },
+        "currentWallMs": {
+          "count": 135,
+          "min": 0.8287000000127591,
+          "mean": 226.81321851851956,
+          "p50": 223.8528000000224,
+          "p95": 410.24409999999625,
+          "max": 469.21140000000014
+        },
+        "baselineComputeMs": {
+          "count": 135,
+          "min": 0.8141000000177883,
+          "mean": 83.2749637037023,
+          "p50": 82.81789999993634,
+          "p95": 146.6305000000284,
+          "max": 377.0779000000184
+        },
+        "currentComputeMs": {
+          "count": 135,
+          "min": 0.8287000000127591,
+          "mean": 64.54959777777867,
+          "p50": 64.42089999993914,
+          "p95": 113.87100000004284,
+          "max": 203.08790000004228
+        },
+        "wallMeanRatio": 0.8641252824763416,
+        "computeMeanRatio": 0.7751381076244033
+      }
+    ],
+    "matchedRows": 270,
+    "changedOutputs": 92,
+    "baselineFailedChecks": 108,
+    "currentFailedChecks": 0,
+    "changedDiscards": [
+      {
+        "key": "dead-side-furiten/discard/warm/3",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.8831157258028888,
+        "computeMeanRatio": 0.8096355517162321
+      },
+      {
+        "key": "dead-side-furiten/discard/cold/4",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.598997721135903,
+        "computeMeanRatio": 0.4722966190978676
+      },
+      {
+        "key": "dead-side-furiten/discard/cold/3",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.8549565825822679,
+        "computeMeanRatio": 0.8401221598447981
+      },
+      {
+        "key": "dead-side-furiten/discard/warm/4",
+        "outputsEqual": false,
+        "baselineTile": "9m",
+        "currentTile": "1s",
+        "wallMeanRatio": 0.9621590390132155,
+        "computeMeanRatio": 1.0496498921072472
+      }
+    ],
+    "geometricMeanComputeRatio": 0.8051806988477905,
+    "note": "Ratios are current/baseline (lower is faster). Inspect changed decision outputs; timing/fingerprint changes alone are not evidence of better play."
+  },
+  "changedDecisions": [
+    {
+      "key": "dead-side-furiten/discard/warm/3",
+      "baseline": {
+        "tile": "9m",
+        "strategy": "General",
+        "selected": {
+          "tile": "9m",
+          "shanten": 0,
+          "ukeire": 4,
+          "furiten": true,
+          "priority": 372.0552049861991,
+          "riichiPriority": 88.74728342394569,
+          "efficiency": 0.18070107019128984,
+          "danger": 0,
+          "waits": 0.6,
+          "score": {
+            "open": 779.020979020979,
+            "closed": 779.020979020979,
+            "riichi": 6880
+          },
+          "yaku": {
+            "open": 0.0979020979020979,
+            "closed": 0.0979020979020979
+          },
+          "safe": 1,
+          "fu": 40,
+          "dora": 2.097902097902098,
+          "improvementChance": 0.03389830508474578,
+          "improvementChanceTwoDraws": 0.06692742285962627
+        },
+        "candidates": [
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 372.0552049861991,
+            "riichiPriority": 88.74728342394569,
+            "efficiency": 0.18070107019128984,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6880
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 40,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      },
+      "current": {
+        "tile": "1s",
+        "strategy": "General",
+        "selected": {
+          "tile": "1s",
+          "shanten": 1,
+          "ukeire": 33,
+          "furiten": false,
+          "priority": 326.83686955596005,
+          "riichiPriority": 0,
+          "efficiency": 0.16778723658085573,
+          "danger": 0,
+          "waits": 0,
+          "score": {
+            "open": 483.9574468085106,
+            "closed": 483.9574468085106,
+            "riichi": 6655.404255319148
+          },
+          "yaku": {
+            "open": 0.0625531914893617,
+            "closed": 0.0625531914893617
+          },
+          "safe": 1,
+          "fu": 30,
+          "dora": 2.0625531914893616,
+          "improvementChance": 0.2796610169491526,
+          "improvementChanceTwoDraws": 0.48283355063016087
+        },
+        "candidates": [
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 228.7955574781409,
+            "riichiPriority": 79.71776330813728,
+            "efficiency": 0.13501320193364394,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6180.000000000001
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 30.000000000000004,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      }
+    },
+    {
+      "key": "dead-side-furiten/discard/cold/4",
+      "baseline": {
+        "tile": "9m",
+        "strategy": "General",
+        "selected": {
+          "tile": "9m",
+          "shanten": 0,
+          "ukeire": 4,
+          "furiten": true,
+          "priority": 372.0552049861991,
+          "riichiPriority": 88.74728342394569,
+          "efficiency": 0.18070107019128984,
+          "danger": 0,
+          "waits": 0.6,
+          "score": {
+            "open": 779.020979020979,
+            "closed": 779.020979020979,
+            "riichi": 6880
+          },
+          "yaku": {
+            "open": 0.0979020979020979,
+            "closed": 0.0979020979020979
+          },
+          "safe": 1,
+          "fu": 40,
+          "dora": 2.097902097902098,
+          "improvementChance": 0.03389830508474578,
+          "improvementChanceTwoDraws": 0.06692742285962627
+        },
+        "candidates": [
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 372.0552049861991,
+            "riichiPriority": 88.74728342394569,
+            "efficiency": 0.18070107019128984,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6880
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 40,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      },
+      "current": {
+        "tile": "1s",
+        "strategy": "General",
+        "selected": {
+          "tile": "1s",
+          "shanten": 1,
+          "ukeire": 33,
+          "furiten": false,
+          "priority": 326.83686955596005,
+          "riichiPriority": 0,
+          "efficiency": 0.16778723658085573,
+          "danger": 0,
+          "waits": 0,
+          "score": {
+            "open": 483.9574468085106,
+            "closed": 483.9574468085106,
+            "riichi": 6655.404255319148
+          },
+          "yaku": {
+            "open": 0.0625531914893617,
+            "closed": 0.0625531914893617
+          },
+          "safe": 1,
+          "fu": 30,
+          "dora": 2.0625531914893616,
+          "improvementChance": 0.2796610169491526,
+          "improvementChanceTwoDraws": 0.48283355063016087
+        },
+        "candidates": [
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 228.7955574781409,
+            "riichiPriority": 79.71776330813728,
+            "efficiency": 0.13501320193364394,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6180.000000000001
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 30.000000000000004,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      }
+    },
+    {
+      "key": "dead-side-furiten/discard/cold/3",
+      "baseline": {
+        "tile": "9m",
+        "strategy": "General",
+        "selected": {
+          "tile": "9m",
+          "shanten": 0,
+          "ukeire": 4,
+          "furiten": true,
+          "priority": 372.0552049861991,
+          "riichiPriority": 88.74728342394569,
+          "efficiency": 0.18070107019128984,
+          "danger": 0,
+          "waits": 0.6,
+          "score": {
+            "open": 779.020979020979,
+            "closed": 779.020979020979,
+            "riichi": 6880
+          },
+          "yaku": {
+            "open": 0.0979020979020979,
+            "closed": 0.0979020979020979
+          },
+          "safe": 1,
+          "fu": 40,
+          "dora": 2.097902097902098,
+          "improvementChance": 0.03389830508474578,
+          "improvementChanceTwoDraws": 0.06692742285962627
+        },
+        "candidates": [
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 372.0552049861991,
+            "riichiPriority": 88.74728342394569,
+            "efficiency": 0.18070107019128984,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6880
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 40,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      },
+      "current": {
+        "tile": "1s",
+        "strategy": "General",
+        "selected": {
+          "tile": "1s",
+          "shanten": 1,
+          "ukeire": 33,
+          "furiten": false,
+          "priority": 326.83686955596005,
+          "riichiPriority": 0,
+          "efficiency": 0.16778723658085573,
+          "danger": 0,
+          "waits": 0,
+          "score": {
+            "open": 483.9574468085106,
+            "closed": 483.9574468085106,
+            "riichi": 6655.404255319148
+          },
+          "yaku": {
+            "open": 0.0625531914893617,
+            "closed": 0.0625531914893617
+          },
+          "safe": 1,
+          "fu": 30,
+          "dora": 2.0625531914893616,
+          "improvementChance": 0.2796610169491526,
+          "improvementChanceTwoDraws": 0.48283355063016087
+        },
+        "candidates": [
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 228.7955574781409,
+            "riichiPriority": 79.71776330813728,
+            "efficiency": 0.13501320193364394,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6180.000000000001
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 30.000000000000004,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      }
+    },
+    {
+      "key": "dead-side-furiten/discard/warm/4",
+      "baseline": {
+        "tile": "9m",
+        "strategy": "General",
+        "selected": {
+          "tile": "9m",
+          "shanten": 0,
+          "ukeire": 4,
+          "furiten": true,
+          "priority": 372.0552049861991,
+          "riichiPriority": 88.74728342394569,
+          "efficiency": 0.18070107019128984,
+          "danger": 0,
+          "waits": 0.6,
+          "score": {
+            "open": 779.020979020979,
+            "closed": 779.020979020979,
+            "riichi": 6880
+          },
+          "yaku": {
+            "open": 0.0979020979020979,
+            "closed": 0.0979020979020979
+          },
+          "safe": 1,
+          "fu": 40,
+          "dora": 2.097902097902098,
+          "improvementChance": 0.03389830508474578,
+          "improvementChanceTwoDraws": 0.06692742285962627
+        },
+        "candidates": [
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 372.0552049861991,
+            "riichiPriority": 88.74728342394569,
+            "efficiency": 0.18070107019128984,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6880
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 40,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      },
+      "current": {
+        "tile": "1s",
+        "strategy": "General",
+        "selected": {
+          "tile": "1s",
+          "shanten": 1,
+          "ukeire": 33,
+          "furiten": false,
+          "priority": 326.83686955596005,
+          "riichiPriority": 0,
+          "efficiency": 0.16778723658085573,
+          "danger": 0,
+          "waits": 0,
+          "score": {
+            "open": 483.9574468085106,
+            "closed": 483.9574468085106,
+            "riichi": 6655.404255319148
+          },
+          "yaku": {
+            "open": 0.0625531914893617,
+            "closed": 0.0625531914893617
+          },
+          "safe": 1,
+          "fu": 30,
+          "dora": 2.0625531914893616,
+          "improvementChance": 0.2796610169491526,
+          "improvementChanceTwoDraws": 0.48283355063016087
+        },
+        "candidates": [
+          {
+            "tile": "1s",
+            "shanten": 1,
+            "ukeire": 33,
+            "furiten": false,
+            "priority": 326.83686955596005,
+            "riichiPriority": 0,
+            "efficiency": 0.16778723658085573,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 483.9574468085106,
+              "closed": 483.9574468085106,
+              "riichi": 6655.404255319148
+            },
+            "yaku": {
+              "open": 0.0625531914893617,
+              "closed": 0.0625531914893617
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0625531914893616,
+            "improvementChance": 0.2796610169491526,
+            "improvementChanceTwoDraws": 0.48283355063016087
+          },
+          {
+            "tile": "5s",
+            "shanten": 1,
+            "ukeire": 29,
+            "furiten": false,
+            "priority": 283.0340076254629,
+            "riichiPriority": 0,
+            "efficiency": 0.14955134596211367,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 522.6919339164237,
+              "closed": 522.6919339164237,
+              "riichi": 6693.313896987367
+            },
+            "yaku": {
+              "open": 0.06754130223517979,
+              "closed": 0.06754130223517979
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.06754130223518,
+            "improvementChance": 0.2457627118644068,
+            "improvementChanceTwoDraws": 0.43271041576126323
+          },
+          {
+            "tile": "4s",
+            "shanten": 1,
+            "ukeire": 27,
+            "furiten": false,
+            "priority": 268.6974390436748,
+            "riichiPriority": 0,
+            "efficiency": 0.14337329890669873,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 541.2297426120115,
+              "closed": 541.2297426120115,
+              "riichi": 6712.507149666349
+            },
+            "yaku": {
+              "open": 0.07006673021925644,
+              "closed": 0.07006673021925644
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0700667302192564,
+            "improvementChance": 0.22881355932203384,
+            "improvementChanceTwoDraws": 0.40677966101694907
+          },
+          {
+            "tile": "2s",
+            "shanten": 1,
+            "ukeire": 23,
+            "furiten": false,
+            "priority": 232.8611558347792,
+            "riichiPriority": 0,
+            "efficiency": 0.1276938415522663,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 592.0229405630865,
+              "closed": 592.0229405630865,
+              "riichi": 6762.481751824817
+            },
+            "yaku": {
+              "open": 0.07664233576642336,
+              "closed": 0.07664233576642336
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.076642335766423,
+            "improvementChance": 0.19491525423728817,
+            "improvementChanceTwoDraws": 0.3531797769085905
+          },
+          {
+            "tile": "9m",
+            "shanten": 0,
+            "ukeire": 4,
+            "furiten": true,
+            "priority": 228.7955574781409,
+            "riichiPriority": 79.71776330813728,
+            "efficiency": 0.13501320193364394,
+            "danger": 0,
+            "waits": 0.6,
+            "score": {
+              "open": 779.020979020979,
+              "closed": 779.020979020979,
+              "riichi": 6180.000000000001
+            },
+            "yaku": {
+              "open": 0.0979020979020979,
+              "closed": 0.0979020979020979
+            },
+            "safe": 1,
+            "fu": 30.000000000000004,
+            "dora": 2.097902097902098,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "1m",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.7240807918602,
+            "riichiPriority": 0,
+            "efficiency": 0.058755357858049785,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 577.0491803278688,
+              "closed": 577.0491803278688,
+              "riichi": 6749.555035128806
+            },
+            "yaku": {
+              "open": 0.07494145199063232,
+              "closed": 0.07494145199063232
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0749414519906324,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "4p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "6p",
+            "shanten": 1,
+            "ukeire": 11,
+            "furiten": false,
+            "priority": 84.57622549988136,
+            "riichiPriority": 0,
+            "efficiency": 0.05849971453161882,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 603.9215686274509,
+              "closed": 603.9215686274509,
+              "riichi": 6776.07843137255
+            },
+            "yaku": {
+              "open": 0.0784313725490196,
+              "closed": 0.0784313725490196
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0784313725490198,
+            "improvementChance": 0.09322033898305082,
+            "improvementChanceTwoDraws": 0.17847312762567002
+          },
+          {
+            "tile": "5p",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 52.18838377256701,
+            "riichiPriority": 0,
+            "efficiency": 0.039922966144302144,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 700,
+              "closed": 700,
+              "riichi": 6870.90909090909
+            },
+            "yaku": {
+              "open": 0.09090909090909091,
+              "closed": 0.09090909090909091
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.090909090909091,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "2m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 51.169702757948485,
+            "riichiPriority": 0,
+            "efficiency": 0.0392412506071529,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 718.6666666666666,
+              "closed": 718.6666666666666,
+              "riichi": 6889.333333333333
+            },
+            "yaku": {
+              "open": 0.09333333333333334,
+              "closed": 0.09333333333333334
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.0933333333333333,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3m",
+            "shanten": 1,
+            "ukeire": 7,
+            "furiten": false,
+            "priority": 49.931655119514524,
+            "riichiPriority": 0,
+            "efficiency": 0.038303891743572696,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 767.2597864768683,
+              "closed": 767.2597864768683,
+              "riichi": 6937.295373665482
+            },
+            "yaku": {
+              "open": 0.099644128113879,
+              "closed": 0.099644128113879
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.099644128113879,
+            "improvementChance": 0.05932203389830504,
+            "improvementChanceTwoDraws": 0.11560191221208171
+          },
+          {
+            "tile": "3s",
+            "shanten": 1,
+            "ukeire": 4,
+            "furiten": false,
+            "priority": 24.365773993759152,
+            "riichiPriority": 0,
+            "efficiency": 0.021942718851991037,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 815.041782729805,
+              "closed": 815.041782729805,
+              "riichi": 6984.456824512536
+            },
+            "yaku": {
+              "open": 0.10584958217270195,
+              "closed": 0.10584958217270195
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 2.105849582172702,
+            "improvementChance": 0.03389830508474578,
+            "improvementChanceTwoDraws": 0.06692742285962627
+          },
+          {
+            "tile": "7z",
+            "shanten": 1,
+            "ukeire": 9,
+            "furiten": false,
+            "priority": 23.916748696719274,
+            "riichiPriority": 0,
+            "efficiency": 0.05837189286840334,
+            "danger": 0,
+            "waits": 0,
+            "score": {
+              "open": 8.20021299254526,
+              "closed": 14.589989350372736,
+              "riichi": 1921.6187433439827
+            },
+            "yaku": {
+              "open": 0.0010649627263045794,
+              "closed": 0.007454739084132056
+            },
+            "safe": 1,
+            "fu": 30,
+            "dora": 0.3141640042598509,
+            "improvementChance": 0.07627118644067798,
+            "improvementChanceTwoDraws": 0.1473272490221642
+          }
+        ]
+      }
+    }
+  ]
+}

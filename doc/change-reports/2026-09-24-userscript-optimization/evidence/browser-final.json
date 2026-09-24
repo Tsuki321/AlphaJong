@@ -1,0 +1,55 @@
+{
+  "done": true,
+  "failed": 0,
+  "total": 91,
+  "predictionAssertions": 1574,
+  "avgMsPerTest": 527.1098901098901,
+  "timeMs": 47967,
+  "cases": [
+    {
+      "name": "Efficiency",
+      "passed": 22,
+      "total": 22
+    },
+    {
+      "name": "Defense",
+      "passed": 11,
+      "total": 11
+    },
+    {
+      "name": "Dora",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "name": "Yaku",
+      "passed": 22,
+      "total": 22
+    },
+    {
+      "name": "Strategy",
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "name": "Waits",
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "name": "Call",
+      "passed": 8,
+      "total": 8
+    },
+    {
+      "name": "Issue",
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "name": "Example",
+      "passed": 7,
+      "total": 7
+    }
+  ]
+}

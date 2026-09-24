@@ -5,10 +5,11 @@
 
 var doublesCache = {};
 var triplesAndPairsCache = {};
+var visibleTileCountsCache = { tiles: null, length: -1, counts: [] };
 
 function getTileCacheKey(tiles, sorted = false) {
 	var cacheTiles = sorted ? tiles : sortTiles(tiles);
-	return cacheTiles.map(tile => tile.type + "-" + tile.index + "-" + (tile.dora ? 1 : 0)).join("|");
+	return cacheTiles.map(tile => tile.type + "-" + tile.index + "-" + (tile.dora ? 1 : 0) + "-" + (tile.doraValue || 0)).join("|");
 }
 
 function clearHandAnalysisCache() {
@@ -129,7 +130,7 @@ function getDoubles(tiles) {
 	tiles = sortTiles(tiles);
 	var cacheKey = getTileCacheKey(tiles, true);
 	if (typeof doublesCache[cacheKey] !== 'undefined') {
-		return [...doublesCache[cacheKey]];
+		return doublesCache[cacheKey].map(index => tiles[index]);
 	}
 	var doubles = [];
 	for (let i = 0; i < tiles.length - 1; i++) {
@@ -137,28 +138,62 @@ function getDoubles(tiles) {
 			tiles[i].index == tiles[i + 1].index ||
 			(tiles[i].type != 3 &&
 				tiles[i].index + 2 >= tiles[i + 1].index))) {
-			doubles.push(tiles[i]);
-			doubles.push(tiles[i + 1]);
+			doubles.push(i);
+			doubles.push(i + 1);
 			i++;
 		}
 	}
 	doublesCache[cacheKey] = doubles;
-	return [...doubles];
+	return doubles.map(index => tiles[index]);
+}
+
+// The recursive search only needs the number of greedy doubles, not their
+// physical tiles. Counts visit the same sorted neighbors without sorting,
+// allocating pair arrays, or constructing a cache key at every search node.
+function getDoubleCount(tiles) {
+	var counts = getTileCounts(tiles);
+	var doubles = 0;
+	for (var type = 0; type <= 3; type++) {
+		var previous = -1;
+		for (var rank = 0; rank < (type == 3 ? 7 : 9); rank++) {
+			var count = counts[type * 9 + rank];
+			if (count == 0) continue;
+			if (previous >= 0 && type != 3 && rank - previous <= 2) {
+				doubles++;
+				count--;
+			}
+			doubles += Math.floor(count / 2);
+			previous = count % 2 ? rank : -1;
+		}
+	}
+	return doubles;
 }
 
 //Return all triplets/3-sequences and pairs as a tile array
 function getTriplesAndPairs(tiles) {
-	var cacheKey = getTileCacheKey(tiles) + "|" + (PERFORMANCE_MODE - timeSave) + "|" + strategy;
+	tiles = sortTiles(tiles);
+	var cacheKey = getTileCacheKey(tiles, true) + "|" + (PERFORMANCE_MODE - timeSave) + "|" + strategy;
 	if (typeof triplesAndPairsCache[cacheKey] !== 'undefined') {
 		var cached = triplesAndPairsCache[cacheKey];
-		return { triples: [...cached.triples], pairs: [...cached.pairs], shanten: cached.shanten };
+		return { triples: cached.triples.map(index => tiles[index]), pairs: cached.pairs.map(index => tiles[index]), shanten: cached.shanten };
 	}
 	var sequences = getSequences(tiles);
 	var triplets = getTriplets(tiles);
 	var pairs = getPairs(tiles);
 	var bestCombination = getBestCombinationOfTiles(tiles, sequences.concat(triplets).concat(pairs), { triples: [], pairs: [], shanten: 8 });
-	triplesAndPairsCache[cacheKey] = bestCombination;
-	return { triples: [...bestCombination.triples], pairs: [...bestCombination.pairs], shanten: bestCombination.shanten };
+	// Cache selections, not live tile objects. Equivalent hands can carry new
+	// validity, provenance or dora metadata after a draw or a simulated call.
+	var used = new Set();
+	function indices(selected) {
+		return selected.map(tile => {
+			var index = tiles.findIndex((candidate, index) => !used.has(index) && isSameTile(candidate, tile, true));
+			used.add(index);
+			return index;
+		});
+	}
+	var cached = { triples: indices(bestCombination.triples), pairs: indices(bestCombination.pairs), shanten: bestCombination.shanten };
+	triplesAndPairsCache[cacheKey] = cached;
+	return { triples: cached.triples.map(index => tiles[index]), pairs: cached.pairs.map(index => tiles[index]), shanten: cached.shanten };
 }
 
 //Return all triplets/3-tile-sequences as a tile array
@@ -238,33 +273,29 @@ function isBetterCombination(candidate, currentBest, checkShanten = false) {
 function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombinations, startIndex = 0) {
 	var originalC = { triples: [...chosenCombinations.triples], pairs: [...chosenCombinations.pairs], shanten: chosenCombinations.shanten };
 	for (var i = startIndex; i < possibleCombinations.length; i++) {
-		var cs = { triples: [...originalC.triples], pairs: [...originalC.pairs], shanten: originalC.shanten };
 		var tiles = possibleCombinations[i];
-		var hand = [...inputTiles];
 		if (!("tile3" in tiles)) { // Pairs
-			if (tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(hand, tiles.tile1.index, tiles.tile1.type) < 2) {
+			if (tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(inputTiles, tiles.tile1.index, tiles.tile1.type) < 2) {
 				continue;
 			}
 		}
-		else if (getNumberOfTilesInTileArray(hand, tiles.tile1.index, tiles.tile1.type) == 0 ||
-			getNumberOfTilesInTileArray(hand, tiles.tile2.index, tiles.tile2.type) == 0 ||
-			getNumberOfTilesInTileArray(hand, tiles.tile3.index, tiles.tile3.type) == 0 ||
-			(tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(hand, tiles.tile1.index, tiles.tile1.type) < 3)) {
+		else if (getNumberOfTilesInTileArray(inputTiles, tiles.tile1.index, tiles.tile1.type) == 0 ||
+			getNumberOfTilesInTileArray(inputTiles, tiles.tile2.index, tiles.tile2.type) == 0 ||
+			getNumberOfTilesInTileArray(inputTiles, tiles.tile3.index, tiles.tile3.type) == 0 ||
+			(tiles.tile1.index == tiles.tile2.index && getNumberOfTilesInTileArray(inputTiles, tiles.tile1.index, tiles.tile1.type) < 3)) {
 			continue;
 		}
-		if ("tile3" in tiles) {
-			var tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.triples, tiles.tile1);
-			hand = removeTilesFromTileArray(hand, [tt]);
-			tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.triples, tiles.tile2);
-			hand = removeTilesFromTileArray(hand, [tt]);
-			tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.triples, tiles.tile3);
-			hand = removeTilesFromTileArray(hand, [tt]);
-		}
-		else {
-			var tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.pairs, tiles.tile1);
-			hand = removeTilesFromTileArray(hand, [tt]);
-			tt = pushTileAndCheckDora(cs.pairs.concat(cs.triples), cs.pairs, tiles.tile2);
-			hand = removeTilesFromTileArray(hand, [tt]);
+		var cs = { triples: [...originalC.triples], pairs: [...originalC.pairs], shanten: originalC.shanten };
+		var hand = [...inputTiles];
+		var group = "tile3" in tiles ? [tiles.tile1, tiles.tile2, tiles.tile3] : [tiles.tile1, tiles.tile2];
+		var selected = "tile3" in tiles ? cs.triples : cs.pairs;
+		for (let tile of group) {
+			// Consume an actual remaining tile, preferring the requested red or
+			// normal variant. A branch owns this array, so remove in place once.
+			var index = hand.findIndex(candidate => isSameTile(tile, candidate, true));
+			if (index < 0) index = hand.findIndex(candidate => isSameTile(tile, candidate));
+			selected.push(hand[index]);
+			hand.splice(index, 1);
 		}
 
 		if (PERFORMANCE_MODE - timeSave <= 3) {
@@ -275,8 +306,7 @@ function getBestCombinationOfTiles(inputTiles, possibleCombinations, chosenCombi
 		}
 		else {
 			if (cs.triples.length >= chosenCombinations.triples.length) {
-				var doubles = getDoubles(hand); //This is costly, so only do it when performance mode is at maximum
-				cs.shanten = calculateShanten(parseInt(cs.triples.length / 3), parseInt(cs.pairs.length / 2), parseInt(doubles.length / 2));
+				cs.shanten = calculateShanten(parseInt(cs.triples.length / 3), parseInt(cs.pairs.length / 2), getDoubleCount(hand));
 			}
 			else {
 				cs.shanten = 8;
@@ -345,7 +375,13 @@ function getNumberOfTilesAvailable(index, type) {
 		return 0;
 	}
 
-	return Math.max(0, 4 - visibleTiles.filter(tile => tile.index == index && tile.type == type).length);
+	// Board refreshes replace this array; discard observers append to it. Reuse
+	// one histogram throughout a decision instead of scanning every visible
+	// tile for each branch of the two-draw search.
+	if (visibleTileCountsCache.tiles !== visibleTiles || visibleTileCountsCache.length !== visibleTiles.length) {
+		visibleTileCountsCache = { tiles: visibleTiles, length: visibleTiles.length, counts: getTileCounts(visibleTiles) };
+	}
+	return Math.max(0, 4 - visibleTileCountsCache.counts[type * 9 + index - 1]);
 }
 
 //Return if a tile is furiten
@@ -368,7 +404,9 @@ function getNumberOfNonFuritenTilesAvailable(index, type) {
 
 //Return number of specific tile in tile array
 function getNumberOfTilesInTileArray(tileArray, index, type) {
-	return getTilesInTileArray(tileArray, index, type).length;
+	var count = 0;
+	for (let tile of tileArray) if (tile.index == index && tile.type == type) count++;
+	return count;
 }
 
 //Return specific tiles in tile array

@@ -24,8 +24,24 @@ function getDefenseRuntimeStateKey() {
 	var riichiState = [0, 1, 2, 3].map(p => isPlayerRiichi(p) ? 1 : 0).join(",");
 	//dora and availableTiles feed getExpectedDealInValue (via getExpectedHandValue/getUradoraChance),
 	//and both can change without any discard/call length changing - include them or the cache goes stale.
-	return tilesLeft + "|" + discardLengths + "|" + callLengths + "|" + riichiState +
+	return getNumberOfPlayers() + "|" + tilesLeft + "|" + discardLengths + "|" + callLengths + "|" + riichiState +
 		"|" + dora.length + "|" + availableTiles.length;
+}
+
+// These live observations can change between board snapshots. Keep their keys
+// local to the affected cache, instead of querying every seat for every wait.
+function getDefensePlayerWaitStateKey(player) {
+	return getNumberOfTilesInHand(player) + "|" + getSeatWind(player) + "|" + getRoundWind() +
+		"|" + roundWind + "|" + getDefenseTileKey(riichiTiles[player]);
+}
+
+function getDefensePlayerValueStateKey(player) {
+	var history = playerDiscardSafetyList[player];
+	var room = getCurrentRoom();
+	var roomModifier = typeof ROOM_TENPAI_MODIFIER == 'undefined' ? undefined : ROOM_TENPAI_MODIFIER[room];
+	return getNumberOfTilesInHand(player) + "|" + getNumberOfKitaOfPlayer(player) + "|" +
+		getSeatWind(player) + "|" + roundWind + "|" + room + "|" + roomModifier + "|" +
+		history.length + "|" + history[history.length - 1] + "|" + history[history.length - 2] + "|" + history[history.length - 3];
 }
 
 function ensureDefenseRuntimeCache() {
@@ -67,17 +83,19 @@ function getTileDanger(tile, playerPerspective = 0) {
 
 	var danger = dangerPerPlayer[0] + dangerPerPlayer[1] + dangerPerPlayer[2] + dangerPerPlayer[3];
 
-	if (getCurrentDangerLevel() < 2500) { //Scale it down for low danger levels
-		danger *= 1 - ((2500 - getCurrentDangerLevel()) / 2500);
+	var dangerLevel = getCurrentDangerLevel(playerPerspective);
+	if (dangerLevel < 2500) { //Scale it down for low danger levels
+		danger *= dangerLevel / 2500;
 	}
 
 	return danger;
 }
 
 //Return the Danger value for a specific tile and player
-function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
+function getTileDangerForPlayer(tile, player, playerPerspective = 0, playerStateKey) {
 	ensureDefenseRuntimeCache();
-	var dangerCacheKey = player + "|" + playerPerspective + "|" + getDefenseTileKey(tile);
+	if (typeof playerStateKey == 'undefined') playerStateKey = getDefensePlayerWaitStateKey(player);
+	var dangerCacheKey = player + "|" + playerPerspective + "|" + playerStateKey + "|" + getDefenseTileKey(tile);
 	if (typeof defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey] != 'undefined') {
 		return defenseRuntimeCache.tileDangerForPlayer[dangerCacheKey];
 	}
@@ -179,17 +197,19 @@ function getTileDangerForPlayer(tile, player, playerPerspective = 0) {
 
 //Percentage to deal in with a tile
 function getDealInChanceForTileAndPlayer(player, tile, playerPerspective = 0) {
-	var total = getTotalPossibleWaits(player, playerPerspective);
+	var playerStateKey = getDefensePlayerWaitStateKey(player);
+	var total = getTotalPossibleWaits(player, playerPerspective, playerStateKey);
 	if (total <= 0) {
 		return 0;
 	}
-	return Math.min(1, Math.max(0, getTileDangerForPlayer(tile, player, playerPerspective) / total));
+	return Math.min(1, Math.max(0, getTileDangerForPlayer(tile, player, playerPerspective, playerStateKey) / total));
 }
 
 //Total amount of waits possible
-function getTotalPossibleWaits(player, playerPerspective = 0) {
+function getTotalPossibleWaits(player, playerPerspective = 0, playerStateKey) {
 	ensureDefenseRuntimeCache();
-	var waitCacheKey = player + "|" + playerPerspective;
+	if (typeof playerStateKey == 'undefined') playerStateKey = getDefensePlayerWaitStateKey(player);
+	var waitCacheKey = player + "|" + playerPerspective + "|" + playerStateKey;
 	if (typeof defenseRuntimeCache.totalPossibleWaits[waitCacheKey] != 'undefined') {
 		return defenseRuntimeCache.totalPossibleWaits[waitCacheKey];
 	}
@@ -200,7 +220,7 @@ function getTotalPossibleWaits(player, playerPerspective = 0) {
 			if (j == 3 && i >= 8) {
 				break;
 			}
-			total += getTileDangerForPlayer({ index: i, type: j }, player, playerPerspective);
+			total += getTileDangerForPlayer({ index: i, type: j }, player, playerPerspective, playerStateKey);
 		}
 	}
 	defenseRuntimeCache.totalPossibleWaits[waitCacheKey] = total;
@@ -211,13 +231,15 @@ function getTotalPossibleWaits(player, playerPerspective = 0) {
 //which is hot (called from getCurrentDangerLevel and from getTileDanger for the player-0 perspective).
 function getExpectedDealInValue(player) {
 	ensureDefenseRuntimeCache();
-	if (typeof defenseRuntimeCache.expectedDealInValue[player] != 'undefined') {
-		return defenseRuntimeCache.expectedDealInValue[player];
+	var playerStateKey = getDefensePlayerValueStateKey(player);
+	var cached = defenseRuntimeCache.expectedDealInValue[player];
+	if (cached && cached.stateKey == playerStateKey) {
+		return cached.value;
 	}
 
 	//DealInValue is probability of player being in tenpai multiplied by the value of the hand
 	var value = isPlayerTenpai(player) * getExpectedHandValue(player);
-	defenseRuntimeCache.expectedDealInValue[player] = value;
+	defenseRuntimeCache.expectedDealInValue[player] = { stateKey: playerStateKey, value: value };
 	return value;
 }
 
@@ -270,22 +292,16 @@ function getExpectedDoraInHand(player) {
 
 //Returns the current Danger level of the table
 function getCurrentDangerLevel(forPlayer = 0) { //Most Dangerous Player counts extra
-	var i = 1;
-	var j = 2;
-	var k = 3;
-	if (forPlayer == 1) {
-		i = 0;
+	var total = 0;
+	var maximum = 0;
+	var players = getNumberOfPlayers();
+	for (var player = 0; player < players; player++) {
+		if (player == forPlayer) continue;
+		var value = getExpectedDealInValue(player);
+		total += value;
+		maximum = Math.max(maximum, value);
 	}
-	if (forPlayer == 2) {
-		j = 0;
-	}
-	if (forPlayer == 3) {
-		k = 0;
-	}
-	if (getNumberOfPlayers() == 3) {
-		return ((getExpectedDealInValue(i) + getExpectedDealInValue(j) + Math.max(getExpectedDealInValue(i), getExpectedDealInValue(j))) / 3);
-	}
-	return ((getExpectedDealInValue(i) + getExpectedDealInValue(j) + getExpectedDealInValue(k) + Math.max(getExpectedDealInValue(i), getExpectedDealInValue(j), getExpectedDealInValue(k))) / 4);
+	return (total + maximum) / players;
 }
 
 //Returns the number of turns ago when the tile was most recently discarded
@@ -325,8 +341,12 @@ function wasTileCalledFromOtherPlayers(player, tile) {
 		}
 		for (let t of calls[i]) { //Look through all melds and check where the tile came from
 			if (t.from == localPosition2Seat(player) && isSameTile(tile, t)) {
-				t.numberOfPlayerHandChanges = [10, 10, 10, 10];
-				return t;
+				// Looking up a called discard must not overwrite the live meld's
+				// timing metadata. Called tiles are no longer aged with the ponds,
+				// so their old timing is uncertain. The discarder is still furiten.
+				return Object.assign({}, t, {
+					numberOfPlayerHandChanges: [10, 10, 10, 10]
+				});
 			}
 		}
 	}
@@ -524,7 +544,8 @@ function isDoingYakuhai(player) {
 //If "includeOthers" parameter is set to true it will also check if other players recently discarded relevant tiles
 function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeOfOwnHand = true) {
 	ensureDefenseRuntimeCache();
-	var waitCacheKey = player + "|" + includeOthers + "|" + useKnowledgeOfOwnHand + "|" + getDefenseTileKey(tile);
+	var handSize = getNumberOfTilesInHand(player);
+	var waitCacheKey = player + "|" + includeOthers + "|" + useKnowledgeOfOwnHand + "|" + handSize + "|" + getDefenseTileKey(tile);
 	if (typeof defenseRuntimeCache.waitScore[waitCacheKey] != 'undefined') {
 		return defenseRuntimeCache.waitScore[waitCacheKey];
 	}
@@ -549,7 +570,7 @@ function getWaitScoreForTileAndPlayer(player, tile, includeOthers, useKnowledgeO
 	//Same tile
 	score += tile0 * tile0Public * furitenFactor * 2 * (2 - toitoiFactor);
 
-	if (getNumberOfTilesInHand(player) == 1 || tile.type == 3) {
+	if (handSize == 1 || tile.type == 3) {
 		defenseRuntimeCache.waitScore[waitCacheKey] = score;
 		return score;
 	}
