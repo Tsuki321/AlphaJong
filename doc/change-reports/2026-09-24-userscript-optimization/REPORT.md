@@ -3,7 +3,7 @@
 The source changes correct reproducible call, scoring, and defensive-state
 errors, reduce repeated work in hand evaluation, and add independent test and
 benchmark coverage. The final local source passes all reported correctness
-checks. Measured fresh-turn compute time improved, while paired closed-hand
+checks and the complete GitHub Actions build/validation workflow. Measured fresh-turn compute time improved, while paired closed-hand
 rollouts preserved every chosen discard and tenpai outcome. These experiments
 do not establish an improvement in match win rate.
 
@@ -162,10 +162,26 @@ and [complete compressed trajectories](evidence/rollout-full.json.gz).
 
 ## Build and reproduction
 
-No local userscript build was performed. GitHub Actions is the required assembly
-path and now runs the new engine tests, repeated snapshot benchmark, and a small
-multi-turn experiment before its existing bundle/API/Unity checks. The source
-branch must pass that workflow before the installable artifact is accepted.
+GitHub Actions [run 35950426345](https://github.com/Tsuki321/AlphaJong/actions/runs/35950426345)
+passed on source commit `58e1547551a9ba76693ab7e7eb194fe294ac7903`. This includes
+22 engine tests, 3,000 independent reference hands (10,574 total source-browser
+assertions), all 91 historical decision/call cases, 245 source API checks,
+810 additional benchmark samples, and 359 additional rollout decisions.
+The assembled userscript passed 1,574 regression assertions, 245 API checks,
+and 51 Unity integration checks. Native transport tests passed in Chromium,
+Firefox, and WebKit. The source-browser suite averaged 397.19 ms/case on CI.
+
+The validated artifact was downloaded unchanged to
+`build/review-optimization-2026-09-24/AlphaJong.user.js`. All 14 source files were
+verified against its contents, normalizing line endings. Artifact SHA-256:
+`a402cc6a9d6fbef2f5e8395f2d5121b00002b8b15225c7a89d7702d80d70ec04`.
+The CI build uses `--no-bump` and retains version 1.3.13; this is a review artifact,
+not a new production auto-update. See [CI evidence](evidence/ci-summary.json) and
+[artifact provenance](evidence/validated-artifact.json).
+
+No local userscript build was performed. The changes are on
+`review/userscript-optimization-2026-09-24`. Production publication was skipped
+because the validation branch is not `master`.
 
 Commands, methodology, profile instructions, and report interpretation are in
 [Testing and Benchmarks](../../Testing-and-Benchmarks.md). Full reports in this
