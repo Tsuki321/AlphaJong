@@ -1,0 +1,793 @@
+{
+  "run": 35950426345,
+  "sourceCommit": "58e1547551a9ba76693ab7e7eb194fe294ac7903",
+  "url": "https://github.com/Tsuki321/AlphaJong/actions/runs/35950426345",
+  "reports": {
+    "run_tests.html.json": {
+      "done": true,
+      "failed": 0,
+      "total": 91,
+      "predictionAssertions": 10574,
+      "avgMsPerTest": 397.1868131868132,
+      "timeMs": 36144,
+      "cases": [
+        {
+          "name": "Efficiency",
+          "passed": 22,
+          "total": 22
+        },
+        {
+          "name": "Defense",
+          "passed": 11,
+          "total": 11
+        },
+        {
+          "name": "Dora",
+          "passed": 5,
+          "total": 5
+        },
+        {
+          "name": "Yaku",
+          "passed": 22,
+          "total": 22
+        },
+        {
+          "name": "Strategy",
+          "passed": 4,
+          "total": 4
+        },
+        {
+          "name": "Waits",
+          "passed": 7,
+          "total": 7
+        },
+        {
+          "name": "Call",
+          "passed": 8,
+          "total": 8
+        },
+        {
+          "name": "Issue",
+          "passed": 5,
+          "total": 5
+        },
+        {
+          "name": "Example",
+          "passed": 7,
+          "total": 7
+        }
+      ]
+    },
+    "run_api_tests.html.json": {
+      "done": true,
+      "failed": 0,
+      "total": 245,
+      "avgMsPerTest": 0,
+      "errors": []
+    },
+    "run_bundle_tests.html.json": {
+      "done": true,
+      "failed": 0,
+      "total": 1574,
+      "avgMsPerTest": 0,
+      "fast": true
+    },
+    "run_bundle_api_tests.html.json": {
+      "done": true,
+      "failed": 0,
+      "total": 245,
+      "avgMsPerTest": 0,
+      "errors": []
+    },
+    "unity-integration.json": {
+      "passed": true,
+      "results": [
+        {
+          "players": 4,
+          "checks": 29,
+          "hint": "Decline: Call pon;",
+          "phase": "game"
+        },
+        {
+          "players": 3,
+          "checks": 22,
+          "hint": "",
+          "phase": "paused"
+        }
+      ]
+    },
+    "unity-browser-chromium.json": {
+      "browser": "chromium",
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "document-start interception preserves native constructor, events, and subprotocol",
+          "passed": true,
+          "durationMs": 109
+        },
+        {
+          "name": "invalid constructor errors match the unwrapped native WebSocket",
+          "passed": true,
+          "durationMs": 161
+        },
+        {
+          "name": "failed native sends are not recorded as successful protocol activity",
+          "passed": true,
+          "durationMs": 74
+        },
+        {
+          "name": "Unity heap slices are copied before reuse and sent without prefix or suffix",
+          "passed": true,
+          "durationMs": 81
+        },
+        {
+          "name": "unrelated text and binary traffic reaches native listeners unchanged",
+          "passed": true,
+          "durationMs": 84
+        },
+        {
+          "name": "HELP and stale decisions cannot originate requests",
+          "passed": true,
+          "durationMs": 84
+        },
+        {
+          "name": "bridge responses and duplicates stay private while colliding Unity IDs are restored",
+          "passed": true,
+          "durationMs": 87
+        },
+        {
+          "name": "Blob decoding cannot reorder a later ArrayBuffer and never changes binaryType",
+          "passed": true,
+          "durationMs": 87
+        },
+        {
+          "name": "incoming activity invalidates a decision before Unity's message handler runs",
+          "passed": true,
+          "durationMs": 85
+        },
+        {
+          "name": "private replies remain hidden behind a slow Blob after binary mode changes",
+          "passed": true,
+          "durationMs": 95
+        },
+        {
+          "name": "actual Blob replies isolate private IDs and restore colliding client IDs",
+          "passed": true,
+          "durationMs": 101
+        },
+        {
+          "name": "disconnect blocks actions and replacement sockets must identify themselves",
+          "passed": true,
+          "durationMs": 95
+        },
+        {
+          "name": "queued Blob data from a closed socket cannot revive an obsolete game",
+          "passed": true,
+          "durationMs": 111
+        },
+        {
+          "name": "observer exceptions cannot interrupt Unity's native send or message delivery",
+          "passed": true,
+          "durationMs": 78
+        },
+        {
+          "name": "disposing the transport restores construction and stops observation",
+          "passed": true,
+          "durationMs": 82
+        }
+      ]
+    }
+  },
+  "benchmark": {
+    "checks": {
+      "rows": 270,
+      "measuredSamples": 810,
+      "failed": 0,
+      "description": "Physical fixture legality, finite metrics, draw probability bounds/count sums, immutable exact/ranking state, legal distinct candidates, exactly one discarded tile, other live state unchanged, deterministic repeated and cold/warm outputs."
+    },
+    "summary": [
+      {
+        "key": "discard/cold/4",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.8958639999982552,
+          "mean": 274.73278302469146,
+          "p50": 277.24811000000045,
+          "p95": 498.549947,
+          "max": 513.7360669999998
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.8958639999982552,
+          "mean": 176.2999858765421,
+          "p50": 175.68625900000916,
+          "p95": 365.8618459999998,
+          "max": 382.846810999999
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "discard/cold/0",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 1.1185399999994843,
+          "mean": 139.22011501234599,
+          "p50": 147.1653660000011,
+          "p95": 210.4329349999898,
+          "max": 227.84785200000078
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 1.1185399999994843,
+          "mean": 40.56012996296431,
+          "p50": 36.4878209999988,
+          "p95": 79.62216699999408,
+          "max": 126.46972800000094
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "discard/warm/0",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.9279119999991963,
+          "mean": 113.90884174074074,
+          "p50": 125.37903599999845,
+          "p95": 157.54334700001345,
+          "max": 167.40336300000126
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.9279119999991963,
+          "mean": 15.249606617282643,
+          "p50": 15.986842999962391,
+          "p95": 24.680028999999195,
+          "max": 25.920315999974264
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "exact-draw/cold/independent",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.005293000001984183,
+          "mean": 0.3560205185185511,
+          "p50": 0.3998959999989893,
+          "p95": 0.4664749999938067,
+          "max": 0.5676390000007814
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.005293000001984183,
+          "mean": 0.3560205185185511,
+          "p50": 0.3998959999989893,
+          "p95": 0.4664749999938067,
+          "max": 0.5676390000007814
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "exact-shanten/cold/independent",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.0011420000082580373,
+          "mean": 0.03749859259241256,
+          "p50": 0.03790099999969243,
+          "p95": 0.0640190000012808,
+          "max": 0.0886160000009113
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.0011420000082580373,
+          "mean": 0.03749859259241256,
+          "p50": 0.03790099999969243,
+          "p95": 0.0640190000012808,
+          "max": 0.0886160000009113
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "discard/warm/3",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 1.0202030000000377,
+          "mean": 162.96814422222292,
+          "p50": 171.75730699999986,
+          "p95": 245.7149619999982,
+          "max": 258.3862270000009
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 1.0202030000000377,
+          "mean": 64.39047793827437,
+          "p50": 67.36022599999706,
+          "p95": 113.37263100000564,
+          "max": 115.78499300000476
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "exact-shanten/warm/independent",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.0011209999938728288,
+          "mean": 0.003781691358210397,
+          "p50": 0.0037129999982425943,
+          "p95": 0.006219999995664693,
+          "max": 0.008647000009659678
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.0011209999938728288,
+          "mean": 0.003781691358210397,
+          "p50": 0.0037129999982425943,
+          "p95": 0.006219999995664693,
+          "max": 0.008647000009659678
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "discard/cold/3",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.961540000000241,
+          "mean": 257.3526418148146,
+          "p50": 263.49710400000913,
+          "p95": 443.8331610000023,
+          "max": 466.3186019999994
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.961540000000241,
+          "mean": 159.30609386419505,
+          "p50": 163.3852929999557,
+          "p95": 312.7203540000046,
+          "max": 334.9421860000148
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "exact-draw/warm/independent",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.004849999997531995,
+          "mean": 0.0357232098774406,
+          "p50": 0.03623900000820868,
+          "p95": 0.057395000010728836,
+          "max": 0.07080099999438971
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.004849999997531995,
+          "mean": 0.0357232098774406,
+          "p50": 0.03623900000820868,
+          "p95": 0.057395000010728836,
+          "max": 0.07080099999438971
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      },
+      {
+        "key": "discard/warm/4",
+        "fixtures": 27,
+        "wallMs": {
+          "count": 81,
+          "min": 0.9650640000036219,
+          "mean": 161.88360313580276,
+          "p50": 171.73261099999945,
+          "p95": 248.62552400000277,
+          "max": 253.254162000012
+        },
+        "computeMs": {
+          "count": 81,
+          "min": 0.9650640000036219,
+          "mean": 63.355739839506974,
+          "p50": 68.58766600000672,
+          "p95": 111.54605500001344,
+          "max": 119.30440000000817
+        },
+        "failedChecks": 0,
+        "unstableOutputs": 0
+      }
+    ],
+    "provenance": {
+      "sourceRoot": "/home/runner/work/AlphaJong/AlphaJong",
+      "sourceHash": "0c4e420eb8bb24ebda4d8d5d523de453e1c85e3b9dcdc2d27d99a9ce471777ec",
+      "files": [
+        {
+          "path": "src/parameters.js",
+          "sha256": "e0f970c56164e728bf88f572a22cd88df98b4f88050fc3d5b23cf00a2e00e066"
+        },
+        {
+          "path": "test/test_api.js",
+          "sha256": "a13555e6da81360fd3eb9bb19f1027c0552a2c867e227ad259050d911e76fc53"
+        },
+        {
+          "path": "src/ai_offense.js",
+          "sha256": "f4d8fa94fbd516170562cd2e9a7ef19192c53ed41ac1c867ed31227b89f25bf1"
+        },
+        {
+          "path": "src/ai_defense.js",
+          "sha256": "6d39ea8928f2f126313b776651fc71d260834f0415ddab1fa0b9ceecad0b3666"
+        },
+        {
+          "path": "src/utils.js",
+          "sha256": "cb013265381d3ae085c71f58e47b0ee7f7d8683c78baee57506a54567d9b5fc9"
+        },
+        {
+          "path": "src/hand_analysis.js",
+          "sha256": "3cf2f3ee30875eb0bfca23856da3370e78440534efa33c82d30ada5f8db51b20"
+        },
+        {
+          "path": "src/yaku.js",
+          "sha256": "628886dae7e2b6f3a78a4736d28c8932fac53fd1c9580c7b4346a04e25b87405"
+        },
+        {
+          "path": "src/logging.js",
+          "sha256": "1549b819cddc91b7cd5474a0ce4dbb48311d060ef88f7414594f98bf0d9df328"
+        }
+      ]
+    }
+  },
+  "rollout": {
+    "progress": {
+      "complete": true,
+      "hands": 24,
+      "observedDraws": 359
+    },
+    "summary": [
+      {
+        "key": "current/3p/mode0",
+        "hands": 6,
+        "tenpaiHands": 3,
+        "censoredHands": 3,
+        "drawsToTenpaiAmongReached": {
+          "count": 3,
+          "min": 7,
+          "mean": 11,
+          "p50": 12,
+          "p95": 14,
+          "max": 14
+        },
+        "finalShanten": {
+          "count": 6,
+          "min": 0,
+          "mean": 0.5,
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "observedDraws": 87,
+        "shantenRegret": {
+          "count": 87,
+          "min": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "decisionsAboveMinimumShanten": 0,
+        "ukeireRegretAtBestShanten": {
+          "count": 87,
+          "min": 0,
+          "mean": 0.367816091954023,
+          "p50": 0,
+          "p95": 0,
+          "max": 15
+        },
+        "decisionWallMs": {
+          "count": 87,
+          "min": 3.735376999999062,
+          "mean": 41.37491995402292,
+          "p50": 44.349615999999514,
+          "p95": 56.19122199999998,
+          "max": 107.02450299999998
+        },
+        "decisionComputeMs": {
+          "count": 87,
+          "min": 3.735376999999062,
+          "mean": 40.06529951724144,
+          "p50": 43.0129459999971,
+          "p95": 53.55556999999982,
+          "max": 98.97230399999992
+        },
+        "finalClosedScoreEstimate": {
+          "count": 6,
+          "min": 345.45454545454544,
+          "mean": 2661.3886822988948,
+          "p50": 1110.6796116504854,
+          "p95": 6618.681318681319,
+          "max": 6618.681318681319
+        },
+        "finalRiichiScoreEstimate": {
+          "count": 6,
+          "min": 2014.6153846153848,
+          "mean": 6875.759088588758,
+          "p50": 5910.327051051166,
+          "p95": 11459.340659340662,
+          "max": 11459.340659340662
+        },
+        "failedChecks": 0
+      },
+      {
+        "key": "current/3p/mode3",
+        "hands": 6,
+        "tenpaiHands": 3,
+        "censoredHands": 3,
+        "drawsToTenpaiAmongReached": {
+          "count": 3,
+          "min": 7,
+          "mean": 10.666666666666666,
+          "p50": 12,
+          "p95": 13,
+          "max": 13
+        },
+        "finalShanten": {
+          "count": 6,
+          "min": 0,
+          "mean": 0.5,
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "observedDraws": 86,
+        "shantenRegret": {
+          "count": 86,
+          "min": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "decisionsAboveMinimumShanten": 0,
+        "ukeireRegretAtBestShanten": {
+          "count": 86,
+          "min": 0,
+          "mean": 0.11627906976744186,
+          "p50": 0,
+          "p95": 0,
+          "max": 4
+        },
+        "decisionWallMs": {
+          "count": 86,
+          "min": 3.071499000001495,
+          "mean": 105.35859023255817,
+          "p50": 116.79690699999992,
+          "p95": 157.61386200000015,
+          "max": 180.89107999999942
+        },
+        "decisionComputeMs": {
+          "count": 86,
+          "min": 3.071499000001495,
+          "mean": 103.7382540116279,
+          "p50": 115.312457,
+          "p95": 152.01363599999786,
+          "max": 174.04405899999983
+        },
+        "finalClosedScoreEstimate": {
+          "count": 6,
+          "min": 0,
+          "mean": 1796.4033696049644,
+          "p50": 601.452784503632,
+          "p95": 7174.074074074074,
+          "max": 7174.074074074074
+        },
+        "finalRiichiScoreEstimate": {
+          "count": 6,
+          "min": 2437.5060532687653,
+          "mean": 6394.158019011087,
+          "p50": 5910.327051051167,
+          "p95": 11651.851851851852,
+          "max": 11651.851851851852
+        },
+        "failedChecks": 0
+      },
+      {
+        "key": "current/4p/mode0",
+        "hands": 6,
+        "tenpaiHands": 2,
+        "censoredHands": 4,
+        "drawsToTenpaiAmongReached": {
+          "count": 2,
+          "min": 10,
+          "mean": 10.5,
+          "p50": 10,
+          "p95": 11,
+          "max": 11
+        },
+        "finalShanten": {
+          "count": 6,
+          "min": 0,
+          "mean": 0.6666666666666666,
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "observedDraws": 93,
+        "shantenRegret": {
+          "count": 93,
+          "min": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "decisionsAboveMinimumShanten": 0,
+        "ukeireRegretAtBestShanten": {
+          "count": 93,
+          "min": 0,
+          "mean": 0.6021505376344086,
+          "p50": 0,
+          "p95": 2,
+          "max": 15
+        },
+        "decisionWallMs": {
+          "count": 93,
+          "min": 3.5358630000009725,
+          "mean": 42.50335860215046,
+          "p50": 50.934392999999545,
+          "p95": 70.02818300000035,
+          "max": 72.51287400000001
+        },
+        "decisionComputeMs": {
+          "count": 93,
+          "min": 3.5358630000009725,
+          "mean": 41.47069712903184,
+          "p50": 49.68056999999317,
+          "p95": 68.7256989999969,
+          "max": 70.55204199999935
+        },
+        "finalClosedScoreEstimate": {
+          "count": 6,
+          "min": 0,
+          "mean": 1593.821542871435,
+          "p50": 1199.501246882793,
+          "p95": 3384.615384615384,
+          "max": 3384.615384615384
+        },
+        "finalRiichiScoreEstimate": {
+          "count": 6,
+          "min": 2080,
+          "mean": 5855.400579024198,
+          "p50": 5624.4879649968025,
+          "p95": 7806.027397260274,
+          "max": 7806.027397260274
+        },
+        "failedChecks": 0
+      },
+      {
+        "key": "current/4p/mode3",
+        "hands": 6,
+        "tenpaiHands": 2,
+        "censoredHands": 4,
+        "drawsToTenpaiAmongReached": {
+          "count": 2,
+          "min": 10,
+          "mean": 10.5,
+          "p50": 10,
+          "p95": 11,
+          "max": 11
+        },
+        "finalShanten": {
+          "count": 6,
+          "min": 0,
+          "mean": 0.6666666666666666,
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "observedDraws": 93,
+        "shantenRegret": {
+          "count": 93,
+          "min": 0,
+          "mean": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "decisionsAboveMinimumShanten": 0,
+        "ukeireRegretAtBestShanten": {
+          "count": 93,
+          "min": 0,
+          "mean": 0.7956989247311828,
+          "p50": 0,
+          "p95": 9,
+          "max": 13
+        },
+        "decisionWallMs": {
+          "count": 93,
+          "min": 3.3978559999959543,
+          "mean": 183.27405832258071,
+          "p50": 206.26506100000188,
+          "p95": 264.4899519999999,
+          "max": 283.06737299999986
+        },
+        "decisionComputeMs": {
+          "count": 93,
+          "min": 3.3978559999959543,
+          "mean": 181.69295474193518,
+          "p50": 203.1220949999988,
+          "p95": 260.7481010000083,
+          "max": 277.0155240000022
+        },
+        "finalClosedScoreEstimate": {
+          "count": 6,
+          "min": 0,
+          "mean": 1533.1551395619979,
+          "p50": 1180.3347280334729,
+          "p95": 3384.615384615384,
+          "max": 3384.615384615384
+        },
+        "finalRiichiScoreEstimate": {
+          "count": 6,
+          "min": 2080,
+          "mean": 5860.193104202258,
+          "p50": 5624.4879649968025,
+          "p95": 7721.135573580534,
+          "max": 7721.135573580534
+        },
+        "failedChecks": 0
+      }
+    ],
+    "sources": [
+      {
+        "label": "current",
+        "sourceRoot": "/home/runner/work/AlphaJong/AlphaJong",
+        "sourceHash": "0c4e420eb8bb24ebda4d8d5d523de453e1c85e3b9dcdc2d27d99a9ce471777ec",
+        "files": [
+          {
+            "path": "src/parameters.js",
+            "sha256": "e0f970c56164e728bf88f572a22cd88df98b4f88050fc3d5b23cf00a2e00e066"
+          },
+          {
+            "path": "test/test_api.js",
+            "sha256": "a13555e6da81360fd3eb9bb19f1027c0552a2c867e227ad259050d911e76fc53"
+          },
+          {
+            "path": "src/ai_offense.js",
+            "sha256": "f4d8fa94fbd516170562cd2e9a7ef19192c53ed41ac1c867ed31227b89f25bf1"
+          },
+          {
+            "path": "src/ai_defense.js",
+            "sha256": "6d39ea8928f2f126313b776651fc71d260834f0415ddab1fa0b9ceecad0b3666"
+          },
+          {
+            "path": "src/utils.js",
+            "sha256": "cb013265381d3ae085c71f58e47b0ee7f7d8683c78baee57506a54567d9b5fc9"
+          },
+          {
+            "path": "src/hand_analysis.js",
+            "sha256": "3cf2f3ee30875eb0bfca23856da3370e78440534efa33c82d30ada5f8db51b20"
+          },
+          {
+            "path": "src/yaku.js",
+            "sha256": "628886dae7e2b6f3a78a4736d28c8932fac53fd1c9580c7b4346a04e25b87405"
+          },
+          {
+            "path": "src/logging.js",
+            "sha256": "1549b819cddc91b7cd5474a0ce4dbb48311d060ef88f7414594f98bf0d9df328"
+          }
+        ]
+      }
+    ]
+  }
+}
